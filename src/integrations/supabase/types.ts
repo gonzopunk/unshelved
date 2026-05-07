@@ -14,7 +14,236 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      books: {
+        Row: {
+          author: string | null
+          bookmark_color: string
+          cover_color: string
+          cover_generic: boolean
+          cover_text_color: string
+          created_at: string
+          format: Database["public"]["Enums"]["book_format"]
+          id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          author?: string | null
+          bookmark_color?: string
+          cover_color?: string
+          cover_generic?: boolean
+          cover_text_color?: string
+          created_at?: string
+          format?: Database["public"]["Enums"]["book_format"]
+          id?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          author?: string | null
+          bookmark_color?: string
+          cover_color?: string
+          cover_generic?: boolean
+          cover_text_color?: string
+          created_at?: string
+          format?: Database["public"]["Enums"]["book_format"]
+          id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      highlights: {
+        Row: {
+          book_id: string
+          created_at: string
+          id: string
+          page_number: number | null
+          quote_text: string
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          id?: string
+          page_number?: number | null
+          quote_text: string
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          id?: string
+          page_number?: number | null
+          quote_text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "highlights_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notes: {
+        Row: {
+          book_id: string
+          content: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          content: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          yearly_goal: number
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          yearly_goal?: number
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          yearly_goal?: number
+        }
+        Relationships: []
+      }
+      reading_sessions: {
+        Row: {
+          book_id: string
+          ended_at: string | null
+          id: string
+          minutes: number | null
+          pages_read: number | null
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          ended_at?: string | null
+          id?: string
+          minutes?: number | null
+          pages_read?: number | null
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          ended_at?: string | null
+          id?: string
+          minutes?: number | null
+          pages_read?: number | null
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_sessions_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_books: {
+        Row: {
+          board_position: number
+          book_id: string
+          current_page: number | null
+          current_seconds: number | null
+          finished_at: string | null
+          id: string
+          note: string | null
+          paused: boolean
+          progress_pct: number | null
+          rating: number | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["book_status"]
+          total_pages: number | null
+          total_seconds: number | null
+          user_id: string
+        }
+        Insert: {
+          board_position?: number
+          book_id: string
+          current_page?: number | null
+          current_seconds?: number | null
+          finished_at?: string | null
+          id?: string
+          note?: string | null
+          paused?: boolean
+          progress_pct?: number | null
+          rating?: number | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["book_status"]
+          total_pages?: number | null
+          total_seconds?: number | null
+          user_id: string
+        }
+        Update: {
+          board_position?: number
+          book_id?: string
+          current_page?: number | null
+          current_seconds?: number | null
+          finished_at?: string | null
+          id?: string
+          note?: string | null
+          paused?: boolean
+          progress_pct?: number | null
+          rating?: number | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["book_status"]
+          total_pages?: number | null
+          total_seconds?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_books_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +252,15 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      book_format: "print" | "ebook" | "audiobook"
+      book_status:
+        | "want"
+        | "reading"
+        | "later"
+        | "dnf"
+        | "loved"
+        | "liked"
+        | "meh"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +387,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      book_format: ["print", "ebook", "audiobook"],
+      book_status: ["want", "reading", "later", "dnf", "loved", "liked", "meh"],
+    },
   },
 } as const
