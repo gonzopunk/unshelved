@@ -70,7 +70,7 @@ export function useUpdateStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status, board_position }: { id: string; status: BookStatus; board_position?: number }) => {
-      const patch: Record<string, unknown> = { status };
+      const patch: UserBookUpdate = { status };
       if (board_position !== undefined) patch.board_position = board_position;
       if (status === "loved" || status === "liked" || status === "meh" || status === "dnf") {
         patch.finished_at = new Date().toISOString();
@@ -97,7 +97,7 @@ export function useUpdateProgress() {
       current_page?: number; total_pages?: number; progress_pct?: number;
       current_seconds?: number; total_seconds?: number; paused?: boolean;
     }) => {
-      const patch: Record<string, unknown> = {};
+      const patch: UserBookUpdate = {};
       if (current_page !== undefined) patch.current_page = current_page;
       if (total_pages !== undefined) patch.total_pages = total_pages;
       if (progress_pct !== undefined) patch.progress_pct = progress_pct;
