@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import type { Database } from "@/integrations/supabase/types";
 
+type UserBookUpdate = Database["public"]["Tables"]["user_books"]["Update"];
+
 export type Book = Database["public"]["Tables"]["books"]["Row"];
 export type UserBook = Database["public"]["Tables"]["user_books"]["Row"];
 export type BookStatus = Database["public"]["Enums"]["book_status"];
