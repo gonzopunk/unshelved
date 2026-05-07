@@ -1,0 +1,248 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useBookDetail, useUpdateProgress, useUpdateStatus, type BookStatus } from "@/lib/queries";
+import GeneratedCover from "@/components/GeneratedCover";
+import StarRating from "@/components/StarRating";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
+import { useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Pause, Play, Pencil, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import AddBookModal from "@/components/AddBookModal";
+import { format } from "date-fns";
+import { toast } from "sonner";
+
+export const Route = createFileRoute("/_authenticated/books/$bookId")({
+  component: BookDetail,
+});
+
+const SHELVES: { value: BookStatus; label: string }[] = [
+  { value: "want", label: "Want to Read" },
+  { value: "reading", label: "Currently Reading" },
+  { value: "later", label: "Come Back Later" },
+  { value: "dnf", label: "DNF" },
+  { value: "loved", label: "Loved It" },
+  { value: "liked", label: "Liked It" },
+  { value: "meh", label: "Meh" },
+];
+
+function BookDetail() {
+  const { bookId } = Route.useParams();
+  const { data, isLoading } = useBookDetail(bookId);
+  const updateStatus = useUpdateStatus();
+  const updateProgress = useUpdateProgress();
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+  const [editOpen, setEditOpen] = useState(false);
+
+  if (isLoading || !data) {
+    return <div className="text-center py-20 text-muted-foreground">Loading…</div>;
+  }
+  const { book, userBook, sessions, notes, highlights } = data;
+  if (!userBook) {
+    return <div className="text-center py-20 text-muted-foreground">No shelf info for this book.</div>;
+  }
+  const pct = Number(userBook.progress_pct ?? 0);
+
+  const setProgress = (val: number) => {
+    if (book.format === "audiobook") {
+      const total = userBook.total_seconds ?? 0;
+      updateProgress.mutate({ id: userBook.id, current_seconds: Math.round((val / 100) * total), progress_pct: val });
+    } else {
+      const total = userBook.total_pages ?? 0;
+      updateProgress.mutate({ id: userBook.id, current_page: Math.round((val / 100) * total), progress_pct: val });
+    }
+  };
+
+  const deleteBook = async () => {
+    if (!confirm("Remove this book from your library?")) return;
+    await supabase.from("books").delete().eq("id", book.id);
+    qc.invalidateQueries({ queryKey: ["library"] });
+    toast.success("Removed");
+    navigate({ to: "/" });
+  };
+
+  return (
+    <main className="max-w-5xl mx-auto px-6">
+      <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-ink mb-6">
+        <ArrowLeft className="h-4 w-4" /> Back
+      </Link>
+
+      <div className="grid md:grid-cols-[220px_1fr] gap-8 items-start">
+        <GeneratedCover book={book} className="w-full aspect-[3/4] rounded-2xl shadow-lift" />
+
+        <div>
+          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">{book.format}</p>
+          <h1 className="font-display text-4xl md:text-5xl mt-1">{book.title}</h1>
+          <p className="text-lg text-muted-foreground mt-1">{book.author}</p>
+
+          {userBook.rating && (
+            <div className="mt-3"><StarRating value={userBook.rating} size={20} /></div>
+          )}
+
+          <div className="mt-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Progress</span>
+              <span className="font-mono text-sm">{Math.round(pct)}%</span>
+            </div>
+            <div className="h-3 rounded-full bg-mist overflow-hidden">
+              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+            </div>
+            <input
+              type="range" min={0} max={100} value={Math.round(pct)}
+              onChange={(e) => setProgress(Number(e.target.value))}
+              className="w-full mt-2 accent-primary"
+            />
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            <Select value={userBook.status} onValueChange={(v) => updateStatus.mutate({ id: userBook.id, status: v as BookStatus })}>
+              <SelectTrigger className="w-52 rounded-full"><SelectValue /></SelectTrigger>
+              <SelectContent>{SHELVES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              className="rounded-full gap-1.5"
+              onClick={() => updateProgress.mutate({ id: userBook.id, paused: !userBook.paused })}
+            >
+              {userBook.paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+              {userBook.paused ? "Resume" : "Pause"}
+            </Button>
+            <Button variant="outline" className="rounded-full gap-1.5" onClick={() => setEditOpen(true)}>
+              <Pencil className="h-4 w-4" /> Edit
+            </Button>
+            <Button variant="ghost" className="rounded-full gap-1.5 text-destructive" onClick={deleteBook}>
+              <Trash2 className="h-4 w-4" /> Delete
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <Tabs defaultValue="notes" className="mt-12">
+        <TabsList className="rounded-full bg-card shadow-paper p-1">
+          <TabsTrigger value="notes" className="rounded-full">Notes</TabsTrigger>
+          <TabsTrigger value="quotes" className="rounded-full">Quotes</TabsTrigger>
+          <TabsTrigger value="sessions" className="rounded-full">Sessions</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="notes" className="mt-6">
+          <NewNote bookId={book.id} userId={user!.id} />
+          <div className="mt-4 space-y-3">
+            {notes.length === 0 && <Empty>No notes yet. Capture a thought.</Empty>}
+            {notes.map(n => (
+              <div key={n.id} className="rounded-2xl bg-card shadow-paper p-4">
+                <p className="whitespace-pre-wrap">{n.content}</p>
+                <div className="font-mono text-xs text-muted-foreground mt-2">{format(new Date(n.created_at), "MMM d, yyyy · h:mm a")}</div>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="quotes" className="mt-6">
+          <NewQuote bookId={book.id} userId={user!.id} />
+          <div className="mt-4 space-y-3">
+            {highlights.length === 0 && <Empty>No quotes saved yet.</Empty>}
+            {highlights.map(h => (
+              <blockquote key={h.id} className="rounded-2xl bg-card shadow-paper p-5 border-l-4 border-terra">
+                <p className="font-display italic text-lg leading-snug">"{h.quote_text}"</p>
+                {h.page_number && <div className="font-mono text-xs text-muted-foreground mt-2">p. {h.page_number}</div>}
+              </blockquote>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="sessions" className="mt-6">
+          <NewSession bookId={book.id} userId={user!.id} format={book.format} />
+          <div className="mt-4 rounded-2xl bg-card shadow-paper divide-y divide-border">
+            {sessions.length === 0 && <Empty>No reading sessions logged.</Empty>}
+            {sessions.map(s => (
+              <div key={s.id} className="flex items-center justify-between p-4 font-mono text-sm">
+                <span>{format(new Date(s.started_at), "MMM d, yyyy")}</span>
+                <span className="text-muted-foreground">{s.pages_read ? `${s.pages_read} pages` : `${s.minutes} min`}</span>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      <AddBookModal open={editOpen} onOpenChange={setEditOpen} editing={{ book, userBook }} />
+    </main>
+  );
+}
+
+function NewNote({ bookId, userId }: { bookId: string; userId: string }) {
+  const [text, setText] = useState("");
+  const qc = useQueryClient();
+  return (
+    <form onSubmit={async (e) => {
+      e.preventDefault();
+      if (!text.trim()) return;
+      await supabase.from("notes").insert({ book_id: bookId, user_id: userId, content: text });
+      setText("");
+      qc.invalidateQueries({ queryKey: ["book"] });
+    }} className="rounded-2xl bg-card shadow-paper p-4">
+      <Textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="A thought, a reaction, a connection…" className="min-h-24 bg-transparent border-0 focus-visible:ring-0 resize-none" />
+      <div className="flex justify-end mt-2"><Button type="submit" className="rounded-full" disabled={!text.trim()}>Save note</Button></div>
+    </form>
+  );
+}
+
+function NewQuote({ bookId, userId }: { bookId: string; userId: string }) {
+  const [text, setText] = useState("");
+  const [page, setPage] = useState("");
+  const qc = useQueryClient();
+  return (
+    <form onSubmit={async (e) => {
+      e.preventDefault();
+      if (!text.trim()) return;
+      await supabase.from("highlights").insert({ book_id: bookId, user_id: userId, quote_text: text, page_number: page ? Number(page) : null });
+      setText(""); setPage("");
+      qc.invalidateQueries({ queryKey: ["book"] });
+    }} className="rounded-2xl bg-card shadow-paper p-4">
+      <Textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Type a passage worth keeping…" className="min-h-24 bg-transparent border-0 focus-visible:ring-0 resize-none font-display italic" />
+      <div className="flex justify-between gap-2 mt-2">
+        <Input value={page} onChange={(e) => setPage(e.target.value)} placeholder="Page" className="w-24" inputMode="numeric" />
+        <Button type="submit" className="rounded-full" disabled={!text.trim()}>Save quote</Button>
+      </div>
+    </form>
+  );
+}
+
+function NewSession({ bookId, userId, format: fmt }: { bookId: string; userId: string; format: string }) {
+  const [pages, setPages] = useState("");
+  const [minutes, setMinutes] = useState("");
+  const qc = useQueryClient();
+  return (
+    <form onSubmit={async (e) => {
+      e.preventDefault();
+      await supabase.from("reading_sessions").insert({
+        book_id: bookId, user_id: userId,
+        pages_read: pages ? Number(pages) : 0,
+        minutes: minutes ? Number(minutes) : 0,
+      });
+      setPages(""); setMinutes("");
+      qc.invalidateQueries({ queryKey: ["book"] });
+    }} className="rounded-2xl bg-card shadow-paper p-4 flex flex-wrap gap-2 items-end">
+      {fmt !== "audiobook" && (
+        <div className="flex-1 min-w-32">
+          <label className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Pages</label>
+          <Input value={pages} onChange={(e) => setPages(e.target.value)} inputMode="numeric" />
+        </div>
+      )}
+      <div className="flex-1 min-w-32">
+        <label className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Minutes</label>
+        <Input value={minutes} onChange={(e) => setMinutes(e.target.value)} inputMode="numeric" />
+      </div>
+      <Button type="submit" className="rounded-full">Log session</Button>
+    </form>
+  );
+}
+
+function Empty({ children }: { children: React.ReactNode }) {
+  return <div className="rounded-2xl bg-card shadow-paper p-6 text-center text-muted-foreground italic">{children}</div>;
+}
