@@ -239,6 +239,7 @@ function WeavePage() {
               connection={c}
               source={resolve(c.source_kind, c.source_id)}
               target={resolve(c.target_kind, c.target_id)}
+              onEdit={openEdit}
             />
           ))}
           {filteredConnections.length === 0 && (
@@ -293,10 +294,11 @@ function WeavePage() {
           open={modalOpen}
           onOpenChange={(o) => {
             setModalOpen(o);
-            if (!o) { setPendingSource(null); setPendingTarget(null); }
+            if (!o) { setPendingSource(null); setPendingTarget(null); setEditingConn(null); }
           }}
           source={pendingSource}
           initialTarget={pendingTarget}
+          editing={editingConn}
         />
       )}
 
@@ -312,6 +314,7 @@ function WeavePage() {
                 connection={c}
                 source={resolve(c.source_kind, c.source_id)}
                 target={resolve(c.target_kind, c.target_id)}
+                onEdit={(conn) => { setEdgePair(null); openEdit(conn); }}
               />
             ))}
             {edgeConnections.length === 0 && (
