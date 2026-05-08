@@ -33,6 +33,7 @@ function WeavePage() {
   const [pendingTarget, setPendingTarget] = useState<{ kind: ConnectionKind; id: string; title: string; author: string | null; isReference: boolean } | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [edgePair, setEdgePair] = useState<{ a: string; b: string } | null>(null);
+  const [connectMode, setConnectMode] = useState(false);
 
   const { data: marginalia } = useQuery({
     queryKey: ["marginalia", "all", user?.id],
