@@ -8,8 +8,9 @@ import { useEffect, useState } from "react";
 import BookCard from "@/components/BookCard";
 import { useAllSessions, computeStreak, fmtMinutes } from "@/lib/sessions";
 
-type ReadingSize = "sm" | "md" | "lg";
 const SIZE_KEY = "unshelved.readingSize";
+const MIN_COL = 180;
+const MAX_COL = 520;
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({ meta: [{ title: "Unshelved — Library" }] }),
@@ -22,14 +23,23 @@ function Home() {
   const { data: library = [] } = useLibrary();
   const { data: profile } = useProfile();
   const { user } = useAuth();
-  const [readingSize, setReadingSize] = useState<ReadingSize>("sm");
+  const [readingSize, setReadingSize] = useState<number>(220);
   useEffect(() => {
-    const saved = (typeof window !== "undefined" && localStorage.getItem(SIZE_KEY)) as ReadingSize | null;
-    if (saved === "sm" || saved === "md" || saved === "lg") setReadingSize(saved);
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem(SIZE_KEY);
+    if (!saved) return;
+    // Accept legacy "sm" | "md" | "lg" as well as numeric values.
+    if (saved === "sm") setReadingSize(200);
+    else if (saved === "md") setReadingSize(320);
+    else if (saved === "lg") setReadingSize(480);
+    else {
+      const n = Number(saved);
+      if (Number.isFinite(n) && n >= MIN_COL && n <= MAX_COL) setReadingSize(n);
+    }
   }, []);
-  const changeSize = (s: ReadingSize) => {
-    setReadingSize(s);
-    try { localStorage.setItem(SIZE_KEY, s); } catch {}
+  const changeSize = (n: number) => {
+    setReadingSize(n);
+    try { localStorage.setItem(SIZE_KEY, String(n)); } catch {}
   };
 
   const { data: highlights = [] } = useQuery({
