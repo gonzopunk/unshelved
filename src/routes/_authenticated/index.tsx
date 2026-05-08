@@ -4,7 +4,11 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { useEffect, useState } from "react";
 import BookCard from "@/components/BookCard";
+
+type ReadingSize = "sm" | "md" | "lg";
+const SIZE_KEY = "unshelved.readingSize";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({ meta: [{ title: "Unshelved — Library" }] }),
