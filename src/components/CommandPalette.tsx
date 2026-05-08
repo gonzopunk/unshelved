@@ -20,6 +20,7 @@ import { Kbd, useIsMac } from "@/components/Kbd";
 export default function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
+  const isMac = useIsMac();
   const { user } = useAuth();
   const { data: library } = useLibrary();
   const { data: connections } = useAllConnections();
