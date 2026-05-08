@@ -36,6 +36,11 @@ function WeavePage() {
   const [edgePair, setEdgePair] = useState<{ a: string; b: string } | null>(null);
   const [connectMode, setConnectMode] = useState(false);
   const [editingConn, setEditingConn] = useState<Connection | null>(null);
+  const [fFormat, setFFormat] = useState<Set<string>>(new Set());
+  const [fStatus, setFStatus] = useState<Set<string>>(new Set());
+  const [fAuthor, setFAuthor] = useState<Set<string>>(new Set());
+  const [fYear, setFYear] = useState<Set<string>>(new Set());
+  const [fTag, setFTag] = useState<Set<string>>(new Set());
 
   const openEdit = (c: Connection) => {
     const s = lookup.get(c.source_id);
