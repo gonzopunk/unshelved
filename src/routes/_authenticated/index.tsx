@@ -45,6 +45,12 @@ function Home() {
     },
   });
 
+  const { data: recentSessions = [] } = useAllSessions(30);
+  const streak = computeStreak(recentSessions);
+  const weekMinutes = recentSessions
+    .filter((s) => new Date(s.started_at).getTime() >= Date.now() - 7 * 86_400_000)
+    .reduce((sum, s) => sum + (s.minutes ?? 0), 0);
+
   const reading = library.filter((b) => b.user_books[0]?.status === "reading").slice(0, 2);
   const upNext = library.filter((b) => b.user_books[0]?.status === "want").slice(0, 5);
   const finished = library
