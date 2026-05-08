@@ -286,6 +286,7 @@ function WeaveTab({
               connection={c}
               source={resolve(c.source_kind, c.source_id)}
               target={resolve(c.target_kind, c.target_id)}
+              onEdit={onEdit}
             />
           ))}
         </div>
