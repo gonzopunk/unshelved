@@ -1,10 +1,11 @@
 import { createFileRoute, Outlet, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
-import { Home, LayoutGrid, Plus, LogOut, Network, Settings as SettingsIcon } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Home, LayoutGrid, Plus, LogOut, Network, Settings as SettingsIcon, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AddBookModal from "@/components/AddBookModal";
+import CommandPalette from "@/components/CommandPalette";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthLayout,
@@ -14,6 +15,18 @@ function AuthLayout() {
   const { session, loading } = useAuth();
   const navigate = useNavigate();
   const [addOpen, setAddOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
@@ -25,16 +38,17 @@ function AuthLayout() {
 
   return (
     <div className="min-h-screen pb-24">
-      <PillNav onAdd={() => setAddOpen(true)} onLogout={async () => { await supabase.auth.signOut(); navigate({ to: "/login" }); }} />
+      <PillNav onAdd={() => setAddOpen(true)} onSearch={() => setPaletteOpen(true)} onLogout={async () => { await supabase.auth.signOut(); navigate({ to: "/login" }); }} />
       <div className="pt-28">
         <Outlet />
       </div>
       <AddBookModal open={addOpen} onOpenChange={setAddOpen} />
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </div>
   );
 }
 
-function PillNav({ onAdd, onLogout }: { onAdd: () => void; onLogout: () => void }) {
+function PillNav({ onAdd, onSearch, onLogout }: { onAdd: () => void; onSearch: () => void; onLogout: () => void }) {
   return (
     <div className="fixed top-5 left-1/2 -translate-x-1/2 z-40">
       <nav className="flex items-center gap-1 rounded-full bg-paper/80 backdrop-blur-md shadow-lift px-2 py-2 border border-border">
@@ -43,6 +57,9 @@ function PillNav({ onAdd, onLogout }: { onAdd: () => void; onLogout: () => void 
         <NavItem to="/" icon={<Home className="h-4 w-4" />} label="Home" />
         <NavItem to="/board" icon={<LayoutGrid className="h-4 w-4" />} label="Board" />
         <NavItem to="/weave" icon={<Network className="h-4 w-4" />} label="Connections" />
+        <button onClick={onSearch} aria-label="Search (⌘K)" title="Search (⌘K)" className="ml-1 p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors">
+          <Search className="h-4 w-4" />
+        </button>
         <Button size="sm" onClick={onAdd} className="rounded-full ml-1 gap-1.5">
           <Plus className="h-4 w-4" /> Add book
         </Button>
