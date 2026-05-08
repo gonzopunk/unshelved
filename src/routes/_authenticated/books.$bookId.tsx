@@ -14,6 +14,7 @@ import { ArrowLeft, Pause, Play, Pencil, Trash2, Network } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AddBookModal from "@/components/AddBookModal";
 import AddConnectionModal from "@/components/AddConnectionModal";
+import QuickTagBar from "@/components/QuickTagBar";
 import ConnectionCard, { type EndpointInfo } from "@/components/ConnectionCard";
 import { useBookConnections, useReferenceBooks, type ConnectionKind } from "@/lib/weave";
 import { useLibrary } from "@/lib/queries";
@@ -128,6 +129,8 @@ function BookDetail() {
           </div>
         </div>
       </div>
+
+      <QuickTagBar bookId={book.id} />
 
       <Tabs defaultValue="margins" className="mt-12">
         <TabsList className="rounded-full bg-card shadow-paper p-1">

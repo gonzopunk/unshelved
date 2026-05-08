@@ -14,6 +14,73 @@ export type Database = {
   }
   public: {
     Tables: {
+      book_axis_values: {
+        Row: {
+          axis_id: string
+          book_id: string
+          id: string
+          scale_value: number | null
+          updated_at: string
+          user_id: string
+          values: string[]
+        }
+        Insert: {
+          axis_id: string
+          book_id: string
+          id?: string
+          scale_value?: number | null
+          updated_at?: string
+          user_id: string
+          values?: string[]
+        }
+        Update: {
+          axis_id?: string
+          book_id?: string
+          id?: string
+          scale_value?: number | null
+          updated_at?: string
+          user_id?: string
+          values?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_axis_values_axis_id_fkey"
+            columns: ["axis_id"]
+            isOneToOne: false
+            referencedRelation: "tag_axes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      book_tags: {
+        Row: {
+          book_id: string
+          created_at: string
+          tag_id: string
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          tag_id: string
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          tag_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       books: {
         Row: {
           author: string | null
@@ -248,6 +315,81 @@ export type Database = {
         }
         Relationships: []
       }
+      tag_axes: {
+        Row: {
+          built_in: boolean
+          created_at: string
+          hidden: boolean
+          id: string
+          key: string
+          kind: string
+          label: string
+          open: boolean
+          position: number
+          scale_max: number | null
+          scale_min: number | null
+          user_id: string
+          values: string[]
+        }
+        Insert: {
+          built_in?: boolean
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          key: string
+          kind: string
+          label: string
+          open?: boolean
+          position?: number
+          scale_max?: number | null
+          scale_min?: number | null
+          user_id: string
+          values?: string[]
+        }
+        Update: {
+          built_in?: boolean
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          key?: string
+          kind?: string
+          label?: string
+          open?: boolean
+          position?: number
+          scale_max?: number | null
+          scale_min?: number | null
+          user_id?: string
+          values?: string[]
+        }
+        Relationships: []
+      }
+      tags: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          use_count: number
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          use_count?: number
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          use_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_books: {
         Row: {
           board_position: number
@@ -315,7 +457,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      seed_tag_axes: { Args: { _user_id: string }; Returns: undefined }
     }
     Enums: {
       book_format: "print" | "ebook" | "audiobook"
