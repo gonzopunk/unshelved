@@ -285,6 +285,7 @@ function MiniCard({ book, colId, overlay }: { book: BookWithShelf; colId: BookSt
   return (
     <article
       ref={setNodeRef}
+      style={style}
       {...attributes}
       {...listeners}
       className={"mc" + (isDragging && !overlay ? " dragging" : "") + (paused ? " paused" : "") + (overlay ? " overlay" : "")}
