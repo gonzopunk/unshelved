@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import BookCard from "@/components/BookCard";
+import AddBookModal from "@/components/AddBookModal";
 import { useAllSessions, computeStreak, fmtMinutes } from "@/lib/sessions";
 
 const SIZE_KEY = "unshelved.readingSize";
@@ -24,6 +25,7 @@ function Home() {
   const { data: profile } = useProfile();
   const { user } = useAuth();
   const [readingSize, setReadingSize] = useState<number>(220);
+  const [addOpen, setAddOpen] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
     const saved = localStorage.getItem(SIZE_KEY);
