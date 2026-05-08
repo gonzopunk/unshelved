@@ -421,6 +421,8 @@ function HomepageStyles() {
         box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 18px 40px -28px rgba(31,38,48,0.22);
       }
       .stat.alt { background: #D5E8F2; }
+      .stat-link { display: block; text-decoration: none; color: inherit; transition: transform 0.15s ease, box-shadow 0.15s ease; cursor: pointer; }
+      .stat-link:hover { transform: translateY(-2px); box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 24px 48px -24px rgba(31,38,48,0.28); }
       .stat-num {
         font-family: 'Newsreader', serif;
         font-size: 56px; font-weight: 400; line-height: 1;
@@ -591,7 +593,10 @@ function HomepageStyles() {
         border: 1.5px dashed rgba(31,38,48,0.18);
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 8px; color: rgba(31,38,48,0.45); margin-left: auto;
+        background: transparent; cursor: pointer; padding: 0;
+        transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
       }
+      .shelf-add:hover { border-color: var(--forest); color: var(--forest); transform: translateY(-2px); }
       .add-plus { font-size: 22px; font-family: 'Newsreader', serif; }
       .add-lbl { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
       .shelf-floor {
@@ -660,6 +665,8 @@ function HomepageStyles() {
       .quote-conn { margin-top: 14px; font-size: 12px; color: rgba(250,251,243,0.6); position: relative; z-index: 1; }
       .quote-conn-link { color: rgba(250,251,243,0.85); text-decoration: none; border-bottom: 1px dotted rgba(250,251,243,0.4); }
       .quote-conn-link:hover { color: var(--cream); border-bottom-color: var(--cream); }
+      .quote-body-link { display: block; text-decoration: none; color: inherit; }
+      .quote-body-link:hover blockquote { color: var(--cream); }
 
       .hp-foot {
         display: flex; justify-content: space-between;
