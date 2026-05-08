@@ -17,7 +17,7 @@ import AddBookModal from "@/components/AddBookModal";
 import AddConnectionModal from "@/components/AddConnectionModal";
 import QuickTagBar from "@/components/QuickTagBar";
 import ConnectionCard, { type EndpointInfo } from "@/components/ConnectionCard";
-import { useBookConnections, useReferenceBooks, type ConnectionKind } from "@/lib/weave";
+import { useBookConnections, useReferenceBooks, type ConnectionKind, type Connection } from "@/lib/weave";
 import { useLibrary } from "@/lib/queries";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -51,6 +51,7 @@ function BookDetail() {
   const navigate = useNavigate();
   const [editOpen, setEditOpen] = useState(false);
   const [weaveSource, setWeaveSource] = useState<{ kind: ConnectionKind; id: string; label: string } | null>(null);
+  const [editingConn, setEditingConn] = useState<Connection | null>(null);
 
   if (isLoading || !data) {
     return <div className="text-center py-20 text-muted-foreground">Loading…</div>;
