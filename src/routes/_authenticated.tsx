@@ -42,10 +42,11 @@ function PillNav({ onAdd, onLogout }: { onAdd: () => void; onLogout: () => void 
         <span className="h-6 w-px bg-border mx-1" />
         <NavItem to="/" icon={<Home className="h-4 w-4" />} label="Home" />
         <NavItem to="/board" icon={<LayoutGrid className="h-4 w-4" />} label="Board" />
-        <NavItem to="/weave" icon={<Network className="h-4 w-4" />} label="Weave" />
+        <NavItem to="/weave" icon={<Network className="h-4 w-4" />} label="Connections" />
         <Button size="sm" onClick={onAdd} className="rounded-full ml-1 gap-1.5">
           <Plus className="h-4 w-4" /> Add book
         </Button>
+        <span className="h-6 w-px bg-border mx-2" />
         <button onClick={onLogout} aria-label="Sign out" className="ml-1 p-2 rounded-full hover:bg-muted text-muted-foreground">
           <LogOut className="h-4 w-4" />
         </button>

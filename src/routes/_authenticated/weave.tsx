@@ -23,7 +23,7 @@ function WeavePage() {
   const { data: library = [] } = useLibrary();
   const { data: refBooks = [] } = useReferenceBooks();
   const { data: connections = [], isLoading } = useAllConnections();
-  const [view, setView] = useState<"list" | "web">("list");
+  const [view, setView] = useState<"list" | "web">("web");
   const [filter, setFilter] = useState("");
 
   const { data: marginalia } = useQuery({
@@ -107,7 +107,7 @@ function WeavePage() {
   return (
     <main className="max-w-5xl mx-auto px-6">
       <header className="mb-8">
-        <h1 className="font-display text-4xl md:text-5xl">Weave</h1>
+        <h1 className="font-display text-4xl md:text-5xl">Connections</h1>
         <p className="text-muted-foreground mt-2 max-w-2xl">
           Connections between books — and the quotes and notes inside them. Every link grows your private web of how texts speak to each other.
         </p>
