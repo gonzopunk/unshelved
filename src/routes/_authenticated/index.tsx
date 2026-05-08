@@ -90,6 +90,8 @@ function Home() {
         <div className="hero-text">
           <div className="hero-eyebrow">
             <span className="dot" /> {dayName} {partOfDay} · {inFlight} {inFlight === 1 ? "book" : "books"} in flight
+            {streak > 0 && <span> · 🔥 {streak}-day streak</span>}
+            {weekMinutes > 0 && <span> · {fmtMinutes(weekMinutes)} this week</span>}
           </div>
           <h1 className="hero-title">
             Welcome back, {firstName}. <em>Pick up where you drifted off.</em>
