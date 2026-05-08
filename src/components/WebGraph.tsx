@@ -159,7 +159,7 @@ export default function WebGraph({
           nodeLabel={(n: unknown) => (n as Node).name}
           nodeColor={(n: unknown) => (n as Node).color}
           nodeRelSize={6}
-          enableNodeDrag={false}
+          enableNodeDrag={!connectMode}
           linkColor={(l: unknown) => {
             const c = (l as Link).count ?? 1;
             const a = Math.min(0.25 + (c - 1) * 0.12, 0.7);
