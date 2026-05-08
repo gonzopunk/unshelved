@@ -50,6 +50,7 @@ function AuthLayout() {
 }
 
 function PillNav({ onAdd, onSearch, onLogout }: { onAdd: () => void; onSearch: () => void; onLogout: () => void }) {
+  const isMac = useIsMac();
   return (
     <div className="fixed top-5 left-1/2 -translate-x-1/2 z-40">
       <nav className="flex items-center gap-1 rounded-full bg-paper/80 backdrop-blur-md shadow-lift px-2 py-2 border border-border">
