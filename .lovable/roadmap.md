@@ -6,7 +6,7 @@ Updated build order, reflecting what's shipped and what's been decided since the
 
 - **App identity: Unshelved** — renamed from Margins; inclusive tagline, no two-tier brand framing.
 - **Margins tab** — notes + quotes unified on the book detail page (with Sessions alongside).
-- **Reading Sessions** — `reading_sessions` table wired, per-book session log.
+- **Reading Sessions v2** — `reading_sessions` enriched with end times, page/%/audio ranges, mood, session notes, location. Live timer, quick log, backfill modes; auto-updates book progress; pace + ETA + streak; rhythm + mood mix surfaces.
 - **Real Book Covers (partial)** — Open Library / Google Books lookup in `AddBookModal`; generated cover fallback.
 - **Weave (intertextuality)** — `connections` + `reference_books` tables, `/weave` route with **List** and **Web** views, per-book Weave tab, per-quote/note "Weave" affordance, seeded sample connections. *(Originally tagged the #1 killer feature; now live.)*
 
