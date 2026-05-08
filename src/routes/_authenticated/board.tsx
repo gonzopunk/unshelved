@@ -1,16 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useLibrary, useUpdateStatus, type BookStatus, type BookWithShelf, type UserBook } from "@/lib/queries";
+import { useLibrary, useReorderBoard, type BookStatus, type BookWithShelf, type UserBook } from "@/lib/queries";
 import {
   DndContext,
   DragOverlay,
   PointerSensor,
   useDroppable,
-  useDraggable,
   useSensor,
   useSensors,
   type DragEndEvent,
   type DragStartEvent,
+  type DragOverEvent,
 } from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 
