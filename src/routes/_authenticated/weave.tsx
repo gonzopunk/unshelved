@@ -227,12 +227,13 @@ function WeavePage() {
             links={graph.links}
             highlightedId={pendingSource?.id ?? null}
             onNodeClick={handleNodeClick}
+            onLinkClick={handleLinkClick}
           />
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground font-mono uppercase tracking-widest">
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: "#1F5266" }} /> Your books</span>
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: "#5DA8D5" }} /> References</span>
             <span className="normal-case tracking-normal font-sans italic">
-              Click a dot to open a book · Shift-click two books to connect them
+              Click a dot to open a book · Click a line to view that connection · Shift-click two books to connect them
             </span>
             {pendingSource && (
               <button
