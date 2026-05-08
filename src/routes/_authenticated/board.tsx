@@ -1,16 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useLibrary, useUpdateStatus, type BookStatus, type BookWithShelf, type UserBook } from "@/lib/queries";
+import { useLibrary, useReorderBoard, type BookStatus, type BookWithShelf, type UserBook } from "@/lib/queries";
 import {
   DndContext,
   DragOverlay,
   PointerSensor,
   useDroppable,
-  useDraggable,
   useSensor,
   useSensors,
   type DragEndEvent,
   type DragStartEvent,
+  type DragOverEvent,
 } from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 
@@ -42,9 +48,11 @@ const RATINGS: ColDef[] = [
 
 const FMT_LABEL: Record<string, string> = { print: "Print", ebook: "Ebook", audiobook: "Audio" };
 
+const ALL_COL_IDS: BookStatus[] = ["want", "reading", "later", "dnf", "loved", "liked", "meh"];
+
 function BoardPage() {
   const { data: library = [] } = useLibrary();
-  const updateStatus = useUpdateStatus();
+  const reorder = useReorderBoard();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -55,6 +63,19 @@ function BoardPage() {
     for (const b of library) {
       const s = (b.user_books[0]?.status ?? "want") as BookStatus;
       if (out[s]) out[s].push(b);
+    }
+    // Sort each column by board_position (nulls last, then by created_at desc as fallback).
+    for (const k of Object.keys(out) as BookStatus[]) {
+      out[k].sort((a, b) => {
+        const pa = a.user_books[0]?.board_position;
+        const pb = b.user_books[0]?.board_position;
+        if (pa == null && pb == null) {
+          return (b.created_at ?? "").localeCompare(a.created_at ?? "");
+        }
+        if (pa == null) return 1;
+        if (pb == null) return -1;
+        return pa - pb;
+      });
     }
     return out;
   }, [library]);
@@ -67,18 +88,71 @@ function BoardPage() {
   const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
   const thisYear = library.filter((b) => (b.user_books[0]?.finished_at ?? "") >= yearStart).length;
 
+  const findContainer = (id: string): BookStatus | null => {
+    if (ALL_COL_IDS.includes(id as BookStatus)) return id as BookStatus;
+    const book = library.find((b) => b.id === id);
+    return (book?.user_books[0]?.status as BookStatus | undefined) ?? null;
+  };
+
   const onDragStart = (e: DragStartEvent) => setActiveId(String(e.active.id));
+
   const onDragEnd = (e: DragEndEvent) => {
     setActiveId(null);
-    const bookId = String(e.active.id);
-    const overId = e.over?.id;
+    const activeIdStr = String(e.active.id);
+    const overId = e.over?.id ? String(e.over.id) : null;
     if (!overId) return;
-    const targetStatus = String(overId) as BookStatus;
-    const book = library.find((b) => b.id === bookId);
-    const ub = book?.user_books[0];
-    if (!ub || ub.status === targetStatus) return;
-    updateStatus.mutate({ id: ub.id, status: targetStatus });
+
+    const sourceCol = findContainer(activeIdStr);
+    const targetCol = findContainer(overId);
+    if (!sourceCol || !targetCol) return;
+
+    const activeBook = library.find((b) => b.id === activeIdStr);
+    const activeUb = activeBook?.user_books[0];
+    if (!activeBook || !activeUb) return;
+
+    // Compute the target list after the move.
+    const sourceList = grouped[sourceCol].filter((b) => b.id !== activeIdStr);
+    const targetListBase = sourceCol === targetCol ? sourceList : grouped[targetCol].slice();
+
+    let insertIndex: number;
+    if (ALL_COL_IDS.includes(overId as BookStatus)) {
+      insertIndex = targetListBase.length;
+    } else {
+      insertIndex = targetListBase.findIndex((b) => b.id === overId);
+      if (insertIndex < 0) insertIndex = targetListBase.length;
+    }
+
+    const newTargetList = targetListBase.slice();
+    newTargetList.splice(insertIndex, 0, activeBook);
+
+    // No-op if order and column unchanged.
+    if (sourceCol === targetCol) {
+      const oldIdx = grouped[sourceCol].findIndex((b) => b.id === activeIdStr);
+      if (oldIdx === insertIndex) return;
+    }
+
+    // Build update list: reassign board_position for the entire target column,
+    // and (if cross-column) compact the source column too.
+    const updates: { id: string; status: BookStatus; board_position: number }[] = [];
+    newTargetList.forEach((b, i) => {
+      const ub = b.user_books[0];
+      if (!ub) return;
+      updates.push({ id: ub.id, status: targetCol, board_position: i });
+    });
+    if (sourceCol !== targetCol) {
+      sourceList.forEach((b, i) => {
+        const ub = b.user_books[0];
+        if (!ub) return;
+        updates.push({ id: ub.id, status: sourceCol, board_position: i });
+      });
+    }
+    reorder.mutate(updates);
   };
+
+  const onDragOver = (_e: DragOverEvent) => {
+    // Live cross-column reordering could go here; the optimistic onDragEnd is enough for snappy feel.
+  };
+
 
   return (
     <div className="bv">
@@ -95,12 +169,12 @@ function BoardPage() {
         </div>
       </div>
 
-      <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+      <DndContext sensors={sensors} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd}>
         <section className="bv-section">
           <div className="bv-section-head">
             <h2>Shelves</h2>
             <span className="bv-rule" />
-            <span className="bv-section-hint">drag between columns ↔</span>
+            <span className="bv-section-hint">drag to reorder or move between columns ↔</span>
           </div>
           <div className="bv-cols cols-4">
             {SHELVES.map((col) => (
@@ -122,7 +196,7 @@ function BoardPage() {
           </div>
         </section>
 
-        <DragOverlay>
+        <DragOverlay dropAnimation={null}>
           {activeBook && activeCol && <MiniCard book={activeBook} colId={activeCol} overlay />}
         </DragOverlay>
       </DndContext>
@@ -162,18 +236,27 @@ function Column({ col, books }: { col: ColDef; books: BookWithShelf[] }) {
         </div>
         <div className="col-count">{books.length}</div>
       </div>
-      <div className="col-cards">
-        {books.length === 0 && <div className="col-empty">empty</div>}
-        {books.map((b) => (
-          <MiniCard key={b.id} book={b} colId={col.id} />
-        ))}
-      </div>
+      <SortableContext items={books.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+        <div className="col-cards">
+          {books.length === 0 && <div className="col-empty">empty</div>}
+          {books.map((b) => (
+            <MiniCard key={b.id} book={b} colId={col.id} />
+          ))}
+        </div>
+      </SortableContext>
     </div>
   );
 }
 
 function MiniCard({ book, colId, overlay }: { book: BookWithShelf; colId: BookStatus; overlay?: boolean }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: book.id });
+  const sortable = useSortable({ id: book.id, disabled: overlay });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = sortable;
+  const style = overlay
+    ? undefined
+    : {
+        transform: CSS.Transform.toString(transform),
+        transition,
+      };
   const ub = book.user_books[0] as UserBook | undefined;
   const isPrint = book.format === "print";
   const isEbook = book.format === "ebook";
@@ -202,6 +285,7 @@ function MiniCard({ book, colId, overlay }: { book: BookWithShelf; colId: BookSt
   return (
     <article
       ref={setNodeRef}
+      style={style}
       {...attributes}
       {...listeners}
       className={"mc" + (isDragging && !overlay ? " dragging" : "") + (paused ? " paused" : "") + (overlay ? " overlay" : "")}
@@ -391,7 +475,11 @@ function BoardStyles() {
         background: #F0F0E5;
       }
       .mc:active { cursor: grabbing; }
-      .mc.dragging { opacity: 0.35; transform: rotate(-2deg); }
+      .mc.dragging {
+        opacity: 0;
+        pointer-events: none;
+        transition: none;
+      }
       .mc.overlay {
         box-shadow: 0 1px 0 rgba(31,38,48,0.06), 0 22px 40px -16px rgba(31,38,48,0.4);
         transform: rotate(-2deg); background: #F0F0E5;

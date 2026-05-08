@@ -114,6 +114,41 @@ export function useUpdateProgress() {
   });
 }
 
+export function useReorderBoard() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (updates: { id: string; status: BookStatus; board_position: number }[]) => {
+      // Fire updates in parallel; ignore individual errors so a partial failure doesn't snap everything back.
+      await Promise.all(updates.map(u =>
+        supabase.from("user_books").update({ status: u.status, board_position: u.board_position }).eq("id", u.id)
+      ));
+    },
+    onMutate: async (updates) => {
+      await qc.cancelQueries({ queryKey: ["library", user?.id] });
+      const prev = qc.getQueryData<BookWithShelf[]>(["library", user?.id]);
+      if (prev) {
+        const byUbId = new Map(updates.map(u => [u.id, u]));
+        const next = prev.map(b => {
+          const ub = b.user_books[0];
+          if (!ub) return b;
+          const u = byUbId.get(ub.id);
+          if (!u) return b;
+          return { ...b, user_books: [{ ...ub, status: u.status, board_position: u.board_position }] };
+        });
+        qc.setQueryData(["library", user?.id], next);
+      }
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["library", user?.id], ctx.prev);
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["library"] });
+    },
+  });
+}
+
 /** Distinct dominant colors from the user's library, in library order.
  * Useful for chart palettes — pass a desired count to cap. */
 export function useLibraryPalette(count = 8): string[] {
