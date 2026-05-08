@@ -21,6 +21,15 @@ function Home() {
   const { data: library = [] } = useLibrary();
   const { data: profile } = useProfile();
   const { user } = useAuth();
+  const [readingSize, setReadingSize] = useState<ReadingSize>("sm");
+  useEffect(() => {
+    const saved = (typeof window !== "undefined" && localStorage.getItem(SIZE_KEY)) as ReadingSize | null;
+    if (saved === "sm" || saved === "md" || saved === "lg") setReadingSize(saved);
+  }, []);
+  const changeSize = (s: ReadingSize) => {
+    setReadingSize(s);
+    try { localStorage.setItem(SIZE_KEY, s); } catch {}
+  };
 
   const { data: highlights = [] } = useQuery({
     queryKey: ["highlights-all", user?.id],
