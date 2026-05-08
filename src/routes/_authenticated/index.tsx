@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useLibrary, useProfile, type BookWithShelf } from "@/lib/queries";
+import { useLibrary, useProfile } from "@/lib/queries";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
+import BookCard from "@/components/BookCard";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({ meta: [{ title: "Margins — Library" }] }),
