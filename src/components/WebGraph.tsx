@@ -7,6 +7,7 @@ type Props = {
   nodes: Node[];
   links: Link[];
   highlightedId?: string | null;
+  dimmedNodeIds?: Set<string>;
   onNodeClick?: (id: string, shiftKey: boolean) => void;
   onLinkClick?: (sourceId: string, targetId: string) => void;
   onConnectDrag?: (sourceId: string, targetId: string) => void;
