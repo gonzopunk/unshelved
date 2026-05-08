@@ -34,6 +34,15 @@ function WeavePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [edgePair, setEdgePair] = useState<{ a: string; b: string } | null>(null);
   const [connectMode, setConnectMode] = useState(false);
+  const [editingConn, setEditingConn] = useState<Connection | null>(null);
+
+  const openEdit = (c: Connection) => {
+    const s = lookup.get(c.source_id);
+    const label = s?.title ?? "Source";
+    setPendingSource({ kind: c.source_kind, id: c.source_id, label });
+    setEditingConn(c);
+    setModalOpen(true);
+  };
 
   const { data: marginalia } = useQuery({
     queryKey: ["marginalia", "all", user?.id],
