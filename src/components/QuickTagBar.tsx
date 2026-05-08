@@ -264,7 +264,8 @@ function FreeTagsRow({
     : suggestions.slice(0, 6);
 
   const submit = () => {
-    if (draft.trim()) onAdd(draft);
+    const v = draft.trim();
+    if (v) onAdd(v);
     setDraft("");
     setAdding(false);
   };
@@ -289,52 +290,48 @@ function FreeTagsRow({
         </span>
       ))}
       {adding ? (
-        <Popover open onOpenChange={(o) => !o && setAdding(false)}>
-          <PopoverTrigger asChild>
-            <input
-              ref={inputRef}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  submit();
-                } else if (e.key === "Escape") {
-                  setDraft("");
-                  setAdding(false);
-                }
-              }}
-              onBlur={() => setTimeout(() => submit(), 120)}
-              placeholder="tag…"
-              className="rounded-full bg-mist px-2.5 py-0.5 text-xs outline-none focus:ring-1 focus:ring-primary w-24"
-            />
-          </PopoverTrigger>
+        <div className="relative">
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                submit();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                setDraft("");
+                setAdding(false);
+              }
+            }}
+            onBlur={() => {
+              // delay so suggestion mousedown can fire first
+              setTimeout(() => submit(), 150);
+            }}
+            placeholder="tag…"
+            className="rounded-full bg-mist px-2.5 py-0.5 text-xs outline-none focus:ring-1 focus:ring-primary w-28"
+          />
           {matches.length > 0 && (
-            <PopoverContent
-              className="w-56 p-1"
-              align="start"
-              onOpenAutoFocus={(e) => e.preventDefault()}
-            >
-              <div className="flex flex-wrap gap-1">
-                {matches.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      onAdd(t.name);
-                      setDraft("");
-                      setAdding(false);
-                    }}
-                    className="rounded-full bg-mist hover:bg-border px-2 py-0.5 text-xs"
-                  >
-                    {t.name}
-                  </button>
-                ))}
-              </div>
-            </PopoverContent>
+            <div className="absolute left-0 top-full mt-1 z-50 rounded-md border border-border bg-popover shadow-md p-1 flex flex-wrap gap-1 w-56">
+              {matches.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    onAdd(t.name);
+                    setDraft("");
+                    setAdding(false);
+                  }}
+                  className="rounded-full bg-mist hover:bg-border px-2 py-0.5 text-xs"
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
           )}
-        </Popover>
+        </div>
       ) : (
         <button
           type="button"
