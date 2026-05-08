@@ -124,6 +124,7 @@ export default function WebGraph({
     const d = dragRef.current;
     if (!d || !containerRef.current) return;
     try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* noop */ }
+    try { graphRef.current?.resumeAnimation(); } catch { /* noop */ }
     const rect = containerRef.current.getBoundingClientRect();
     const sx = e.clientX - rect.left;
     const sy = e.clientY - rect.top;
