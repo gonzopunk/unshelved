@@ -136,65 +136,57 @@ function BookDetail() {
 
       <QuickTagBar bookId={book.id} />
 
-      <Tabs defaultValue="margins" className="mt-12">
+      <Tabs defaultValue="notes" className="mt-12">
         <TabsList className="rounded-full bg-card shadow-paper p-1">
-          <TabsTrigger value="margins" className="rounded-full">Margins</TabsTrigger>
-          <TabsTrigger value="weave" className="rounded-full">Weave</TabsTrigger>
+          <TabsTrigger value="notes" className="rounded-full">Notes</TabsTrigger>
+          <TabsTrigger value="quotes" className="rounded-full">Quotes</TabsTrigger>
+          <TabsTrigger value="connections" className="rounded-full">Connections</TabsTrigger>
           <TabsTrigger value="sessions" className="rounded-full">Sessions</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="margins" className="mt-6">
-          <Tabs defaultValue="notes">
-            <TabsList className="rounded-full bg-mist p-1">
-              <TabsTrigger value="notes" className="rounded-full">Notes</TabsTrigger>
-              <TabsTrigger value="quotes" className="rounded-full">Quotes</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="notes" className="mt-4">
-              <NewNote bookId={book.id} userId={user!.id} />
-              <div className="mt-4 space-y-3">
-                {notes.length === 0 && <Empty>Notes, quotes, anything worth keeping. Or leave it blank — not every book needs ink.</Empty>}
-                {notes.map(n => (
-                  <div key={n.id} className="rounded-2xl bg-card shadow-paper p-4">
-                    <p className="whitespace-pre-wrap">{n.content}</p>
-                    <div className="mt-2 flex items-center justify-between">
-                      <div className="font-mono text-xs text-muted-foreground">{format(new Date(n.created_at), "MMM d, yyyy · h:mm a")}</div>
-                      <button
-                        onClick={() => setWeaveSource({ kind: "note", id: n.id, label: `Note on ${book.title}` })}
-                        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition"
-                      >
-                        <Network className="h-3 w-3" /> Weave
-                      </button>
-                    </div>
-                  </div>
-                ))}
+        <TabsContent value="notes" className="mt-6">
+          <NewNote bookId={book.id} userId={user!.id} />
+          <div className="mt-4 space-y-3">
+            {notes.length === 0 && <Empty>Notes, reactions, anything worth keeping. Or leave it blank — not every book needs ink.</Empty>}
+            {notes.map(n => (
+              <div key={n.id} className="rounded-2xl bg-card shadow-paper p-4">
+                <p className="whitespace-pre-wrap">{n.content}</p>
+                <div className="mt-2 flex items-center justify-between">
+                  <div className="font-mono text-xs text-muted-foreground">{format(new Date(n.created_at), "MMM d, yyyy · h:mm a")}</div>
+                  <button
+                    onClick={() => setWeaveSource({ kind: "note", id: n.id, label: `Note on ${book.title}` })}
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition"
+                  >
+                    <Network className="h-3 w-3" /> Connect
+                  </button>
+                </div>
               </div>
-            </TabsContent>
-
-            <TabsContent value="quotes" className="mt-4">
-              <NewQuote bookId={book.id} userId={user!.id} />
-              <div className="mt-4 space-y-3">
-                {highlights.length === 0 && <Empty>No quotes saved yet.</Empty>}
-                {highlights.map(h => (
-                  <blockquote key={h.id} className="rounded-2xl bg-card shadow-paper p-5 border-l-4 border-terra">
-                    <p className="font-display italic text-lg leading-snug">"{h.quote_text}"</p>
-                    <div className="mt-2 flex items-center justify-between">
-                      {h.page_number ? <div className="font-mono text-xs text-muted-foreground">p. {h.page_number}</div> : <span />}
-                      <button
-                        onClick={() => setWeaveSource({ kind: "highlight", id: h.id, label: `Quote from ${book.title}` })}
-                        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition"
-                      >
-                        <Network className="h-3 w-3" /> Weave
-                      </button>
-                    </div>
-                  </blockquote>
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
+            ))}
+          </div>
         </TabsContent>
 
-        <TabsContent value="weave" className="mt-6">
+        <TabsContent value="quotes" className="mt-6">
+          <NewQuote bookId={book.id} userId={user!.id} />
+          <div className="mt-4 space-y-3">
+            {highlights.length === 0 && <Empty>No quotes saved yet.</Empty>}
+            {highlights.map(h => (
+              <blockquote key={h.id} className="rounded-2xl bg-card shadow-paper p-5 border-l-4 border-terra">
+                <p className="font-display italic text-lg leading-snug">"{h.quote_text}"</p>
+                <div className="mt-2 flex items-center justify-between">
+                  {h.page_number ? <div className="font-mono text-xs text-muted-foreground">p. {h.page_number}</div> : <span />}
+                  <button
+                    onClick={() => setWeaveSource({ kind: "highlight", id: h.id, label: `Quote from ${book.title}` })}
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition"
+                  >
+                    <Network className="h-3 w-3" /> Connect
+                  </button>
+                </div>
+              </blockquote>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="connections" className="mt-6">
           <WeaveTab
             book={book}
             highlights={highlights}
