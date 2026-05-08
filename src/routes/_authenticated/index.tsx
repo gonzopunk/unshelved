@@ -4,7 +4,11 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { useEffect, useState } from "react";
 import BookCard from "@/components/BookCard";
+
+type ReadingSize = "sm" | "md" | "lg";
+const SIZE_KEY = "unshelved.readingSize";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({ meta: [{ title: "Unshelved — Library" }] }),
@@ -17,6 +21,15 @@ function Home() {
   const { data: library = [] } = useLibrary();
   const { data: profile } = useProfile();
   const { user } = useAuth();
+  const [readingSize, setReadingSize] = useState<ReadingSize>("sm");
+  useEffect(() => {
+    const saved = (typeof window !== "undefined" && localStorage.getItem(SIZE_KEY)) as ReadingSize | null;
+    if (saved === "sm" || saved === "md" || saved === "lg") setReadingSize(saved);
+  }, []);
+  const changeSize = (s: ReadingSize) => {
+    setReadingSize(s);
+    try { localStorage.setItem(SIZE_KEY, s); } catch {}
+  };
 
   const { data: highlights = [] } = useQuery({
     queryKey: ["highlights-all", user?.id],
@@ -119,12 +132,25 @@ function Home() {
         <div className="section-head">
           <h2>Currently reading</h2>
           <span className="section-rule" />
+          <div className="size-toggle" role="group" aria-label="Card size">
+            {(["sm", "md", "lg"] as ReadingSize[]).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => changeSize(s)}
+                aria-pressed={readingSize === s}
+                className={"size-btn" + (readingSize === s ? " on" : "")}
+              >
+                {s === "sm" ? "S" : s === "md" ? "M" : "L"}
+              </button>
+            ))}
+          </div>
           <Link to="/board" className="section-link">All shelves →</Link>
         </div>
         {reading.length === 0 ? (
           <Empty>Nothing in progress. Pick something from your shelf.</Empty>
         ) : (
-          <div className="reading-grid">
+          <div className={"reading-grid size-" + readingSize}>
             {reading.map((b, i) => (
               <BookCard key={b.id} book={b} userBook={b.user_books[0]} tilt={[-0.6, 0.4][i] ?? 0} />
             ))}
@@ -342,8 +368,28 @@ function HomepageStyles() {
         box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 18px 40px -28px rgba(31,38,48,0.22);
       }
 
-      .reading-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-      @media (max-width: 900px) { .reading-grid { grid-template-columns: 1fr; } }
+      .reading-grid { display: grid; gap: 20px; }
+      .reading-grid.size-sm { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+      .reading-grid.size-md { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+      .reading-grid.size-lg { grid-template-columns: 1fr 1fr; }
+      @media (max-width: 900px) {
+        .reading-grid.size-sm { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+        .reading-grid.size-md,
+        .reading-grid.size-lg { grid-template-columns: 1fr; }
+      }
+      .size-toggle {
+        display: inline-flex; align-items: center; gap: 2px;
+        background: var(--paper); border-radius: 999px; padding: 3px;
+        box-shadow: inset 0 0 0 1px rgba(31,38,48,0.1);
+      }
+      .size-btn {
+        width: 26px; height: 24px; border-radius: 999px; border: none;
+        background: transparent; cursor: pointer;
+        font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
+        color: rgba(31,38,48,0.55); transition: background 0.15s, color 0.15s;
+      }
+      .size-btn:hover { color: var(--ink); }
+      .size-btn.on { background: var(--forest); color: var(--paper); }
 
       .read-card {
         display: grid; grid-template-columns: 168px 1fr; gap: 24px;
