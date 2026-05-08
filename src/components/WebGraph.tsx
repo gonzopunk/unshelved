@@ -88,6 +88,10 @@ export default function WebGraph({
     if (!node || node.x == null || node.y == null) return;
     e.preventDefault();
     e.stopPropagation();
+    e.nativeEvent.stopPropagation();
+    if (typeof e.nativeEvent.stopImmediatePropagation === "function") {
+      e.nativeEvent.stopImmediatePropagation();
+    }
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     setDrag({
       sourceId: node.id,
