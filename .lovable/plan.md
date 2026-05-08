@@ -1,59 +1,73 @@
-## Goal
+## How I'd group the next three rounds
 
-Make the Connections graph more useful and inviting without adding pressure or clutter. Three first-batch improvements you already greenlit, plus one tiny resurfaced-quote tweak.
+The list mixes three different kinds of work: **fixing what's already there**, **getting more raw material in**, and **making new ways to look at it**. Doing them in that order compounds — each round makes the next one feel better.
 
-## What we'll build
+---
 
-### 1. Click a node → open that book
+### Round 1 — Polish, clickability, and editing (the "everything works" round)
 
-In the Web view, clicking a dot navigates to that book's page (or to a stub view for reference books). Hover already shows the title; click should follow through.
+The app already has the right bones; right now several things look interactive but aren't, and connections are read-only once made. This round closes those gaps so the rest of the app feels trustworthy.
 
-- Wire `onNodeClick` in `weave.tsx` to `router.navigate({ to: "/books/$bookId", params: { bookId: id } })` for owned books.
-- Reference-book nodes: for now, no nav (cursor stays default). A dedicated reference page is a later, separate task.
-- Cursor turns to pointer on hover over book nodes.
+- **Clickability audit.** Walk every surface (Home, Library, Board, Book detail, Connections list + web). For each element that *looks* clickable, decide: link, modal, or remove the affordance.
+  - Home: "books this year" and "currently reading" stat cards → link to filtered library views.
+  - Home: "Up Next" dotted Add tile → opens AddBook modal.
+  - Home: resurfaced Quote card → links to that book + highlight.
+- **Edit connections.** Click a ConnectionCard (or its pencil) → opens AddConnectionModal pre-filled with `why`, `tags`, endpoints. Same modal handles create + edit.
+- **Filters for the Connections web.** Start with the highest-leverage axes: format, status, author, year read, and any user tag axis. Chip row above the canvas; nodes/edges fade rather than disappear so the shape of the web stays legible.
+- **Search.** A single ⌘K palette across books, highlights, notes, connections, tags — because once filters exist, people want to jump.
 
-### 2. Shift-drag to create a connection
+*Why first:* low risk, immediately felt on every page, and makes Round 3 (data views, exports) much more valuable because every chart bar will actually click through to something.
 
-Hold Shift, drag from one book node to another, release → opens the existing AddConnectionModal pre-filled with both endpoints. No right-click (right-click is reserved by browsers and unreliable on trackpads).
+---
 
-- Use the `react-force-graph-2d` `onNodeDrag` / `onNodeDragEnd` events with a Shift-key check.
-- During the drag, draw a temporary line from the source node to the cursor.
-- On release over another node, open `AddConnectionModal` with `source` and `target` pre-set.
-- A small hint chip under the legend: "Hold Shift + drag between books to connect them."
+### Round 2 — Rich library import (the "now I can really use this" round)
 
-### 3. Edge weight by connection count
+The biggest single unlock. Until import is painless, the library stays at sample-size and the web stays sparse. Tackled as one round because the underlying pipeline (normalize → enrich → dedupe → preview → commit) is shared across every input source.
 
-When two books have multiple connections (e.g. three quotes from book A all link to book B), bundle them into a single thicker, slightly darker line. Hover shows the count; clicking opens a side panel listing those connections.
+- **Shared import pipeline.** One "Import" screen with a staging table: parsed rows → enrichment status → duplicate warnings → user confirms → batch insert.
+- **Sources, in priority order:**
+  1. **Goodreads + StoryGraph CSV** — highest ROI, well-documented schemas, brings shelves/ratings/dates.
+  2. **ISBN paste** (one or many, newline-separated) — tiny UI, huge usefulness.
+  3. **Barcode scan via phone camera** — `BarcodeDetector` API where supported, `@zxing/browser` fallback. Mobile-first.
+  4. **Bookshelf photo pan** — defer to a stretch goal at the end of the round; honest answer is it's *possible* (Gemini 2.5 Pro can read spines) but accuracy on a tilted shelf is maybe 60–80% and needs heavy human review. Worth prototyping, not worth promising.
+- **Metadata enrichment.** Open Library + Google Books as the two-source lookup; cache results. Auto-fill cover, author, page count, publisher, year.
+- **Smart dedupe.** Match on ISBN first, then normalized (title + author) with a similarity threshold. Show side-by-side merge UI when ambiguous.
+- **Cover handling.** Use enriched cover art when present; fall back to the existing GeneratedCover.
 
-- Group `links` in `weave.tsx` by an unordered `{a,b}` key, store `count`.
-- Pass `count` into `WebGraph`; `linkWidth = 1 + Math.log2(count) * 1.4`, `linkColor` opacity `0.25 + Math.min(count - 1, 4) * 0.1`.
-- Tooltip via `linkLabel`: `"3 connections"`.
-- (Optional, same PR if simple) Click a bundled edge → router navigate to `/connections?between=A,B` filter; otherwise defer.
+*Why second:* this is the round that turns the app from a demo into someone's actual library, which makes Round 3's charts and views worth building.
 
-### 4. Tiny: connections on resurfaced quote cards
+---
 
-On the home page's resurfaced-quote card, show a subtle line of related connections under the quote: "Connected to: *Book Title*, *Book Title*". Each is a link to that book. Pure display tweak using `useAllConnections()` filtered by `source_id/target_id === highlight.id`.
+### Round 3 — Data, expression, and export (the "make meaning visible" round)
 
-## Explicitly NOT in this batch
+With a real library and trustworthy navigation in place, this round is where the app becomes something you'd want to *show* someone.
 
-- **Tag-colored edges as a global legend** — confirmed too noisy with freeform tags.
-- **Built-in axis filter chips with color-coded options** — captured for the *next* batch alongside scale/filtering work; needs its own design pass on which axes to surface and how chips compose.
-- **Mini-webs / focused subgraphs** — defer until library size makes it pay off.
-- **Suggested connections** — rejected (would dilute the meaning of a connection).
-- **Reading-stats overlay** — rejected (clutter).
-- **Export card** — parked.
+- **Data tab.** Top-level route. A small set of editorial, customizable charts:
+  - Reading pace heatmap (calendar-style).
+  - Pages/minutes over time, by format.
+  - Author/genre/tag breakdowns.
+  - "Web density" — connections per book over time.
+  - Each chart click-throughs to the filtered list.
+- **Bookcloud.** Tag/author/theme cloud sized by frequency, weighted by your ratings. Click a term → filtered library + web.
+- **Tier maker.** Drag books into S/A/B/C/D rows. Per-axis tier lists (best plot, best prose, most reread-worthy). Saved as named lists.
+- **Commonplace book view.** A long, beautifully-typeset scroll of your highlights and notes — chronological or grouped by book — that reads like a private anthology. This is the one that captures the *spirit* you mentioned. Print-stylesheet friendly.
+- **Exports.** PDF (commonplace book, tier lists, single connection cards), CSV (library, highlights, connections), PNG (single quote cards, web snapshot, tier list). One export system, multiple endpoints.
 
-## Files touched
+*Why third:* every item here is dramatically better when there's real data behind it and when clicking a chart bar actually goes somewhere (Round 1).
 
-- `src/routes/_authenticated/weave.tsx` — bundle links, wire click + shift-drag, hint text.
-- `src/components/WebGraph.tsx` — accept `count` per link, render width/opacity/label, expose drag callbacks, pointer cursor.
-- `src/routes/_authenticated/index.tsx` — add "Connected to:" line under the resurfaced quote.
-- (No DB changes.)
+---
 
-## Open question
+### Other ideas worth queuing for Round 4+
 
-For #3, when the user clicks a bundled edge with N connections, do you want:
-- (a) a small popover listing them inline on the graph, or
-- (b) navigate to the list view filtered to those two books?
+- **Reading streaks / goal pacing** beyond the yearly count.
+- **"Books that rhyme"** — suggested-reading-from-your-own-library, based on shared tags + connection neighbors. Not auto-suggested *connections* (you rejected that), but suggested *next reads*.
+- **Quick-capture mobile flow:** photo of a page → OCR → new highlight, with book auto-detected.
+- **Public share pages:** one book, one connection, one quote — single canonical URL that looks great when shared.
+- **Tag axis management UI** — right now axes are seeded but not really editable in-app.
+- **Annotations on highlights** (notes attached to a specific quote, not just a book).
 
-I'll default to (b) unless you say otherwise — it reuses existing UI and keeps the graph clean.
+---
+
+### Open question before I write a Round 1 plan
+
+For Round 1's clickability audit — do you want me to just **fix everything** I find in one pass, or **list the inventory first** so you can rank what matters? My instinct is to fix everything, since most fixes are tiny and the inconsistency itself is the bug.
