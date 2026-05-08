@@ -236,18 +236,27 @@ function Column({ col, books }: { col: ColDef; books: BookWithShelf[] }) {
         </div>
         <div className="col-count">{books.length}</div>
       </div>
-      <div className="col-cards">
-        {books.length === 0 && <div className="col-empty">empty</div>}
-        {books.map((b) => (
-          <MiniCard key={b.id} book={b} colId={col.id} />
-        ))}
-      </div>
+      <SortableContext items={books.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+        <div className="col-cards">
+          {books.length === 0 && <div className="col-empty">empty</div>}
+          {books.map((b) => (
+            <MiniCard key={b.id} book={b} colId={col.id} />
+          ))}
+        </div>
+      </SortableContext>
     </div>
   );
 }
 
 function MiniCard({ book, colId, overlay }: { book: BookWithShelf; colId: BookStatus; overlay?: boolean }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: book.id });
+  const sortable = useSortable({ id: book.id, disabled: overlay });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = sortable;
+  const style = overlay
+    ? undefined
+    : {
+        transform: CSS.Transform.toString(transform),
+        transition,
+      };
   const ub = book.user_books[0] as UserBook | undefined;
   const isPrint = book.format === "print";
   const isEbook = book.format === "ebook";
