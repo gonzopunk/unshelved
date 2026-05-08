@@ -136,7 +136,7 @@ export default function WebGraph({
     <div
       ref={containerRef}
       className="rounded-2xl bg-card shadow-paper overflow-hidden relative"
-      onPointerDown={onPointerDown}
+      onPointerDownCapture={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={finishDrag}
       onPointerCancel={finishDrag}
