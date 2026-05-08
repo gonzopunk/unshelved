@@ -390,14 +390,6 @@ function HomepageStyles() {
       }
 
       .reading-grid { display: grid; gap: 20px; }
-      .reading-grid.size-sm { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-      .reading-grid.size-md { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
-      .reading-grid.size-lg { grid-template-columns: 1fr 1fr; }
-      @media (max-width: 900px) {
-        .reading-grid.size-sm { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
-        .reading-grid.size-md,
-        .reading-grid.size-lg { grid-template-columns: 1fr; }
-      }
       .size-slider {
         display: inline-flex; align-items: center; gap: 8px;
         background: var(--paper); border-radius: 999px; padding: 4px 12px;
