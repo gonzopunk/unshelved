@@ -1,23 +1,46 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useLibrary, useUpdateStatus, type BookStatus, type BookWithShelf } from "@/lib/queries";
-import { DndContext, DragOverlay, PointerSensor, useDroppable, useDraggable, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
+import { useLibrary, useUpdateStatus, type BookStatus, type BookWithShelf, type UserBook } from "@/lib/queries";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useDroppable,
+  useDraggable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
 import { useMemo, useState } from "react";
-import GeneratedCover from "@/components/GeneratedCover";
+import { format, formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/board")({
   head: () => ({ meta: [{ title: "Board — Margins" }] }),
   component: BoardPage,
 });
 
-const COLUMNS: { id: BookStatus; label: string; tint: string }[] = [
-  { id: "want", label: "Want to Read", tint: "var(--honey)" },
-  { id: "reading", label: "Currently Reading", tint: "var(--sage)" },
-  { id: "later", label: "Come Back Later", tint: "var(--dust)" },
-  { id: "dnf", label: "DNF", tint: "var(--mist)" },
-  { id: "loved", label: "Loved It", tint: "var(--terra)" },
-  { id: "liked", label: "Liked It", tint: "var(--sage)" },
-  { id: "meh", label: "Meh", tint: "var(--mist)" },
+type ColDef = {
+  id: BookStatus;
+  title: string;
+  sub: string;
+  accent: string;
+  icon?: string;
+};
+
+const SHELVES: ColDef[] = [
+  { id: "want", title: "Want to Read", sub: "queued up", accent: "var(--sage)" },
+  { id: "reading", title: "Currently Reading", sub: "in flight", accent: "var(--terra)" },
+  { id: "later", title: "Come Back Later", sub: "paused, no rush", accent: "var(--dust)" },
+  { id: "dnf", title: "DNF", sub: "set down for now", accent: "rgba(31,38,48,0.4)" },
 ];
+
+const RATINGS: ColDef[] = [
+  { id: "loved", title: "Loved It", sub: "5 stars · keep close", accent: "var(--terra)", icon: "♥" },
+  { id: "liked", title: "Liked It", sub: "4 stars · glad I read", accent: "var(--sage)", icon: "★" },
+  { id: "meh", title: "Meh", sub: "1–3 stars · onward", accent: "rgba(31,38,48,0.4)", icon: "·" },
+];
+
+const FMT_LABEL: Record<string, string> = { print: "Print", ebook: "Ebook", audiobook: "Audio" };
 
 function BoardPage() {
   const { data: library = [] } = useLibrary();
@@ -26,15 +49,23 @@ function BoardPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const grouped = useMemo(() => {
-    const out: Record<BookStatus, BookWithShelf[]> = { want: [], reading: [], later: [], dnf: [], loved: [], liked: [], meh: [] };
+    const out: Record<BookStatus, BookWithShelf[]> = {
+      want: [], reading: [], later: [], dnf: [], loved: [], liked: [], meh: [],
+    };
     for (const b of library) {
       const s = (b.user_books[0]?.status ?? "want") as BookStatus;
-      out[s].push(b);
+      if (out[s]) out[s].push(b);
     }
     return out;
   }, [library]);
 
-  const activeBook = library.find((b) => b.id === activeId);
+  const activeBook = library.find((b) => b.id === activeId) ?? null;
+  const activeCol = activeBook?.user_books[0]?.status as BookStatus | undefined;
+
+  const total = library.length;
+  const inFlight = grouped.reading.length;
+  const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
+  const thisYear = library.filter((b) => (b.user_books[0]?.finished_at ?? "") >= yearStart).length;
 
   const onDragStart = (e: DragStartEvent) => setActiveId(String(e.active.id));
   const onDragEnd = (e: DragEndEvent) => {
@@ -50,67 +81,433 @@ function BoardPage() {
   };
 
   return (
-    <main className="max-w-[100rem] mx-auto px-6">
-      <header className="mb-6">
-        <h1 className="font-display text-4xl">Board</h1>
-        <p className="text-sm text-muted-foreground">Drag books between shelves to update them.</p>
-      </header>
-      <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-        <div className="flex gap-4 overflow-x-auto pb-6 -mx-6 px-6">
-          {COLUMNS.map((col) => (
-            <Column key={col.id} id={col.id} label={col.label} tint={col.tint} books={grouped[col.id]} />
-          ))}
+    <div className="bv">
+      <div className="bv-title-row">
+        <div>
+          <div className="bv-eyebrow"><span className="dot" /> Your board</div>
+          <h1 className="bv-h1">The whole shelf, <em>at a glance.</em></h1>
+          <p className="bv-sub">Drag a book between columns to update its status. Ratings live below.</p>
         </div>
+        <div className="bv-counts">
+          <Count value={total} label="total books" />
+          <Count value={inFlight} label="in flight" />
+          <Count value={thisYear} label="this year" />
+        </div>
+      </div>
+
+      <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+        <section className="bv-section">
+          <div className="bv-section-head">
+            <h2>Shelves</h2>
+            <span className="bv-rule" />
+            <span className="bv-section-hint">drag between columns ↔</span>
+          </div>
+          <div className="bv-cols cols-4">
+            {SHELVES.map((col) => (
+              <Column key={col.id} col={col} books={grouped[col.id]} />
+            ))}
+          </div>
+        </section>
+
+        <section className="bv-section">
+          <div className="bv-section-head">
+            <h2>Rated</h2>
+            <span className="bv-rule" />
+            <span className="bv-section-hint">books you've finished</span>
+          </div>
+          <div className="bv-cols cols-3">
+            {RATINGS.map((col) => (
+              <Column key={col.id} col={col} books={grouped[col.id]} />
+            ))}
+          </div>
+        </section>
+
         <DragOverlay>
-          {activeBook && <MiniCard book={activeBook} dragging />}
+          {activeBook && activeCol && <MiniCard book={activeBook} colId={activeCol} overlay />}
         </DragOverlay>
       </DndContext>
-    </main>
+
+      <BoardStyles />
+    </div>
   );
 }
 
-function Column({ id, label, tint, books }: { id: BookStatus; label: string; tint: string; books: BookWithShelf[] }) {
-  const { setNodeRef, isOver } = useDroppable({ id });
+function Count({ value, label }: { value: number; label: string }) {
   return (
-    <div ref={setNodeRef} className={`w-72 shrink-0 rounded-3xl bg-card shadow-paper p-4 transition ${isOver ? "ring-2 ring-primary" : ""}`}>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full" style={{ background: tint }} />
-          <h2 className="font-display text-lg">{label}</h2>
+    <div className="bv-count">
+      <strong>{value}</strong>
+      <span>{label}</span>
+    </div>
+  );
+}
+
+function Column({ col, books }: { col: ColDef; books: BookWithShelf[] }) {
+  const { setNodeRef, isOver } = useDroppable({ id: col.id });
+  return (
+    <div
+      ref={setNodeRef}
+      className={"col" + (isOver ? " hovered" : "")}
+      style={{ ["--col-accent" as string]: col.accent }}
+    >
+      <div className="col-head">
+        <div className="col-head-left">
+          <span className="col-dot" style={{ background: col.accent }} />
+          <div>
+            <div className="col-title-text">
+              {col.title}
+              {col.icon && <span className="col-rating-icon">{col.icon}</span>}
+            </div>
+            <div className="col-sub">{col.sub}</div>
+          </div>
         </div>
-        <span className="font-mono text-xs text-muted-foreground">{books.length}</span>
+        <div className="col-count">{books.length}</div>
       </div>
-      <div className="space-y-2 min-h-40">
-        {books.map((b) => <MiniCard key={b.id} book={b} />)}
-        {books.length === 0 && <div className="text-xs text-muted-foreground italic text-center py-8">empty shelf</div>}
+      <div className="col-cards">
+        {books.length === 0 && <div className="col-empty">empty</div>}
+        {books.map((b) => (
+          <MiniCard key={b.id} book={b} colId={col.id} />
+        ))}
       </div>
     </div>
   );
 }
 
-function MiniCard({ book, dragging }: { book: BookWithShelf; dragging?: boolean }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: book.id });
-  const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
+function MiniCard({ book, colId, overlay }: { book: BookWithShelf; colId: BookStatus; overlay?: boolean }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: book.id });
+  const ub = book.user_books[0] as UserBook | undefined;
+  const isPrint = book.format === "print";
+  const isEbook = book.format === "ebook";
+  const isAudio = book.format === "audiobook";
+  const paused = !!ub?.paused;
+
+  const pct = (() => {
+    if (!ub) return 0;
+    if (ub.total_pages && ub.current_page != null) return Math.round((ub.current_page / ub.total_pages) * 100);
+    if (ub.total_seconds && ub.current_seconds != null) return Math.round((ub.current_seconds / ub.total_seconds) * 100);
+    return Math.round(Number(ub.progress_pct ?? 0));
+  })();
+
+  const showProgress = ub && (colId === "reading" || colId === "later");
+  const showRating = ub?.rating && (colId === "loved" || colId === "liked" || colId === "meh");
+  const showDnf = colId === "dnf" && ub?.current_page;
+  const showAdded = colId === "want";
+
+  const fmtTime = (s: number | null | undefined) => {
+    if (!s) return "0m";
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  };
+
   return (
-    <div
+    <article
       ref={setNodeRef}
-      style={style}
       {...attributes}
       {...listeners}
-      className={`rounded-2xl bg-paper border border-border p-2 flex gap-2 items-center cursor-grab active:cursor-grabbing transition ${isDragging ? "opacity-30" : ""} ${dragging ? "shadow-lift rotate-2" : "shadow-paper"}`}
+      className={"mc" + (isDragging && !overlay ? " dragging" : "") + (paused ? " paused" : "") + (overlay ? " overlay" : "")}
     >
-      <GeneratedCover book={book} className="w-10 h-14 rounded shrink-0" />
-      <div className="min-w-0 flex-1">
+      <div className="mc-cover-wrap">
+        {isPrint && <div className="mc-bookmark" style={{ ["--bk" as string]: book.bookmark_color }} />}
+        {isAudio && (
+          <div className="mc-spool">
+            {[3, 5, 7, 4, 6].map((h, i) => <div key={i} className="b" style={{ height: h + "px" }} />)}
+          </div>
+        )}
+        <div
+          className={"mc-cover" + (isEbook ? " screen" : "")}
+          style={{ background: book.cover_color, color: book.cover_text_color }}
+        >
+          <div className="mc-cover-rule" />
+          <div className="mc-cover-title">{book.title}</div>
+          {isEbook && showProgress && (
+            <div className="mc-screen-dot" style={{ top: `${Math.max(5, Math.min(95, pct))}%` }} />
+          )}
+        </div>
+      </div>
+
+      <div className="mc-info">
         <Link
           to="/books/$bookId"
           params={{ bookId: book.id }}
           onPointerDown={(e) => e.stopPropagation()}
-          className="font-display text-sm leading-tight line-clamp-2 hover:underline"
+          className="mc-title-link"
         >
-          {book.title}
+          <div className="mc-title">{book.title}</div>
         </Link>
-        <div className="text-[0.65rem] text-muted-foreground truncate">{book.author}</div>
+        <div className="mc-author">{book.author}</div>
+        <div className="mc-meta">
+          <span className={"mc-fmt " + book.format}>{FMT_LABEL[book.format]}</span>
+          {showAdded && book.created_at && (
+            <><span className="sep">·</span><span className="mc-mono">added {format(new Date(book.created_at), "MMM d")}</span></>
+          )}
+          {showProgress && isPrint && ub?.total_pages && (
+            <><span className="sep">·</span><span className="mc-mono">p. {ub.current_page ?? 0}/{ub.total_pages}</span></>
+          )}
+          {showProgress && isAudio && (
+            <><span className="sep">·</span><span className="mc-mono">{fmtTime(ub?.current_seconds)}</span></>
+          )}
+          {showProgress && isEbook && (
+            <><span className="sep">·</span><span className="mc-mono">{pct}%</span></>
+          )}
+          {showRating && ub?.finished_at && (
+            <><span className="sep">·</span><span className="mc-mono">{format(new Date(ub.finished_at), "MMM d")}</span></>
+          )}
+          {showDnf && (
+            <><span className="sep">·</span><span className="mc-dnf">stopped p.{ub?.current_page}</span></>
+          )}
+          {colId === "later" && ub?.started_at && (
+            <><span className="sep">·</span><span className="mc-mono">{formatDistanceToNow(new Date(ub.started_at), { addSuffix: true })}</span></>
+          )}
+        </div>
+        {showProgress && (
+          <div className={"mc-bar" + (isEbook ? " ebook-style" : "")}>
+            <div className={"mc-fill " + book.format} style={{ width: `${pct}%` }} />
+          </div>
+        )}
+        {showRating && (
+          <div className="mc-rating">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <span key={n} className={"star " + (n <= (ub?.rating ?? 0) ? "on" : "")}>●</span>
+            ))}
+          </div>
+        )}
       </div>
-    </div>
+    </article>
+  );
+}
+
+function BoardStyles() {
+  return (
+    <style>{`
+      .bv {
+        font-family: 'Manrope', system-ui, sans-serif;
+        color: var(--ink);
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 40px 56px;
+        box-sizing: border-box;
+        background-image:
+          radial-gradient(circle at 90% 0%, rgba(93,168,213,0.10), transparent 36%),
+          radial-gradient(circle at 0% 70%, rgba(111,179,122,0.08), transparent 38%);
+      }
+      @media (max-width: 900px) { .bv { padding: 0 16px 40px; } }
+
+      .bv-title-row {
+        display: flex; align-items: flex-end; justify-content: space-between;
+        margin-bottom: 36px; gap: 32px; flex-wrap: wrap;
+      }
+      .bv-eyebrow {
+        display: inline-flex; align-items: center; gap: 10px;
+        font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+        color: var(--forest); font-weight: 600; margin-bottom: 14px;
+      }
+      .bv-eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sage); }
+      .bv-h1 {
+        font-family: 'Newsreader', serif; font-weight: 400;
+        font-size: 56px; line-height: 1; letter-spacing: -0.02em; margin: 0 0 12px;
+      }
+      @media (max-width: 900px) { .bv-h1 { font-size: 36px; } }
+      .bv-h1 em { font-style: italic; color: var(--terra); font-weight: 400; }
+      .bv-sub { font-size: 16px; color: rgba(31,38,48,0.7); margin: 0; max-width: 520px; }
+
+      .bv-counts {
+        display: flex; gap: 24px; padding: 18px 26px;
+        background: var(--paper); border-radius: 22px;
+        box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 14px 32px -24px rgba(31,38,48,0.2);
+      }
+      .bv-count { display: flex; flex-direction: column; align-items: center; min-width: 64px; }
+      .bv-count strong {
+        font-family: 'Newsreader', serif; font-weight: 400;
+        font-size: 32px; line-height: 1; color: var(--ink);
+      }
+      .bv-count span {
+        font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+        color: rgba(31,38,48,0.55); margin-top: 6px;
+      }
+
+      .bv-section { margin-bottom: 40px; }
+      .bv-section-head { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+      .bv-section-head h2 {
+        font-family: 'Newsreader', serif; font-size: 24px; font-weight: 500;
+        margin: 0; letter-spacing: -0.01em;
+      }
+      .bv-rule { flex: 1; height: 1px; background: var(--mist); }
+      .bv-section-hint {
+        font-size: 12px; letter-spacing: 0.04em;
+        color: rgba(31,38,48,0.5); font-family: 'JetBrains Mono', monospace;
+      }
+
+      .bv-cols { display: grid; gap: 16px; }
+      .cols-4 { grid-template-columns: repeat(4, 1fr); }
+      .cols-3 { grid-template-columns: repeat(3, 1fr); }
+      @media (max-width: 1100px) { .cols-4 { grid-template-columns: repeat(2, 1fr); } .cols-3 { grid-template-columns: repeat(2, 1fr); } }
+      @media (max-width: 640px) { .cols-4, .cols-3 { grid-template-columns: 1fr; } }
+
+      .col {
+        background: var(--paper); border-radius: 20px;
+        padding: 16px 14px 14px;
+        box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 18px 40px -28px rgba(31,38,48,0.22);
+        display: flex; flex-direction: column;
+        min-height: 360px;
+        transition: background 0.2s ease, box-shadow 0.2s ease;
+      }
+      .col.hovered {
+        background: #F4F8E9;
+        box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 18px 40px -28px rgba(31,38,48,0.22), inset 0 0 0 2px var(--sage);
+      }
+      .col-head {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0 6px 12px; margin-bottom: 10px;
+        border-bottom: 1px solid var(--mist);
+      }
+      .col-head-left { display: flex; align-items: center; gap: 10px; }
+      .col-dot { width: 8px; height: 8px; border-radius: 50%; }
+      .col-title-text { font-family: 'Newsreader', serif; font-size: 18px; font-weight: 500; letter-spacing: -0.01em; }
+      .col-sub { font-size: 11px; color: rgba(31,38,48,0.5); letter-spacing: 0.04em; }
+      .col-count {
+        padding: 3px 9px; border-radius: 999px;
+        background: var(--cream); font-family: 'JetBrains Mono', monospace;
+        font-size: 11px; color: rgba(31,38,48,0.6);
+      }
+      .col-rating-icon { font-size: 14px; color: var(--col-accent, var(--terra)); margin-left: 4px; }
+
+      .col-cards { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+      .col-empty {
+        padding: 28px 14px; text-align: center; font-size: 12px;
+        color: rgba(31,38,48,0.4);
+        border: 1.5px dashed rgba(31,38,48,0.12);
+        border-radius: 14px; font-family: 'Newsreader', serif; font-style: italic;
+      }
+
+      .mc {
+        display: grid; grid-template-columns: 56px 1fr; gap: 12px;
+        padding: 10px; background: var(--cream); border-radius: 14px;
+        cursor: grab; position: relative;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+      }
+      .mc:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 1px 0 rgba(31,38,48,0.06), 0 14px 24px -16px rgba(31,38,48,0.28);
+        background: #F0F0E5;
+      }
+      .mc:active { cursor: grabbing; }
+      .mc.dragging { opacity: 0.35; transform: rotate(-2deg); }
+      .mc.overlay {
+        box-shadow: 0 1px 0 rgba(31,38,48,0.06), 0 22px 40px -16px rgba(31,38,48,0.4);
+        transform: rotate(-2deg); background: #F0F0E5;
+      }
+
+      .mc-cover-wrap { position: relative; }
+      .mc-cover {
+        width: 56px; aspect-ratio: 2/3;
+        border-radius: 2px 6px 6px 2px;
+        padding: 6px 5px;
+        font-family: 'Newsreader', serif;
+        display: flex; flex-direction: column; justify-content: flex-end;
+        position: relative; overflow: hidden;
+        box-shadow: inset 3px 0 0 rgba(0,0,0,0.16), 0 4px 8px -4px rgba(31,38,48,0.4);
+      }
+      .mc-cover::before {
+        content: ""; position: absolute; top: 0; left: 0; right: 0; height: 35%;
+        background: linear-gradient(180deg, rgba(255,255,255,0.10), transparent);
+      }
+      .mc-cover::after {
+        content: ""; position: absolute; top: 2px; bottom: 2px; right: 0;
+        width: 2px;
+        background: repeating-linear-gradient(90deg, rgba(0,0,0,0.18) 0 1px, rgba(255,255,255,0.4) 1px 2px);
+        opacity: 0.5;
+      }
+      .mc-cover.screen::after {
+        background: rgba(255,255,255,0.22); width: 1.5px; right: 3px; top: 5px; bottom: 5px;
+      }
+      .mc-screen-dot {
+        position: absolute; right: 3px; width: 4px; height: 4px;
+        background: var(--paper); border-radius: 50%;
+        transform: translate(50%, -50%);
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.2); z-index: 1;
+      }
+      .mc-cover-title { font-size: 8px; line-height: 1.05; font-weight: 500; }
+      .mc-cover-rule { height: 1px; background: currentColor; opacity: 0.4; width: 50%; margin-bottom: 4px; }
+
+      .mc-bookmark {
+        position: absolute; top: -3px; left: 50%;
+        transform: translateX(-50%);
+        width: 6px; height: 24px;
+        background: var(--bk, var(--terra));
+        border-radius: 1px 1px 0 0; z-index: 2;
+        box-shadow: 0 2px 3px rgba(31,38,48,0.3);
+      }
+      .mc-bookmark::before {
+        content: ""; position: absolute; top: 0; left: 0; bottom: 0;
+        width: 2px; background: linear-gradient(90deg, rgba(0,0,0,0.22), transparent);
+      }
+      .mc-bookmark::after {
+        content: ""; position: absolute; left: 0; right: 0; bottom: -3px;
+        height: 4px; background: var(--bk, var(--terra));
+        clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 50%, 0 100%);
+      }
+
+      .mc-spool {
+        position: absolute; top: 3px; right: 3px;
+        padding: 2px 4px; background: rgba(0,0,0,0.35);
+        border-radius: 999px; display: flex; gap: 1.5px; align-items: center; z-index: 2;
+      }
+      .mc-spool .b { width: 1.2px; background: rgba(250,251,243,0.95); border-radius: 1px; }
+
+      .mc-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+      .mc-title-link { text-decoration: none; color: inherit; }
+      .mc-title-link:hover .mc-title { text-decoration: underline; }
+      .mc-title {
+        font-family: 'Newsreader', serif; font-size: 14.5px; font-weight: 500;
+        letter-spacing: -0.005em; line-height: 1.15; color: var(--ink);
+        overflow: hidden; text-overflow: ellipsis;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      }
+      .mc-author {
+        font-size: 11.5px; color: rgba(31,38,48,0.6);
+        overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+      }
+      .mc-meta {
+        display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+        margin-top: 4px; font-size: 10.5px; color: rgba(31,38,48,0.55);
+      }
+      .mc-fmt {
+        padding: 2px 6px; border-radius: 999px;
+        font-size: 9.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+      }
+      .mc-fmt.print { background: rgba(111,179,122,0.18); color: #2F6638; }
+      .mc-fmt.ebook { background: rgba(45,106,149,0.16); color: #1F5266; }
+      .mc-fmt.audiobook { background: rgba(209,118,72,0.18); color: #A85428; }
+
+      .mc-mono { font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+      .sep { color: rgba(31,38,48,0.25); }
+
+      .mc-bar {
+        margin-top: 6px; height: 4px; background: var(--mist);
+        border-radius: 999px; overflow: hidden; position: relative;
+      }
+      .mc-bar.ebook-style {
+        background: repeating-linear-gradient(90deg, var(--mist) 0 2px, transparent 2px 3px);
+        background-color: rgba(31,38,48,0.05); height: 3px;
+      }
+      .mc-fill { height: 100%; border-radius: 999px; }
+      .mc-fill.print { background: var(--sage); }
+      .mc-fill.ebook { background: var(--forest); }
+      .mc-fill.audiobook { background: var(--terra); }
+      .mc.paused .mc-fill {
+        opacity: 0.55;
+        background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.4) 0 3px, transparent 3px 6px);
+      }
+
+      .mc-rating { display: flex; gap: 2px; align-items: center; margin-top: 4px; }
+      .mc-rating .star { font-size: 9px; color: rgba(31,38,48,0.18); }
+      .mc-rating .star.on { color: var(--terra); }
+
+      .mc-dnf {
+        padding: 1px 6px; border-radius: 4px;
+        background: rgba(31,38,48,0.08); font-size: 10px;
+        color: rgba(31,38,48,0.55); font-style: italic;
+      }
+    `}</style>
   );
 }
