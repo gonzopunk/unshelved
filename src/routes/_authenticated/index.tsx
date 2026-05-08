@@ -132,12 +132,25 @@ function Home() {
         <div className="section-head">
           <h2>Currently reading</h2>
           <span className="section-rule" />
+          <div className="size-toggle" role="group" aria-label="Card size">
+            {(["sm", "md", "lg"] as ReadingSize[]).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => changeSize(s)}
+                aria-pressed={readingSize === s}
+                className={"size-btn" + (readingSize === s ? " on" : "")}
+              >
+                {s === "sm" ? "S" : s === "md" ? "M" : "L"}
+              </button>
+            ))}
+          </div>
           <Link to="/board" className="section-link">All shelves →</Link>
         </div>
         {reading.length === 0 ? (
           <Empty>Nothing in progress. Pick something from your shelf.</Empty>
         ) : (
-          <div className="reading-grid">
+          <div className={"reading-grid size-" + readingSize}>
             {reading.map((b, i) => (
               <BookCard key={b.id} book={b} userBook={b.user_books[0]} tilt={[-0.6, 0.4][i] ?? 0} />
             ))}
