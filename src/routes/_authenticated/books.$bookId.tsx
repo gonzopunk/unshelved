@@ -240,12 +240,13 @@ function BookDetail() {
 }
 
 function WeaveTab({
-  book, highlights, notes, onAdd,
+  book, highlights, notes, onAdd, onEdit,
 }: {
   book: { id: string; title: string; author: string | null };
   highlights: { id: string; book_id: string; quote_text: string }[];
   notes: { id: string; book_id: string; content: string }[];
   onAdd: () => void;
+  onEdit?: (c: Connection) => void;
 }) {
   const highlightIds = useMemo(() => highlights.map(h => h.id), [highlights]);
   const noteIds = useMemo(() => notes.map(n => n.id), [notes]);
