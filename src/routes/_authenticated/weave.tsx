@@ -361,6 +361,7 @@ function WeavePage() {
             nodes={graph.nodes}
             links={graph.links}
             highlightedId={pendingSource?.id ?? null}
+            dimmedNodeIds={visibleNodeIds ? new Set(graph.nodes.filter(n => !visibleNodeIds.has(n.id)).map(n => n.id)) : undefined}
             onNodeClick={handleNodeClick}
             onLinkClick={handleLinkClick}
             onConnectDrag={handleConnectDrag}
