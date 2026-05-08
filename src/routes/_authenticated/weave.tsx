@@ -202,7 +202,7 @@ function WeavePage() {
             {pendingSource && (
               <button
                 onClick={() => setPendingSource(null)}
-                className="normal-case tracking-normal font-sans rounded-full bg-terracotta/10 text-terracotta px-2 py-0.5 hover:bg-terracotta/20"
+                className="normal-case tracking-normal font-sans rounded-full bg-terra/10 text-terra px-2 py-0.5 hover:bg-terra/20"
               >
                 Cancel — connecting from “{pendingSource.label}”
               </button>
