@@ -643,6 +643,9 @@ function HomepageStyles() {
       @media (max-width: 900px) { .quote { padding: 32px 28px; } .quote blockquote { font-size: 26px; } }
       .quote-attr { font-size: 13px; color: rgba(250,251,243,0.7); position: relative; z-index: 1; }
       .quote-attr em { color: var(--cream); font-style: italic; }
+      .quote-conn { margin-top: 14px; font-size: 12px; color: rgba(250,251,243,0.6); position: relative; z-index: 1; }
+      .quote-conn-link { color: rgba(250,251,243,0.85); text-decoration: none; border-bottom: 1px dotted rgba(250,251,243,0.4); }
+      .quote-conn-link:hover { color: var(--cream); border-bottom-color: var(--cream); }
 
       .hp-foot {
         display: flex; justify-content: space-between;
