@@ -73,10 +73,12 @@ function ScaleAxis({ axis, bookId, value }: { axis: TagAxis; bookId: string; val
   const min = axis.scale_min ?? 0;
   const max = axis.scale_max ?? 5;
   const current = value?.scale_value ?? null;
-  const dots = [];
-  for (let i = min; i <= max; i++) dots.push(i);
   const isSpice = axis.key === "spice";
   const isPace = axis.key === "pace";
+  // For spice, render 1..max (0 = unset, no highlighted pepper)
+  const start = isSpice ? Math.max(1, min) : min;
+  const dots = [];
+  for (let i = start; i <= max; i++) dots.push(i);
   const glyph = isSpice ? "🌶" : "●";
   const paceLabels: Record<number, string> = {
     1: "glacial",
@@ -85,13 +87,24 @@ function ScaleAxis({ axis, bookId, value }: { axis: TagAxis; bookId: string; val
     4: "brisk",
     5: "blistering",
   };
+  const spiceLabels: Record<number, string> = {
+    1: "mild",
+    2: "warm",
+    3: "spicy",
+    4: "hot",
+    5: "scorching",
+  };
   return (
     <div className="flex items-center gap-1.5">
       <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{axis.label}</span>
       <div className="flex items-center gap-0.5">
         {dots.map((d) => {
-          const active = current !== null && d <= current;
-          const title = isPace ? paceLabels[d] ?? `${d}` : `${axis.label} ${d}`;
+          const active = current !== null && current > 0 && d <= current;
+          const title = isPace
+            ? paceLabels[d] ?? `${d}`
+            : isSpice
+              ? spiceLabels[d] ?? `${d}`
+              : `${axis.label} ${d}`;
           return (
             <button
               key={d}
@@ -105,7 +118,7 @@ function ScaleAxis({ axis, bookId, value }: { axis: TagAxis; bookId: string; val
               className={`h-5 w-5 rounded-full text-xs leading-none transition ${
                 isSpice ? "text-red-600" : ""
               } ${active ? "" : "opacity-25 hover:opacity-60"}`}
-              aria-label={`${axis.label} ${d}${isPace ? ` (${paceLabels[d]})` : ""}`}
+              aria-label={`${axis.label} ${d}${isPace ? ` (${paceLabels[d]})` : isSpice ? ` (${spiceLabels[d]})` : ""}`}
             >
               {glyph}
             </button>
