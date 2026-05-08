@@ -57,6 +57,9 @@ function PillNav({ onAdd, onSearch, onLogout }: { onAdd: () => void; onSearch: (
         <NavItem to="/" icon={<Home className="h-4 w-4" />} label="Home" />
         <NavItem to="/board" icon={<LayoutGrid className="h-4 w-4" />} label="Board" />
         <NavItem to="/weave" icon={<Network className="h-4 w-4" />} label="Connections" />
+        <button onClick={onSearch} aria-label="Search (⌘K)" title="Search (⌘K)" className="ml-1 p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors">
+          <Search className="h-4 w-4" />
+        </button>
         <Button size="sm" onClick={onAdd} className="rounded-full ml-1 gap-1.5">
           <Plus className="h-4 w-4" /> Add book
         </Button>
