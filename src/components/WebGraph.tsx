@@ -17,6 +17,8 @@ type Props = {
 type GraphRef = {
   screen2GraphCoords: (x: number, y: number) => { x: number; y: number };
   graph2ScreenCoords: (x: number, y: number) => { x: number; y: number };
+  pauseAnimation: () => void;
+  resumeAnimation: () => void;
 };
 
 type DragState = {
@@ -93,6 +95,7 @@ export default function WebGraph({
       e.nativeEvent.stopImmediatePropagation();
     }
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    graphRef.current.pauseAnimation();
     setDrag({
       sourceId: node.id,
       sourceX: node.x,
@@ -121,6 +124,7 @@ export default function WebGraph({
     const d = dragRef.current;
     if (!d || !containerRef.current) return;
     try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* noop */ }
+    try { graphRef.current?.resumeAnimation(); } catch { /* noop */ }
     const rect = containerRef.current.getBoundingClientRect();
     const sx = e.clientX - rect.left;
     const sy = e.clientY - rect.top;
