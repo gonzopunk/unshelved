@@ -256,28 +256,55 @@ export type Database = {
       reading_sessions: {
         Row: {
           book_id: string
+          end_page: number | null
+          end_pct: number | null
+          end_seconds: number | null
           ended_at: string | null
           id: string
+          location: string | null
           minutes: number | null
+          mood: string | null
           pages_read: number | null
+          session_note: string | null
+          start_page: number | null
+          start_pct: number | null
+          start_seconds: number | null
           started_at: string
           user_id: string
         }
         Insert: {
           book_id: string
+          end_page?: number | null
+          end_pct?: number | null
+          end_seconds?: number | null
           ended_at?: string | null
           id?: string
+          location?: string | null
           minutes?: number | null
+          mood?: string | null
           pages_read?: number | null
+          session_note?: string | null
+          start_page?: number | null
+          start_pct?: number | null
+          start_seconds?: number | null
           started_at?: string
           user_id: string
         }
         Update: {
           book_id?: string
+          end_page?: number | null
+          end_pct?: number | null
+          end_seconds?: number | null
           ended_at?: string | null
           id?: string
+          location?: string | null
           minutes?: number | null
+          mood?: string | null
           pages_read?: number | null
+          session_note?: string | null
+          start_page?: number | null
+          start_pct?: number | null
+          start_seconds?: number | null
           started_at?: string
           user_id?: string
         }
