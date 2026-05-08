@@ -17,6 +17,8 @@ type Props = {
 type GraphRef = {
   screen2GraphCoords: (x: number, y: number) => { x: number; y: number };
   graph2ScreenCoords: (x: number, y: number) => { x: number; y: number };
+  pauseAnimation: () => void;
+  resumeAnimation: () => void;
 };
 
 type DragState = {
