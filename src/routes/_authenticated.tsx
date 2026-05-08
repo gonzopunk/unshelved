@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, Link, useNavigate } from "@tanstack/react-rout
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
-import { Home, LayoutGrid, Plus, LogOut } from "lucide-react";
+import { Home, LayoutGrid, Plus, LogOut, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AddBookModal from "@/components/AddBookModal";
 
@@ -42,6 +42,7 @@ function PillNav({ onAdd, onLogout }: { onAdd: () => void; onLogout: () => void 
         <span className="h-6 w-px bg-border mx-1" />
         <NavItem to="/" icon={<Home className="h-4 w-4" />} label="Home" />
         <NavItem to="/board" icon={<LayoutGrid className="h-4 w-4" />} label="Board" />
+        <NavItem to="/weave" icon={<Network className="h-4 w-4" />} label="Weave" />
         <Button size="sm" onClick={onAdd} className="rounded-full ml-1 gap-1.5">
           <Plus className="h-4 w-4" /> Add book
         </Button>
