@@ -95,6 +95,7 @@ export default function WebGraph({
       e.nativeEvent.stopImmediatePropagation();
     }
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    graphRef.current.pauseAnimation();
     setDrag({
       sourceId: node.id,
       sourceX: node.x,
