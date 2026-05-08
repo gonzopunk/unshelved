@@ -48,9 +48,11 @@ const RATINGS: ColDef[] = [
 
 const FMT_LABEL: Record<string, string> = { print: "Print", ebook: "Ebook", audiobook: "Audio" };
 
+const ALL_COL_IDS: BookStatus[] = ["want", "reading", "later", "dnf", "loved", "liked", "meh"];
+
 function BoardPage() {
   const { data: library = [] } = useLibrary();
-  const updateStatus = useUpdateStatus();
+  const reorder = useReorderBoard();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -61,6 +63,19 @@ function BoardPage() {
     for (const b of library) {
       const s = (b.user_books[0]?.status ?? "want") as BookStatus;
       if (out[s]) out[s].push(b);
+    }
+    // Sort each column by board_position (nulls last, then by created_at desc as fallback).
+    for (const k of Object.keys(out) as BookStatus[]) {
+      out[k].sort((a, b) => {
+        const pa = a.user_books[0]?.board_position;
+        const pb = b.user_books[0]?.board_position;
+        if (pa == null && pb == null) {
+          return (b.created_at ?? "").localeCompare(a.created_at ?? "");
+        }
+        if (pa == null) return 1;
+        if (pb == null) return -1;
+        return pa - pb;
+      });
     }
     return out;
   }, [library]);
@@ -73,18 +88,71 @@ function BoardPage() {
   const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
   const thisYear = library.filter((b) => (b.user_books[0]?.finished_at ?? "") >= yearStart).length;
 
+  const findContainer = (id: string): BookStatus | null => {
+    if (ALL_COL_IDS.includes(id as BookStatus)) return id as BookStatus;
+    const book = library.find((b) => b.id === id);
+    return (book?.user_books[0]?.status as BookStatus | undefined) ?? null;
+  };
+
   const onDragStart = (e: DragStartEvent) => setActiveId(String(e.active.id));
+
   const onDragEnd = (e: DragEndEvent) => {
     setActiveId(null);
-    const bookId = String(e.active.id);
-    const overId = e.over?.id;
+    const activeIdStr = String(e.active.id);
+    const overId = e.over?.id ? String(e.over.id) : null;
     if (!overId) return;
-    const targetStatus = String(overId) as BookStatus;
-    const book = library.find((b) => b.id === bookId);
-    const ub = book?.user_books[0];
-    if (!ub || ub.status === targetStatus) return;
-    updateStatus.mutate({ id: ub.id, status: targetStatus });
+
+    const sourceCol = findContainer(activeIdStr);
+    const targetCol = findContainer(overId);
+    if (!sourceCol || !targetCol) return;
+
+    const activeBook = library.find((b) => b.id === activeIdStr);
+    const activeUb = activeBook?.user_books[0];
+    if (!activeBook || !activeUb) return;
+
+    // Compute the target list after the move.
+    const sourceList = grouped[sourceCol].filter((b) => b.id !== activeIdStr);
+    const targetListBase = sourceCol === targetCol ? sourceList : grouped[targetCol].slice();
+
+    let insertIndex: number;
+    if (ALL_COL_IDS.includes(overId as BookStatus)) {
+      insertIndex = targetListBase.length;
+    } else {
+      insertIndex = targetListBase.findIndex((b) => b.id === overId);
+      if (insertIndex < 0) insertIndex = targetListBase.length;
+    }
+
+    const newTargetList = targetListBase.slice();
+    newTargetList.splice(insertIndex, 0, activeBook);
+
+    // No-op if order and column unchanged.
+    if (sourceCol === targetCol) {
+      const oldIdx = grouped[sourceCol].findIndex((b) => b.id === activeIdStr);
+      if (oldIdx === insertIndex) return;
+    }
+
+    // Build update list: reassign board_position for the entire target column,
+    // and (if cross-column) compact the source column too.
+    const updates: { id: string; status: BookStatus; board_position: number }[] = [];
+    newTargetList.forEach((b, i) => {
+      const ub = b.user_books[0];
+      if (!ub) return;
+      updates.push({ id: ub.id, status: targetCol, board_position: i });
+    });
+    if (sourceCol !== targetCol) {
+      sourceList.forEach((b, i) => {
+        const ub = b.user_books[0];
+        if (!ub) return;
+        updates.push({ id: ub.id, status: sourceCol, board_position: i });
+      });
+    }
+    reorder.mutate(updates);
   };
+
+  const onDragOver = (_e: DragOverEvent) => {
+    // Live cross-column reordering could go here; the optimistic onDragEnd is enough for snappy feel.
+  };
+
 
   return (
     <div className="bv">
