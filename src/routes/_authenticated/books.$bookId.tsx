@@ -20,6 +20,10 @@ import { useBookConnections, useReferenceBooks, type ConnectionKind } from "@/li
 import { useLibrary } from "@/lib/queries";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import NewSessionCard from "@/components/sessions/NewSessionCard";
+import SessionRow from "@/components/sessions/SessionRow";
+import PaceStrip from "@/components/sessions/PaceStrip";
+import RhythmStrip from "@/components/sessions/RhythmStrip";
 
 
 export const Route = createFileRoute("/_authenticated/books/$bookId")({
