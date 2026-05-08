@@ -115,7 +115,7 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="rounded-3xl max-w-lg bg-card max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">Add a connection</DialogTitle>
+          <DialogTitle className="font-display text-2xl">{isEditing ? "Edit connection" : "Add a connection"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="rounded-xl bg-mist p-3">
@@ -183,7 +183,7 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-full">Cancel</Button>
-            <Button onClick={save} disabled={busy || !target} className="rounded-full">{busy ? "Saving…" : "Connect"}</Button>
+            <Button onClick={save} disabled={busy || !target} className="rounded-full">{busy ? "Saving…" : isEditing ? "Save changes" : "Connect"}</Button>
           </div>
         </div>
       </DialogContent>
