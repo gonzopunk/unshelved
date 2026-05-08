@@ -475,7 +475,11 @@ function BoardStyles() {
         background: #F0F0E5;
       }
       .mc:active { cursor: grabbing; }
-      .mc.dragging { opacity: 0.35; transform: rotate(-2deg); }
+      .mc.dragging {
+        opacity: 0;
+        pointer-events: none;
+        transition: none;
+      }
       .mc.overlay {
         box-shadow: 0 1px 0 rgba(31,38,48,0.06), 0 22px 40px -16px rgba(31,38,48,0.4);
         transform: rotate(-2deg); background: #F0F0E5;
