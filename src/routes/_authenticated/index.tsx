@@ -8,8 +8,9 @@ import { useEffect, useState } from "react";
 import BookCard from "@/components/BookCard";
 import { useAllSessions, computeStreak, fmtMinutes } from "@/lib/sessions";
 
-type ReadingSize = "sm" | "md" | "lg";
 const SIZE_KEY = "unshelved.readingSize";
+const MIN_COL = 180;
+const MAX_COL = 520;
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({ meta: [{ title: "Unshelved — Library" }] }),
@@ -22,14 +23,23 @@ function Home() {
   const { data: library = [] } = useLibrary();
   const { data: profile } = useProfile();
   const { user } = useAuth();
-  const [readingSize, setReadingSize] = useState<ReadingSize>("sm");
+  const [readingSize, setReadingSize] = useState<number>(220);
   useEffect(() => {
-    const saved = (typeof window !== "undefined" && localStorage.getItem(SIZE_KEY)) as ReadingSize | null;
-    if (saved === "sm" || saved === "md" || saved === "lg") setReadingSize(saved);
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem(SIZE_KEY);
+    if (!saved) return;
+    // Accept legacy "sm" | "md" | "lg" as well as numeric values.
+    if (saved === "sm") setReadingSize(200);
+    else if (saved === "md") setReadingSize(320);
+    else if (saved === "lg") setReadingSize(480);
+    else {
+      const n = Number(saved);
+      if (Number.isFinite(n) && n >= MIN_COL && n <= MAX_COL) setReadingSize(n);
+    }
   }, []);
-  const changeSize = (s: ReadingSize) => {
-    setReadingSize(s);
-    try { localStorage.setItem(SIZE_KEY, s); } catch {}
+  const changeSize = (n: number) => {
+    setReadingSize(n);
+    try { localStorage.setItem(SIZE_KEY, String(n)); } catch {}
   };
 
   const { data: highlights = [] } = useQuery({
@@ -145,14 +155,11 @@ function Home() {
             <span className="size-slider-lbl">S</span>
             <input
               type="range"
-              min={0}
-              max={2}
-              step={1}
-              value={readingSize === "sm" ? 0 : readingSize === "md" ? 1 : 2}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                changeSize(v === 0 ? "sm" : v === 1 ? "md" : "lg");
-              }}
+              min={MIN_COL}
+              max={MAX_COL}
+              step={4}
+              value={readingSize}
+              onChange={(e) => changeSize(Number(e.target.value))}
             />
             <span className="size-slider-lbl">L</span>
           </label>
@@ -161,7 +168,10 @@ function Home() {
         {reading.length === 0 ? (
           <Empty>Nothing in progress. Pick something from your shelf.</Empty>
         ) : (
-          <div className={"reading-grid size-" + readingSize}>
+          <div
+            className="reading-grid"
+            style={{ gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${readingSize}px), 1fr))` }}
+          >
             {reading.map((b, i) => (
               <BookCard key={b.id} book={b} userBook={b.user_books[0]} tilt={[-0.6, 0.4][i] ?? 0} />
             ))}
@@ -380,14 +390,6 @@ function HomepageStyles() {
       }
 
       .reading-grid { display: grid; gap: 20px; }
-      .reading-grid.size-sm { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-      .reading-grid.size-md { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
-      .reading-grid.size-lg { grid-template-columns: 1fr 1fr; }
-      @media (max-width: 900px) {
-        .reading-grid.size-sm { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
-        .reading-grid.size-md,
-        .reading-grid.size-lg { grid-template-columns: 1fr; }
-      }
       .size-slider {
         display: inline-flex; align-items: center; gap: 8px;
         background: var(--paper); border-radius: 999px; padding: 4px 12px;
