@@ -151,8 +151,8 @@ function Home() {
         <div className="section-head">
           <h2>Currently reading</h2>
           <span className="section-rule" />
-          <label className="size-slider" aria-label="Card size">
-            <span className="size-slider-lbl">S</span>
+          <label className="size-slider">
+            <span className="size-slider-lbl" aria-hidden="true">S</span>
             <input
               type="range"
               min={MIN_COL}
@@ -160,8 +160,13 @@ function Home() {
               step={4}
               value={readingSize}
               onChange={(e) => changeSize(Number(e.target.value))}
+              aria-label="Card size"
+              aria-valuemin={MIN_COL}
+              aria-valuemax={MAX_COL}
+              aria-valuenow={readingSize}
+              aria-valuetext={`${readingSize} pixels wide`}
             />
-            <span className="size-slider-lbl">L</span>
+            <span className="size-slider-lbl" aria-hidden="true">L</span>
           </label>
           <Link to="/board" className="section-link">All shelves →</Link>
         </div>
