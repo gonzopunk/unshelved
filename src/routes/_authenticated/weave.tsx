@@ -256,11 +256,33 @@ function WeavePage() {
           open={modalOpen}
           onOpenChange={(o) => {
             setModalOpen(o);
-            if (!o) setPendingSource(null);
+            if (!o) { setPendingSource(null); setPendingTarget(null); }
           }}
           source={pendingSource}
+          initialTarget={pendingTarget}
         />
       )}
+
+      <Dialog open={!!edgePair} onOpenChange={(o) => { if (!o) setEdgePair(null); }}>
+        <DialogContent className="rounded-3xl max-w-2xl bg-card max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl">{edgeTitle}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {edgeConnections.map(c => (
+              <ConnectionCard
+                key={c.id}
+                connection={c}
+                source={resolve(c.source_kind, c.source_id)}
+                target={resolve(c.target_kind, c.target_id)}
+              />
+            ))}
+            {edgeConnections.length === 0 && (
+              <div className="text-center py-6 text-muted-foreground italic">No connections found.</div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
