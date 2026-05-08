@@ -218,7 +218,7 @@ export default function WebGraph({
             ctx.font = `${fontSize}px serif`;
             ctx.textAlign = "center";
             ctx.textBaseline = "top";
-            ctx.fillStyle = "#1F2630";
+            ctx.fillStyle = dimmedNodeIds?.has(n.id) ? "rgba(31, 38, 48, 0.25)" : "#1F2630";
             const label = n.name.length > 28 ? n.name.slice(0, 26) + "…" : n.name;
             ctx.fillText(label, n.x, n.y + 8);
           }}
