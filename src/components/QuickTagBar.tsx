@@ -75,26 +75,37 @@ function ScaleAxis({ axis, bookId, value }: { axis: TagAxis; bookId: string; val
   const current = value?.scale_value ?? null;
   const dots = [];
   for (let i = min; i <= max; i++) dots.push(i);
-  const glyph = axis.key === "spice" ? "🌶" : "●";
+  const isSpice = axis.key === "spice";
+  const isPace = axis.key === "pace";
+  const glyph = isSpice ? "🌶" : "●";
+  const paceLabels: Record<number, string> = {
+    1: "glacial",
+    2: "languid",
+    3: "steady",
+    4: "brisk",
+    5: "blistering",
+  };
   return (
     <div className="flex items-center gap-1.5">
       <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{axis.label}</span>
       <div className="flex items-center gap-0.5">
         {dots.map((d) => {
           const active = current !== null && d <= current;
+          const title = isPace ? paceLabels[d] ?? `${d}` : `${axis.label} ${d}`;
           return (
             <button
               key={d}
               type="button"
+              title={title}
               onClick={() =>
                 current === d
                   ? clear.mutate({ book_id: bookId, axis_id: axis.id })
                   : set.mutate({ book_id: bookId, axis_id: axis.id, scale_value: d })
               }
               className={`h-5 w-5 rounded-full text-xs leading-none transition ${
-                active ? "" : "opacity-25 hover:opacity-60"
-              }`}
-              aria-label={`${axis.label} ${d}`}
+                isSpice ? "text-red-600" : ""
+              } ${active ? "" : "opacity-25 hover:opacity-60"}`}
+              aria-label={`${axis.label} ${d}${isPace ? ` (${paceLabels[d]})` : ""}`}
             >
               {glyph}
             </button>
@@ -253,7 +264,8 @@ function FreeTagsRow({
     : suggestions.slice(0, 6);
 
   const submit = () => {
-    if (draft.trim()) onAdd(draft);
+    const v = draft.trim();
+    if (v) onAdd(v);
     setDraft("");
     setAdding(false);
   };
@@ -278,52 +290,48 @@ function FreeTagsRow({
         </span>
       ))}
       {adding ? (
-        <Popover open onOpenChange={(o) => !o && setAdding(false)}>
-          <PopoverTrigger asChild>
-            <input
-              ref={inputRef}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  submit();
-                } else if (e.key === "Escape") {
-                  setDraft("");
-                  setAdding(false);
-                }
-              }}
-              onBlur={() => setTimeout(() => submit(), 120)}
-              placeholder="tag…"
-              className="rounded-full bg-mist px-2.5 py-0.5 text-xs outline-none focus:ring-1 focus:ring-primary w-24"
-            />
-          </PopoverTrigger>
+        <div className="relative">
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                submit();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                setDraft("");
+                setAdding(false);
+              }
+            }}
+            onBlur={() => {
+              // delay so suggestion mousedown can fire first
+              setTimeout(() => submit(), 150);
+            }}
+            placeholder="tag…"
+            className="rounded-full bg-mist px-2.5 py-0.5 text-xs outline-none focus:ring-1 focus:ring-primary w-28"
+          />
           {matches.length > 0 && (
-            <PopoverContent
-              className="w-56 p-1"
-              align="start"
-              onOpenAutoFocus={(e) => e.preventDefault()}
-            >
-              <div className="flex flex-wrap gap-1">
-                {matches.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      onAdd(t.name);
-                      setDraft("");
-                      setAdding(false);
-                    }}
-                    className="rounded-full bg-mist hover:bg-border px-2 py-0.5 text-xs"
-                  >
-                    {t.name}
-                  </button>
-                ))}
-              </div>
-            </PopoverContent>
+            <div className="absolute left-0 top-full mt-1 z-50 rounded-md border border-border bg-popover shadow-md p-1 flex flex-wrap gap-1 w-56">
+              {matches.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    onAdd(t.name);
+                    setDraft("");
+                    setAdding(false);
+                  }}
+                  className="rounded-full bg-mist hover:bg-border px-2 py-0.5 text-xs"
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
           )}
-        </Popover>
+        </div>
       ) : (
         <button
           type="button"
