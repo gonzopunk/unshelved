@@ -254,7 +254,7 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
 
           <div className="flex gap-4">
             <div className="w-24 h-32 rounded-lg shadow-paper flex flex-col justify-between p-2 font-display shrink-0" style={{ background: color.color, color: color.text }}>
-              <div className="text-[0.55rem] uppercase tracking-widest opacity-60">Margins</div>
+              <div className="text-[0.55rem] uppercase tracking-widest opacity-60">Unshelved</div>
               <div className="text-xs leading-tight font-semibold line-clamp-3">{title || "Untitled"}</div>
             </div>
             <div className="flex-1 space-y-3">

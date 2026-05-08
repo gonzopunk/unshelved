@@ -123,37 +123,45 @@ function BookDetail() {
         </div>
       </div>
 
-      <Tabs defaultValue="notes" className="mt-12">
+      <Tabs defaultValue="margins" className="mt-12">
         <TabsList className="rounded-full bg-card shadow-paper p-1">
-          <TabsTrigger value="notes" className="rounded-full">Notes</TabsTrigger>
-          <TabsTrigger value="quotes" className="rounded-full">Quotes</TabsTrigger>
+          <TabsTrigger value="margins" className="rounded-full">Margins</TabsTrigger>
           <TabsTrigger value="sessions" className="rounded-full">Sessions</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="notes" className="mt-6">
-          <NewNote bookId={book.id} userId={user!.id} />
-          <div className="mt-4 space-y-3">
-            {notes.length === 0 && <Empty>No notes yet. Capture a thought.</Empty>}
-            {notes.map(n => (
-              <div key={n.id} className="rounded-2xl bg-card shadow-paper p-4">
-                <p className="whitespace-pre-wrap">{n.content}</p>
-                <div className="font-mono text-xs text-muted-foreground mt-2">{format(new Date(n.created_at), "MMM d, yyyy · h:mm a")}</div>
-              </div>
-            ))}
-          </div>
-        </TabsContent>
+        <TabsContent value="margins" className="mt-6">
+          <Tabs defaultValue="notes">
+            <TabsList className="rounded-full bg-mist p-1">
+              <TabsTrigger value="notes" className="rounded-full">Notes</TabsTrigger>
+              <TabsTrigger value="quotes" className="rounded-full">Quotes</TabsTrigger>
+            </TabsList>
 
-        <TabsContent value="quotes" className="mt-6">
-          <NewQuote bookId={book.id} userId={user!.id} />
-          <div className="mt-4 space-y-3">
-            {highlights.length === 0 && <Empty>No quotes saved yet.</Empty>}
-            {highlights.map(h => (
-              <blockquote key={h.id} className="rounded-2xl bg-card shadow-paper p-5 border-l-4 border-terra">
-                <p className="font-display italic text-lg leading-snug">"{h.quote_text}"</p>
-                {h.page_number && <div className="font-mono text-xs text-muted-foreground mt-2">p. {h.page_number}</div>}
-              </blockquote>
-            ))}
-          </div>
+            <TabsContent value="notes" className="mt-4">
+              <NewNote bookId={book.id} userId={user!.id} />
+              <div className="mt-4 space-y-3">
+                {notes.length === 0 && <Empty>Notes, quotes, anything worth keeping. Or leave it blank — not every book needs ink.</Empty>}
+                {notes.map(n => (
+                  <div key={n.id} className="rounded-2xl bg-card shadow-paper p-4">
+                    <p className="whitespace-pre-wrap">{n.content}</p>
+                    <div className="font-mono text-xs text-muted-foreground mt-2">{format(new Date(n.created_at), "MMM d, yyyy · h:mm a")}</div>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="quotes" className="mt-4">
+              <NewQuote bookId={book.id} userId={user!.id} />
+              <div className="mt-4 space-y-3">
+                {highlights.length === 0 && <Empty>No quotes saved yet.</Empty>}
+                {highlights.map(h => (
+                  <blockquote key={h.id} className="rounded-2xl bg-card shadow-paper p-5 border-l-4 border-terra">
+                    <p className="font-display italic text-lg leading-snug">"{h.quote_text}"</p>
+                    {h.page_number && <div className="font-mono text-xs text-muted-foreground mt-2">p. {h.page_number}</div>}
+                  </blockquote>
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         <TabsContent value="sessions" className="mt-6">

@@ -7,7 +7,7 @@ import { format } from "date-fns";
 import BookCard from "@/components/BookCard";
 
 export const Route = createFileRoute("/_authenticated/")({
-  head: () => ({ meta: [{ title: "Margins — Library" }] }),
+  head: () => ({ meta: [{ title: "Unshelved — Library" }] }),
   component: Home,
 });
 
@@ -212,7 +212,7 @@ function Home() {
       )}
 
       <footer className="hp-foot">
-        <span>Margins · a quiet place for readers</span>
+        <span>Unshelved · a quiet place for readers</span>
         <span>{finishedThisYear} books · this year</span>
       </footer>
 

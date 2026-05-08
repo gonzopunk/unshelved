@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/signup")({
-  head: () => ({ meta: [{ title: "Sign up — Margins" }] }),
+  head: () => ({ meta: [{ title: "Sign up — Unshelved" }] }),
   component: SignupPage,
 });
 
@@ -32,7 +32,7 @@ function SignupPage() {
     });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("Welcome to Margins!");
+    toast.success("Welcome to Unshelved!");
     navigate({ to: "/" });
   };
 
@@ -48,8 +48,8 @@ function SignupPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md rounded-3xl bg-card shadow-paper p-8">
-        <Link to="/" className="font-display text-3xl text-primary">Margins</Link>
-        <p className="mt-1 text-sm text-muted-foreground">Start a reading life worth keeping.</p>
+        <Link to="/" className="font-display text-3xl text-primary">Unshelved</Link>
+        <p className="mt-1 text-sm text-muted-foreground">Track what you read, however you read.</p>
         <form onSubmit={signUp} className="mt-6 space-y-4">
           <div>
             <Label htmlFor="name">Your name</Label>
