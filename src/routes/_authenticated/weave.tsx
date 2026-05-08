@@ -244,13 +244,25 @@ function WeavePage() {
             highlightedId={pendingSource?.id ?? null}
             onNodeClick={handleNodeClick}
             onLinkClick={handleLinkClick}
+            onConnectDrag={handleConnectDrag}
+            connectMode={connectMode}
           />
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground font-mono uppercase tracking-widest">
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: "#1F5266" }} /> Your books</span>
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: "#5DA8D5" }} /> References</span>
             <span className="normal-case tracking-normal font-sans italic">
-              Click a dot to open a book · Click a line to view that connection · Shift-click two books to connect them
+              {connectMode
+                ? "Connect mode: drag from one book to another to link them"
+                : "Click a dot to open · Click a line to view · Shift-drag between books to connect"}
             </span>
+            <button
+              onClick={() => setConnectMode(m => !m)}
+              className={`normal-case tracking-normal font-sans rounded-full px-2.5 py-0.5 transition ${
+                connectMode ? "bg-sage/30 text-forest" : "bg-mist text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {connectMode ? "Exit connect mode" : "Connect mode"}
+            </button>
             {pendingSource && (
               <button
                 onClick={() => setPendingSource(null)}
