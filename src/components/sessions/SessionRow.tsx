@@ -49,7 +49,7 @@ export default function SessionRow({
       content: session.session_note,
     });
     qc.invalidateQueries({ queryKey: ["book"] });
-    toast.success("Promoted to Margins notes");
+    toast.success("Promoted to notes");
   };
 
   return (
@@ -92,7 +92,7 @@ export default function SessionRow({
                 onClick={promote}
                 className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary"
               >
-                <BookOpen className="h-3 w-3" /> Promote to Margins note
+                <BookOpen className="h-3 w-3" /> Promote to note
               </button>
             </div>
           )}
