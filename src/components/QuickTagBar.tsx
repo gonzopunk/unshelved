@@ -91,7 +91,7 @@ function ScaleAxis({ axis, bookId, value }: { axis: TagAxis; bookId: string; val
     1: "mild",
     2: "warm",
     3: "spicy",
-    4: "hot",
+    4: "sizzling",
     5: "scorching",
   };
   return (
