@@ -1,10 +1,11 @@
 import { createFileRoute, Outlet, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
-import { Home, LayoutGrid, Plus, LogOut, Network, Settings as SettingsIcon } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Home, LayoutGrid, Plus, LogOut, Network, Settings as SettingsIcon, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AddBookModal from "@/components/AddBookModal";
+import CommandPalette from "@/components/CommandPalette";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthLayout,
