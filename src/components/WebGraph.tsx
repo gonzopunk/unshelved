@@ -7,6 +7,7 @@ type Props = {
   nodes: Node[];
   links: Link[];
   highlightedId?: string | null;
+  dimmedNodeIds?: Set<string>;
   onNodeClick?: (id: string, shiftKey: boolean) => void;
   onLinkClick?: (sourceId: string, targetId: string) => void;
   onConnectDrag?: (sourceId: string, targetId: string) => void;
@@ -33,7 +34,7 @@ type DragState = {
 const HIT_RADIUS = 14; // px on screen, for picking nearest node
 
 export default function WebGraph({
-  nodes, links, highlightedId, onNodeClick, onLinkClick, onConnectDrag, connectMode = false,
+  nodes, links, highlightedId, dimmedNodeIds, onNodeClick, onLinkClick, onConnectDrag, connectMode = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<GraphRef | null>(null);
@@ -157,13 +158,21 @@ export default function WebGraph({
           width={size.w}
           height={size.h}
           nodeLabel={(n: unknown) => (n as Node).name}
-          nodeColor={(n: unknown) => (n as Node).color}
+          nodeColor={(n: unknown) => {
+            const node = n as Node;
+            if (dimmedNodeIds?.has(node.id)) return "rgba(31, 38, 48, 0.15)";
+            return node.color;
+          }}
           nodeRelSize={6}
           enableNodeDrag={!connectMode}
           linkColor={(l: unknown) => {
-            const c = (l as Link).count ?? 1;
+            const link = l as Link;
+            const s = typeof link.source === "string" ? link.source : (link.source as { id: string }).id;
+            const t = typeof link.target === "string" ? link.target : (link.target as { id: string }).id;
+            const dim = dimmedNodeIds?.has(s) || dimmedNodeIds?.has(t);
+            const c = link.count ?? 1;
             const a = Math.min(0.25 + (c - 1) * 0.12, 0.7);
-            return `rgba(31, 38, 48, ${a})`;
+            return dim ? `rgba(31, 38, 48, ${a * 0.2})` : `rgba(31, 38, 48, ${a})`;
           }}
           linkWidth={(l: unknown) => {
             const c = (l as Link).count ?? 1;
@@ -209,7 +218,7 @@ export default function WebGraph({
             ctx.font = `${fontSize}px serif`;
             ctx.textAlign = "center";
             ctx.textBaseline = "top";
-            ctx.fillStyle = "#1F2630";
+            ctx.fillStyle = dimmedNodeIds?.has(n.id) ? "rgba(31, 38, 48, 0.25)" : "#1F2630";
             const label = n.name.length > 28 ? n.name.slice(0, 26) + "…" : n.name;
             ctx.fillText(label, n.x, n.y + 8);
           }}

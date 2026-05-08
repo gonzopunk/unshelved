@@ -11,7 +11,8 @@ import AddConnectionModal from "@/components/AddConnectionModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { List, Network } from "lucide-react";
+import { FilterChip } from "@/components/FilterChip";
+import { List, Network, X } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/weave")({
@@ -35,6 +36,11 @@ function WeavePage() {
   const [edgePair, setEdgePair] = useState<{ a: string; b: string } | null>(null);
   const [connectMode, setConnectMode] = useState(false);
   const [editingConn, setEditingConn] = useState<Connection | null>(null);
+  const [fFormat, setFFormat] = useState<Set<string>>(new Set());
+  const [fStatus, setFStatus] = useState<Set<string>>(new Set());
+  const [fAuthor, setFAuthor] = useState<Set<string>>(new Set());
+  const [fYear, setFYear] = useState<Set<string>>(new Set());
+  const [fTag, setFTag] = useState<Set<string>>(new Set());
 
   const openEdit = (c: Connection) => {
     const s = lookup.get(c.source_id);
@@ -78,10 +84,86 @@ function WeavePage() {
     return lookup.get(id) ?? { kind, id, title: "Unknown" };
   };
 
+  // Build filter option lists from library data
+  const filterOptions = useMemo(() => {
+    const formats = new Map<string, number>();
+    const statuses = new Map<string, number>();
+    const authors = new Map<string, number>();
+    const years = new Map<string, number>();
+    for (const b of library) {
+      formats.set(b.format, (formats.get(b.format) ?? 0) + 1);
+      if (b.author) authors.set(b.author, (authors.get(b.author) ?? 0) + 1);
+      const ub = b.user_books?.[0];
+      if (ub?.status) statuses.set(ub.status, (statuses.get(ub.status) ?? 0) + 1);
+      if (ub?.finished_at) {
+        const y = String(new Date(ub.finished_at).getFullYear());
+        years.set(y, (years.get(y) ?? 0) + 1);
+      }
+    }
+    const tags = new Map<string, number>();
+    for (const c of connections) for (const t of c.tags) tags.set(t, (tags.get(t) ?? 0) + 1);
+    const toOpts = (m: Map<string, number>, sortAlpha = false) => {
+      const entries = Array.from(m.entries());
+      entries.sort((a, b) => sortAlpha ? a[0].localeCompare(b[0]) : b[1] - a[1]);
+      return entries.map(([value, count]) => ({ value, label: value, count }));
+    };
+    return {
+      formats: toOpts(formats),
+      statuses: toOpts(statuses),
+      authors: toOpts(authors, true),
+      years: toOpts(years).sort((a, b) => b.value.localeCompare(a.value)),
+      tags: toOpts(tags),
+    };
+  }, [library, connections]);
+
+  // Predicate: does a given book id match the active book-level filters?
+  const bookMatches = useMemo(() => {
+    const noBookFilters = !fFormat.size && !fStatus.size && !fAuthor.size && !fYear.size;
+    return (bookId: string): boolean => {
+      if (noBookFilters) return true;
+      const b = library.find(x => x.id === bookId);
+      if (!b) return false; // reference books don't carry these attrs — exclude when book filters active
+      if (fFormat.size && !fFormat.has(b.format)) return false;
+      const ub = b.user_books?.[0];
+      if (fStatus.size && (!ub?.status || !fStatus.has(ub.status))) return false;
+      if (fAuthor.size && (!b.author || !fAuthor.has(b.author))) return false;
+      if (fYear.size) {
+        const y = ub?.finished_at ? String(new Date(ub.finished_at).getFullYear()) : null;
+        if (!y || !fYear.has(y)) return false;
+      }
+      return true;
+    };
+  }, [library, fFormat, fStatus, fAuthor, fYear]);
+
+  const anyFilterActive = fFormat.size + fStatus.size + fAuthor.size + fYear.size + fTag.size > 0;
+  const clearAllFilters = () => {
+    setFFormat(new Set()); setFStatus(new Set()); setFAuthor(new Set());
+    setFYear(new Set()); setFTag(new Set());
+  };
+
+  // Endpoint -> book id (for non-book endpoints, use their bookId; reference_books have no book filters → only pass when no book filter active)
+  const endpointBookId = (kind: ConnectionKind, id: string): string | null => {
+    if (kind === "book") return id;
+    if (kind === "reference_book") return null;
+    const ep = lookup.get(id);
+    return ep?.bookId ?? null;
+  };
+
+  const connectionMatchesFilters = (c: Connection): boolean => {
+    if (fTag.size && !c.tags.some(t => fTag.has(t))) return false;
+    const noBookFilters = !fFormat.size && !fStatus.size && !fAuthor.size && !fYear.size;
+    if (noBookFilters) return true;
+    // At least one endpoint must be a matching book.
+    const sBook = endpointBookId(c.source_kind, c.source_id);
+    const tBook = endpointBookId(c.target_kind, c.target_id);
+    return (!!sBook && bookMatches(sBook)) || (!!tBook && bookMatches(tBook));
+  };
+
   const filteredConnections = useMemo(() => {
     const q = filter.trim().toLowerCase();
-    if (!q) return connections;
     return connections.filter((c: Connection) => {
+      if (!connectionMatchesFilters(c)) return false;
+      if (!q) return true;
       const s = resolve(c.source_kind, c.source_id);
       const t = resolve(c.target_kind, c.target_id);
       return s.title.toLowerCase().includes(q) ||
@@ -89,7 +171,21 @@ function WeavePage() {
         (c.why ?? "").toLowerCase().includes(q) ||
         c.tags.some(tag => tag.toLowerCase().includes(q));
     });
-  }, [connections, filter, lookup]);
+  }, [connections, filter, lookup, fFormat, fStatus, fAuthor, fYear, fTag]);
+
+  // Web view: ids of nodes touched by any matching connection (null = no filters).
+  const visibleNodeIds = useMemo(() => {
+    if (!anyFilterActive) return null;
+    const visible = new Set<string>();
+    for (const c of connections) {
+      if (!connectionMatchesFilters(c)) continue;
+      const sBook = c.source_kind === "reference_book" ? c.source_id : endpointBookId(c.source_kind, c.source_id);
+      const tBook = c.target_kind === "reference_book" ? c.target_id : endpointBookId(c.target_kind, c.target_id);
+      if (sBook) visible.add(sBook);
+      if (tBook) visible.add(tBook);
+    }
+    return visible;
+  }, [connections, anyFilterActive, fFormat, fStatus, fAuthor, fYear, fTag]);
 
   // Graph data: only book↔book endpoints. Bundle parallel links and store count.
   const graph = useMemo(() => {
@@ -225,6 +321,19 @@ function WeavePage() {
         )}
       </div>
 
+      <div className="flex flex-wrap items-center gap-2 mb-6">
+        <FilterChip label="Format" options={filterOptions.formats} selected={fFormat} onChange={setFFormat} />
+        <FilterChip label="Status" options={filterOptions.statuses} selected={fStatus} onChange={setFStatus} />
+        <FilterChip label="Author" options={filterOptions.authors} selected={fAuthor} onChange={setFAuthor} />
+        <FilterChip label="Year read" options={filterOptions.years} selected={fYear} onChange={setFYear} />
+        <FilterChip label="Tags" options={filterOptions.tags} selected={fTag} onChange={setFTag} />
+        {anyFilterActive && (
+          <button onClick={clearAllFilters} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-ink px-2 py-1">
+            <X className="h-3 w-3" /> Clear all
+          </button>
+        )}
+      </div>
+
       {isLoading ? (
         <div className="text-center py-20 text-muted-foreground">Loading…</div>
       ) : connections.length === 0 ? (
@@ -252,6 +361,7 @@ function WeavePage() {
             nodes={graph.nodes}
             links={graph.links}
             highlightedId={pendingSource?.id ?? null}
+            dimmedNodeIds={visibleNodeIds ? new Set(graph.nodes.filter(n => !visibleNodeIds.has(n.id)).map(n => n.id)) : undefined}
             onNodeClick={handleNodeClick}
             onLinkClick={handleLinkClick}
             onConnectDrag={handleConnectDrag}
