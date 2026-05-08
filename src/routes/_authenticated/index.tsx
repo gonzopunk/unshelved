@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
 import BookCard from "@/components/BookCard";
+import { useAllSessions, computeStreak, fmtMinutes } from "@/lib/sessions";
 
 type ReadingSize = "sm" | "md" | "lg";
 const SIZE_KEY = "unshelved.readingSize";
@@ -43,6 +44,12 @@ function Home() {
       return data ?? [];
     },
   });
+
+  const { data: recentSessions = [] } = useAllSessions(30);
+  const streak = computeStreak(recentSessions);
+  const weekMinutes = recentSessions
+    .filter((s) => new Date(s.started_at).getTime() >= Date.now() - 7 * 86_400_000)
+    .reduce((sum, s) => sum + (s.minutes ?? 0), 0);
 
   const reading = library.filter((b) => b.user_books[0]?.status === "reading").slice(0, 2);
   const upNext = library.filter((b) => b.user_books[0]?.status === "want").slice(0, 5);
@@ -83,6 +90,8 @@ function Home() {
         <div className="hero-text">
           <div className="hero-eyebrow">
             <span className="dot" /> {dayName} {partOfDay} · {inFlight} {inFlight === 1 ? "book" : "books"} in flight
+            {streak > 0 && <span> · 🔥 {streak}-day streak</span>}
+            {weekMinutes > 0 && <span> · {fmtMinutes(weekMinutes)} this week</span>}
           </div>
           <h1 className="hero-title">
             Welcome back, {firstName}. <em>Pick up where you drifted off.</em>

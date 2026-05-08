@@ -20,6 +20,10 @@ import { useBookConnections, useReferenceBooks, type ConnectionKind } from "@/li
 import { useLibrary } from "@/lib/queries";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import NewSessionCard from "@/components/sessions/NewSessionCard";
+import SessionRow from "@/components/sessions/SessionRow";
+import PaceStrip from "@/components/sessions/PaceStrip";
+import RhythmStrip from "@/components/sessions/RhythmStrip";
 
 
 export const Route = createFileRoute("/_authenticated/books/$bookId")({
@@ -199,15 +203,23 @@ function BookDetail() {
           />
         </TabsContent>
 
-        <TabsContent value="sessions" className="mt-6">
-          <NewSession bookId={book.id} userId={user!.id} format={book.format} />
-          <div className="mt-4 rounded-2xl bg-card shadow-paper divide-y divide-border">
+        <TabsContent value="sessions" className="mt-6 space-y-4">
+          <PaceStrip
+            sessions={sessions}
+            format={book.format}
+            remainingUnits={
+              book.format === "audiobook"
+                ? (userBook.total_seconds ?? 0) - (userBook.current_seconds ?? 0)
+                : (userBook.total_pages ?? 0) - (userBook.current_page ?? 0)
+            }
+            accent={book.cover_color}
+          />
+          <NewSessionCard bookId={book.id} userId={user!.id} format={book.format} userBook={userBook} />
+          <RhythmStrip sessions={sessions} />
+          <div className="rounded-2xl bg-card shadow-paper divide-y divide-border">
             {sessions.length === 0 && <Empty>No reading sessions logged.</Empty>}
-            {sessions.map(s => (
-              <div key={s.id} className="flex items-center justify-between p-4 font-mono text-sm">
-                <span>{format(new Date(s.started_at), "MMM d, yyyy")}</span>
-                <span className="text-muted-foreground">{s.pages_read ? `${s.pages_read} pages` : `${s.minutes} min`}</span>
-              </div>
+            {sessions.map((s) => (
+              <SessionRow key={s.id} session={s} bookId={book.id} userId={user!.id} format={book.format} />
             ))}
           </div>
         </TabsContent>
@@ -317,35 +329,6 @@ function NewQuote({ bookId, userId }: { bookId: string; userId: string }) {
   );
 }
 
-function NewSession({ bookId, userId, format: fmt }: { bookId: string; userId: string; format: string }) {
-  const [pages, setPages] = useState("");
-  const [minutes, setMinutes] = useState("");
-  const qc = useQueryClient();
-  return (
-    <form onSubmit={async (e) => {
-      e.preventDefault();
-      await supabase.from("reading_sessions").insert({
-        book_id: bookId, user_id: userId,
-        pages_read: pages ? Number(pages) : 0,
-        minutes: minutes ? Number(minutes) : 0,
-      });
-      setPages(""); setMinutes("");
-      qc.invalidateQueries({ queryKey: ["book"] });
-    }} className="rounded-2xl bg-card shadow-paper p-4 flex flex-wrap gap-2 items-end">
-      {fmt !== "audiobook" && (
-        <div className="flex-1 min-w-32">
-          <label className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Pages</label>
-          <Input value={pages} onChange={(e) => setPages(e.target.value)} inputMode="numeric" />
-        </div>
-      )}
-      <div className="flex-1 min-w-32">
-        <label className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Minutes</label>
-        <Input value={minutes} onChange={(e) => setMinutes(e.target.value)} inputMode="numeric" />
-      </div>
-      <Button type="submit" className="rounded-full">Log session</Button>
-    </form>
-  );
-}
 
 function Empty({ children }: { children: React.ReactNode }) {
   return <div className="rounded-2xl bg-card shadow-paper p-6 text-center text-muted-foreground italic">{children}</div>;

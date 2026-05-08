@@ -1,158 +1,162 @@
-# Tagging System — Detailed Spec
 
-The taxonomy layer that turns Unshelved from a shelf into a *queryable* library. Powers Weave filters, Margins search, recommendations, and the stats dashboard. Designed to feel as *cozy and editorial* as the rest of the app — not a database admin panel.
+# Reading Sessions v2
+
+A serious upgrade to the per-book Sessions tab and the data behind it — turning today's bare "log pages + minutes" form into a real reading-tracker that captures *how* a session felt and *what it implies* about the book and the reader.
+
+---
 
 ## Goals
 
-1. **Two complementary surfaces**: structured **axes** (consistent, sortable, chartable) + free-form **tags** (expressive, idiosyncratic).
-2. **Low-friction capture**: tag a book in <5 seconds without opening a modal.
-3. **No dead taxonomies**: every tag/axis value should be useful somewhere — filtering, charts, Weave, or recs.
-4. **User-owned**: every built-in axis can be renamed, hidden, or extended; new axes can be invented.
+1. **Capture sessions effortlessly** — live timer for "I'm reading right now", quick-log for "I just finished a chunk", backfill for "I forgot to log yesterday".
+2. **Auto-update book progress** — every session moves the book's current page / location / runtime forward without a second form.
+3. **Capture the *feeling* of a session** — a separate "session notes" field for in-the-moment reactions ("dragged today", "couldn't put it down"), kept distinct from the long-form Margins notes.
+4. **Surface what sessions reveal** — pace, completion estimate, streaks, time-of-day patterns, per-book momentum.
 
-## Concept model
+---
 
-Two distinct primitives:
+## 1. Logging a session — three entry modes
 
-### A. Axes (structured)
-A named dimension with a fixed value space and a UI control type. Each book gets at most one value per axis (or a small bounded set, e.g. content warnings).
+All three live in a redesigned **NewSession** card on the book detail page. Format-aware: audiobook = minutes/seconds, print = pages, ebook = pages or %.
 
-Built-in axes (seeded for every user, all editable/hideable):
+### a. Live timer ("Read now")
+- Big start button → timer counts up (`mm:ss`), persists across reloads via `localStorage` keyed to `book_id`.
+- Pause / resume.
+- Stop → opens the **Save session** sheet pre-filled with the elapsed time.
+- A subtle floating "still reading…" pill on every page while a timer is active, so the user can return.
 
-| Axis | Type | Values | Purpose |
-|---|---|---|---|
-| **Spice** | scale 0–5 | 🌶 chips | Heat level |
-| **Pace** | scale 1–5 | slow → breakneck | Mood/expectation matching |
-| **Mood** | multi-select | cozy, melancholy, propulsive, dreamy, brutal, hopeful, weird, comforting, unsettling, tender (editable) | Recs + stats radar |
-| **POV** | single-select | 1st, close 3rd, omniscient, multi-POV, 2nd, epistolary | Craft signal |
-| **Tense** | single-select | past, present, mixed | Craft signal |
-| **Content warnings** | multi-select | SA, OD, suicide, animal harm, child harm, graphic violence, eating disorders, etc. (editable) | Safety filter |
-| **Tropes** | multi-select free-tag | enemies-to-lovers, found family, locked room, etc. | Recs + Weave |
-| **Setting era** | single-select | contemporary, near-future, far-future, historical, secondary-world, ahistorical | Recs |
-| **Form** | single-select | novel, novella, short stories, essays, poetry, memoir, hybrid | Stats |
+### b. Quick log ("Just finished a stretch")
+- Inline form: pages (or %), minutes, optional session note.
+- One-tap "+10 / +25 / +50 pages" chips for fast entry.
 
-### B. Free tags (unstructured)
-Lowercase, user-coined, autocompleted from prior use. Live alongside axes. Shown as paper-tape chips. Soft-merge suggestions when two tags differ only in case/whitespace/plural.
+### c. Backfill ("Log a past session")
+- Date picker (defaults to today) + start time + duration + pages.
+- Uses the shadcn Datepicker pattern.
 
-Both surfaces share filter and search UIs.
+All three share the same **save** action and the same fields underneath.
 
-## Schema
+---
 
-```sql
--- One row per axis definition. Seed built-ins per user via handle_new_user.
-create table tag_axes (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null,
-  key text not null,                 -- stable slug: 'spice', 'mood'
-  label text not null,               -- editable display: 'Spice 🌶'
-  kind text not null,                -- 'scale' | 'single' | 'multi'
-  scale_min int, scale_max int,      -- for kind='scale'
-  values text[] default '{}',        -- for single/multi: allowed values (free-tag axis = empty + open=true)
-  open boolean default false,        -- multi axis can accept new values inline
-  hidden boolean default false,
-  position int default 0,
-  built_in boolean default false,
-  created_at timestamptz default now(),
-  unique (user_id, key)
-);
+## 2. Session fields
 
--- One row per (book, axis) — structured values.
-create table book_axis_values (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null,
-  book_id uuid not null,
-  axis_id uuid not null references tag_axes(id) on delete cascade,
-  scale_value int,                   -- for scale axes
-  values text[] default '{}',        -- for single (1 elem) / multi
-  updated_at timestamptz default now(),
-  unique (user_id, book_id, axis_id)
-);
+Every saved session captures:
 
--- Free tags. Lowercase, deduped.
-create table tags (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null,
-  name text not null,                -- lowercase, trimmed
-  color text,                        -- optional, derives from cover palette by default
-  use_count int default 0,
-  created_at timestamptz default now(),
-  unique (user_id, name)
-);
+| Field | Notes |
+|---|---|
+| `started_at`, `ended_at` | timestamps; ended derived if user enters duration only |
+| `minutes` | total read time |
+| `pages_read` | print/ebook |
+| `start_page`, `end_page` | optional; if both set, `pages_read` derived |
+| `start_pct`, `end_pct` | ebook % alternative |
+| `seconds_listened`, `start_seconds`, `end_seconds` | audiobook |
+| `mood` | enum chips: `flowing`, `steady`, `slogging`, `couldn't stop`, `tired`, `distracted` |
+| `session_note` | free text — separate from Margins notes; never appears in the Margins tab |
+| `location` | optional text ("train", "porch", "bed") |
 
-create table book_tags (
-  user_id uuid not null,
-  book_id uuid not null,
-  tag_id uuid references tags(id) on delete cascade,
-  created_at timestamptz default now(),
-  primary key (book_id, tag_id)
-);
-```
+### Auto-update of book progress
+On save, if `end_page` / `end_pct` / `end_seconds` is set, the linked `user_books` row is patched with the new `current_page` / `progress_pct` / `current_seconds`. If only `pages_read` is given, we increment from the previous `current_page`. (Stub the "linked external sources" path with a TODO comment for the future Open-Reader Sync feature.)
 
-All four tables: RLS `auth.uid() = user_id`. Indexes on `(user_id, book_id)` and `tags.name`.
+If the new position equals total, prompt: "Mark as finished?" with the same Loved/Liked/Meh chooser used elsewhere.
 
-`handle_new_user()` extended to seed the nine built-in axes + a starter set of moods/warnings/tropes.
+---
 
-## Capture UX
+## 3. Session notes vs Margins notes
 
-Three entry points, ranked by frequency:
+- **Session note** lives on the session row, surfaces only in the Sessions tab and in session detail.
+- **Margins note** is the existing `notes` table — long-form, surfaces in Margins, eligible for Weave.
+- The session-note field has a placeholder that signals tone: *"How did this stretch feel? (felt tired today, but it pulled me in…)"*
+- A small "Promote to Margins note" affordance on each session note, for when something offhand turns out to be worth keeping.
 
-1. **Quick-tag bar on the book detail page** (primary surface)
-   - Horizontal strip under the title: each axis as a compact chip control. Spice/Pace = inline 🌶/🏃 1–5 dots. Single-select = pill dropdown. Multi-select = chip row + `+`. Free tags = paper-tape input.
-   - All edits autosave on blur/click. No "save" button. No modal.
-2. **Inline on the AddBookModal** "Tag-as-you-add" step
-   - After cover/metadata confirm, optional "Quick tag" panel with the same controls. Skippable.
-3. **Bulk tagger on `/library`**
-   - Multi-select books → tag tray slides up → apply axes/tags to all. Critical for back-filling an imported library.
+---
 
-Autocomplete: free-tag input shows top 8 by `use_count`, with case-insensitive prefix match. Hitting Enter on an unknown tag creates it.
+## 4. Analytics surfaced on the book page
 
-Suggested tags: lightweight heuristic — surface tags used on books that share author/series/format. Marked with a faint `↗`. (No AI in v1.)
+A new **Pace strip** above the Sessions list:
 
-## Display & filtering
+- **Current pace** — pages/hour or %/hour, last 5 sessions, EWMA-weighted.
+- **Completion estimate** — "≈ 4h 20m left · finish around May 14" using current pace + remaining pages.
+- **Sessions logged** — total + this week.
+- **Longest stretch** — biggest single session.
+- **Momentum chart** — sparkline of session pages over time (uses the book's cover palette via `useLibraryPalette`).
 
-- **Book card**: up to 3 tags + spice/pace dots in a compressed footer row. Overflow `+N`.
-- **Library filter rail**: collapsible per-axis facets + free-tag cloud (sized by use_count). Multi-filter = AND across axes, OR within axis values. `match all tags` toggle.
-- **Weave**: existing tag-string filter upgrades to multi-select chips drawn from this system. Connections written via the Weave modal can pull from the same vocabulary, ending the current tag-string drift between books and connections.
-- **Margins (future)**: same filter rail, scoped to highlights/notes inherited from their book's tags.
-- **Stats (future)**: mood radar, pace heatmap, spice histogram, top-N free tags.
+A new **Reading rhythm** mini-section:
+- Time-of-day histogram (morning / afternoon / evening / night) for this book.
+- Mood distribution as colored dots.
 
-## Tag management page (`/settings/tags`)
+---
 
-- List of axes with drag-to-reorder, rename, hide, add value, delete value (with usage count + "move existing books to…" merge).
-- Free tags table: name, count, last used, merge-into, rename, delete. Bulk-merge by selection.
-- "Create axis" flow: pick kind (scale/single/multi), define values, optional emoji label.
+## 5. Cross-book / global surfaces (light pass)
 
-## Edge cases & rules
+Add a **Sessions** card to the home dashboard:
+- Current streak (consecutive days with ≥1 session).
+- This-week minutes vs last week.
+- Top 3 books by minutes this week.
 
-- Deleting a value from a single/multi axis: prompt to merge into another value or clear from N books.
-- Hiding a built-in axis hides it from capture but preserves its data.
-- Renaming an axis does not change its `key` (so queries/charts stay stable).
-- Free tags are per-user, not global — no shared vocabulary in v1 (parked with social).
-- Content warnings render with a slightly different chip style (muted, prefixed `cw:`) so they read as warnings, not flair.
+(Full stats dashboard remains a separate roadmap item — this is just a teaser tile.)
 
-## Integration touchpoints
+---
 
-- **Weave**: `connections.tags` migrates from free strings to references into `tags` (back-compat: keep the array column, write both during transition, swap reads after a window). Connection form replaces text input with the same tag chip control used elsewhere.
-- **Recommendations (#9)**: every book becomes a vector over (mood, pace, spice, tropes, top free tags). Cheap cosine sim is a real first-pass rec engine.
-- **Stats dashboard (#6)**: axes are the dashboard's spine — radar/heatmap/histogram each map to one axis.
-- **Margins (#4)**: free-tag input on highlights/notes uses the same `tags` table, scoped to the parent book's tag set + global suggestions.
-- **Import (#2)**: Goodreads "shelves" + StoryGraph "tags/moods/pace/content warnings" map directly onto axes during import — Storygraph especially is a near-perfect schema match.
+## 6. Data model changes
 
-## Build order (within this feature)
+Migration to `reading_sessions`:
+- add `ended_at timestamptz`
+- add `start_page int`, `end_page int`
+- add `start_pct numeric`, `end_pct numeric`
+- add `start_seconds int`, `end_seconds int`
+- add `mood text` (free text, validated client-side against the chip list)
+- add `session_note text`
+- add `location text`
+- add index on `(user_id, started_at desc)` for streak/rhythm queries
+- keep `pages_read` and `minutes` for backwards compatibility
 
-1. **Schema + seed** — migration, extend `handle_new_user`, types regen.
-2. **`useAxes`, `useTags`, mutation hooks** in `src/lib/tagging.ts`.
-3. **Quick-tag bar** on book detail page (the highest-leverage surface).
-4. **Library filter rail** upgrade.
-5. **Weave filter chip upgrade + connection form vocab unification.**
-6. **Bulk tagger** on `/library`.
-7. **`/settings/tags` management page.**
-8. **AddBookModal "Quick tag" step.**
+Existing rows continue to work; new fields are nullable.
 
-Steps 1–4 are the MVP that makes the feature genuinely useful; 5–8 are polish and unification that pay off as Margins, Stats, and Recs land.
+No new tables. RLS already correct (`auth.uid() = user_id`).
 
-## Out of scope (v1)
+---
 
-- AI-suggested tags (parked alongside AI-suggested connections).
-- Shared/public tag vocabularies.
-- Tag-based smart shelves (auto-updating saved filters) — easy follow-up once filters work.
-- Per-quote tagging UI (schema supports it via `book_tags`-equivalent later; UI deferred to Margins-deepened).
+## 7. Files touched
+
+**New**
+- `src/components/sessions/SessionTimer.tsx` — live timer + persistence.
+- `src/components/sessions/NewSessionCard.tsx` — three-mode entry (Now / Quick / Backfill).
+- `src/components/sessions/SessionRow.tsx` — richer row (mood dot, note preview, expand).
+- `src/components/sessions/PaceStrip.tsx` — pace + ETA + sparkline.
+- `src/components/sessions/RhythmStrip.tsx` — time-of-day + mood mix.
+- `src/lib/sessions.ts` — `useSessions`, `useSessionStats`, `useSaveSession`, pace/ETA math.
+
+**Edited**
+- `src/routes/_authenticated/books.$bookId.tsx` — replace `NewSession` + sessions list with new components; mount Pace + Rhythm strips above the list.
+- `src/routes/_authenticated/index.tsx` — add Sessions teaser card (streak + week minutes).
+- `src/integrations/supabase/types.ts` — regenerated after migration.
+
+**Migration**
+- `supabase/migrations/<ts>_sessions_v2.sql` — column adds + index.
+
+---
+
+## 8. Build order
+
+1. Migration + types.
+2. `sessions.ts` hooks + math (pace EWMA, ETA, streak).
+3. `NewSessionCard` with the three modes; auto-update of `user_books`.
+4. `SessionRow` + session note + promote-to-Margins.
+5. `PaceStrip` + `RhythmStrip` on the book page.
+6. Home-page sessions teaser.
+7. Update `.lovable/roadmap.md`: move Reading Sessions to Shipped (v2) line; renumber.
+
+---
+
+## 9. Out of scope (intentionally)
+
+- Real KOReader / Audiobookshelf sync — that's the Open-Reader Sync roadmap item; we just make the schema ready.
+- Full year-end stats dashboard — separate roadmap item.
+- Social/shared session feeds.
+- Goal-setting (daily minutes target) — easy follow-up, not in this pass.
+
+---
+
+## Open questions
+
+- Mood chip list: keep the six above, or let it be free-form like tags?
+- Do you want the live timer's "still reading…" pill global (every page) or only on the book page?
+- Promote-to-Margins: copy or move the text?
