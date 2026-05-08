@@ -56,6 +56,9 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
   const [author, setAuthor] = useState("");
   const [format, setFormat] = useState<BookFormat>("print");
   const [color, setColor] = useState(PALETTE[0]);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [secondary, setSecondary] = useState<string | null>(null);
+  const [bookmark, setBookmark] = useState<string | null>(null);
   const [shelf, setShelf] = useState<BookStatus>("want");
   const [busy, setBusy] = useState(false);
   const [totalPages, setTotalPages] = useState<number | null>(null);
