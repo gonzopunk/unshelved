@@ -65,6 +65,17 @@ export default function WebGraph({ nodes, links, highlightedId, onNodeClick, onL
               containerRef.current.style.cursor = n ? "pointer" : "default";
             }
           }}
+          onLinkClick={(l: unknown) => {
+            const link = l as { source: { id: string } | string; target: { id: string } | string };
+            const s = typeof link.source === "string" ? link.source : link.source.id;
+            const t = typeof link.target === "string" ? link.target : link.target.id;
+            onLinkClick?.(s, t);
+          }}
+          onLinkHover={(l: unknown) => {
+            if (containerRef.current) {
+              containerRef.current.style.cursor = l ? "pointer" : "default";
+            }
+          }}
           nodeCanvasObjectMode={() => "after"}
           nodeCanvasObject={(node: unknown, ctx: CanvasRenderingContext2D, globalScale: number) => {
             const n = node as Node & { x?: number; y?: number };
