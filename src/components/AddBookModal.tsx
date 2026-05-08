@@ -76,9 +76,13 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
       setFormat(editing.book.format);
       setColor(PALETTE.find(p => p.color === editing.book.cover_color) ?? { color: editing.book.cover_color, text: editing.book.cover_text_color, name: "Custom" });
       setShelf(editing.userBook?.status ?? "want");
+      setCoverUrl(editing.book.cover_url ?? null);
+      setSecondary(editing.book.cover_secondary_color ?? null);
+      setBookmark(editing.book.bookmark_color ?? null);
       setSearch(""); setResults([]); setTotalPages(null);
     } else if (open) {
       setTitle(""); setAuthor(""); setFormat("print"); setColor(PALETTE[0]); setShelf("want");
+      setCoverUrl(null); setSecondary(null); setBookmark(null);
       setSearch(""); setResults([]); setTotalPages(null);
     }
   }, [editing, open]);
