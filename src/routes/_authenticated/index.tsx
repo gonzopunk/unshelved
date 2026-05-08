@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
 import BookCard from "@/components/BookCard";
+import { useAllSessions, computeStreak, fmtMinutes } from "@/lib/sessions";
 
 type ReadingSize = "sm" | "md" | "lg";
 const SIZE_KEY = "unshelved.readingSize";
