@@ -1,109 +1,131 @@
 import { Link } from "@tanstack/react-router";
-import GeneratedCover from "./GeneratedCover";
+import { format } from "date-fns";
 import type { Book, UserBook } from "@/lib/queries";
 
 type Props = {
   book: Book;
   userBook: UserBook;
-  variant?: "grid" | "compact";
+  tilt?: number;
 };
 
+const FMT_LABEL: Record<string, string> = { print: "Print", ebook: "Ebook", audiobook: "Audiobook" };
+
+function FmtIcon({ format: f }: { format: string }) {
+  const common = { width: 11, height: 11, fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  if (f === "print") return (
+    <svg viewBox="0 0 24 24" {...common}><path d="M4 5c0-.55.45-1 1-1h6v16H5c-.55 0-1-.45-1-1V5z" /><path d="M20 5c0-.55-.45-1-1-1h-6v16h6c.55 0 1-.45 1-1V5z" /></svg>
+  );
+  if (f === "ebook") return (
+    <svg viewBox="0 0 24 24" {...common}><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 17h6" /></svg>
+  );
+  return (
+    <svg viewBox="0 0 24 24" {...common}><path d="M4 14v-2a8 8 0 0116 0v2" /><path d="M4 14a2 2 0 002 2h1v-5H6a2 2 0 00-2 2v1z" /><path d="M20 14a2 2 0 01-2 2h-1v-5h1a2 2 0 012 2v1z" /></svg>
+  );
+}
+
 function fmtTime(s: number | null | undefined) {
-  if (!s) return "0:00";
+  if (!s) return "0m";
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-export default function BookCard({ book, userBook }: Props) {
-  const finished = userBook.status === "loved" || userBook.status === "liked" || userBook.status === "meh";
-  const paused = userBook.paused;
-  const pct = Number(userBook.progress_pct ?? 0);
+export default function BookCard({ book, userBook, tilt = 0 }: Props) {
+  const isPrint = book.format === "print";
+  const isEbook = book.format === "ebook";
+  const isAudio = book.format === "audiobook";
+  const finished = ["loved", "liked", "meh"].includes(userBook.status);
+  const paused = !!userBook.paused;
+
+  const pct = (() => {
+    if (userBook.total_pages && userBook.current_page != null) return Math.min(100, Math.round((userBook.current_page / userBook.total_pages) * 100));
+    if (userBook.total_seconds && userBook.current_seconds != null) return Math.min(100, Math.round((userBook.current_seconds / userBook.total_seconds) * 100));
+    return Math.min(100, Math.round(Number(userBook.progress_pct ?? 0)));
+  })();
+
+  const started = userBook.started_at ? format(new Date(userBook.started_at), "MMM d") : "—";
 
   return (
     <Link
       to="/books/$bookId"
       params={{ bookId: book.id }}
-      className="group relative block rounded-3xl bg-card shadow-paper hover:shadow-lift transition-all duration-300 hover:-translate-y-1 overflow-hidden"
+      className={"bc-card" + (paused ? " paused" : "") + (finished ? " finished" : "")}
+      style={{ transform: `rotate(${tilt}deg)` }}
     >
-      <div className="flex gap-4 p-4">
-        <div className="relative shrink-0">
-          <GeneratedCover book={book} className="w-20 h-28 rounded-lg shadow-lift" />
-          {book.format === "print" && (
-            <div
-              className="absolute -top-1 right-2 w-3 h-10"
-              style={{ background: book.bookmark_color, clipPath: "polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%)" }}
-            />
-          )}
-          {book.format === "audiobook" && (
-            <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-paper border border-border flex items-end justify-center gap-0.5 p-1.5">
-              {[0, 1, 2, 3].map((i) => (
-                <span key={i} className="wave-bar w-0.5 bg-terra rounded-full" style={{ height: "100%", animationDelay: `${i * 0.15}s` }} />
-              ))}
-            </div>
-          )}
-          {book.format === "ebook" && (
-            <div className="absolute right-1 top-2 bottom-2 w-1 rounded-full bg-mist overflow-hidden">
-              <div className="bg-honey w-full rounded-full" style={{ height: `${pct}%` }} />
-            </div>
-          )}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h3 className="font-display text-lg leading-tight truncate">{book.title}</h3>
-              <p className="text-xs text-muted-foreground truncate">{book.author}</p>
-            </div>
-            <span className="text-[0.6rem] uppercase tracking-widest font-mono text-muted-foreground shrink-0">{book.format}</span>
+      <div className="bc-cover-wrap">
+        {isPrint && !finished && (
+          <div className="bookmark-ribbon" style={{ ["--bk" as string]: book.bookmark_color }}>
+            <div className="rb-body" />
+            <div className="rb-notch" />
           </div>
-
-          <ProgressBar userBook={userBook} format={book.format} paused={paused} />
-
-          <div className="mt-2 flex items-center justify-between font-mono text-[0.7rem] text-muted-foreground">
-            {book.format === "audiobook" ? (
-              <span>{fmtTime(userBook.current_seconds)} / {fmtTime(userBook.total_seconds)}</span>
-            ) : book.format === "ebook" ? (
-              <span>Loc {userBook.current_page ?? 0} · {Math.round(pct)}%</span>
-            ) : (
-              <span>p. {userBook.current_page ?? 0} / {userBook.total_pages ?? "?"}</span>
-            )}
-            <span>{Math.round(pct)}%</span>
+        )}
+        {isAudio && (
+          <div className="audio-spool">
+            {[6, 10, 14, 8, 12, 6].map((h, i) => <div key={i} className="bar" style={{ height: h + "px" }} />)}
           </div>
+        )}
+
+        <div
+          className={"bc-cover" + (isEbook ? " screen" : "")}
+          style={{ background: book.cover_color, color: book.cover_text_color }}
+        >
+          <div className="cv-fmt"><FmtIcon format={book.format} /> {FMT_LABEL[book.format]}</div>
+          {isEbook && (
+            <div className="ebook-track">
+              <div className="ebook-dot" style={{ top: `${Math.max(5, Math.min(95, pct))}%` }} />
+            </div>
+          )}
+          <div className="cv-meta">
+            <div className="cv-rule" />
+            <div className="cv-title">{book.title}</div>
+            <div className="cv-author">{book.author}</div>
+          </div>
+          {finished && <div className="finished-stamp">Finished</div>}
         </div>
       </div>
 
-      {finished && (
-        <>
-          <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(135deg, rgba(111,179,122,0.18), rgba(209,118,72,0.12))" }} />
-          <div
-            className="absolute top-4 right-4 px-2 py-1 border-2 border-terra text-terra font-mono text-[0.6rem] tracking-widest rotate-[-8deg] rounded"
-            style={{ boxShadow: "inset 0 0 0 1px var(--terra)" }}
-          >
-            FINISHED
+      <div className="bc-body">
+        <div className="bc-titlerow">
+          <div className="bc-title-text">{book.title}</div>
+          <div className={"bc-fmt-pill " + book.format}>
+            <FmtIcon format={book.format} /> {FMT_LABEL[book.format]}
           </div>
-        </>
-      )}
+        </div>
+        <div className="bc-author">{book.author}</div>
+
+        <div className="bc-prog-row">
+          {isPrint && (
+            <>
+              <span>p. {userBook.current_page ?? 0} <span className="pct">/ {userBook.total_pages ?? "?"}</span></span>
+              <span className="pct">{pct}%</span>
+            </>
+          )}
+          {isEbook && (
+            <>
+              <span>loc {userBook.current_page ?? 0}{userBook.total_pages ? ` / ${userBook.total_pages}` : ""}</span>
+              <span className="pct">{pct}%</span>
+            </>
+          )}
+          {isAudio && (
+            <>
+              <span>{fmtTime(userBook.current_seconds)} <span className="pct">/ {fmtTime(userBook.total_seconds)}</span></span>
+              <span className="pct">{pct}%</span>
+            </>
+          )}
+        </div>
+
+        <div className={"bc-bar" + (isEbook ? " ebook-style" : "")}>
+          <div className={"bc-fill " + book.format} style={{ width: `${pct}%` }} />
+        </div>
+
+        <div className="bc-meta">
+          <span className="bc-started">Started {started}</span>
+          {paused && <><span className="sep">·</span><span>Paused</span></>}
+          {finished && userBook.finished_at && (
+            <><span className="sep">·</span><span>Finished {format(new Date(userBook.finished_at), "MMM d")}</span></>
+          )}
+        </div>
+      </div>
     </Link>
-  );
-}
-
-function ProgressBar({ userBook, format, paused }: { userBook: UserBook; format: string; paused: boolean }) {
-  const pct = Math.min(100, Math.max(0, Number(userBook.progress_pct ?? 0)));
-  if (paused) {
-    return <div className="mt-3 h-2 rounded-full stripe-bar bg-mist overflow-hidden" />;
-  }
-  if (format === "ebook") {
-    return (
-      <div className="mt-3 h-2 rounded-full bg-mist overflow-hidden relative">
-        <div className="absolute inset-y-0 left-0 dashed-bar" style={{ width: `${pct}%` }} />
-      </div>
-    );
-  }
-  const color = format === "audiobook" ? "var(--terra)" : "var(--forest)";
-  return (
-    <div className="mt-3 h-2 rounded-full bg-mist overflow-hidden">
-      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
-    </div>
   );
 }
