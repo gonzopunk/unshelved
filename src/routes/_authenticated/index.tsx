@@ -155,14 +155,11 @@ function Home() {
             <span className="size-slider-lbl">S</span>
             <input
               type="range"
-              min={0}
-              max={2}
-              step={1}
-              value={readingSize === "sm" ? 0 : readingSize === "md" ? 1 : 2}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                changeSize(v === 0 ? "sm" : v === 1 ? "md" : "lg");
-              }}
+              min={MIN_COL}
+              max={MAX_COL}
+              step={4}
+              value={readingSize}
+              onChange={(e) => changeSize(Number(e.target.value))}
             />
             <span className="size-slider-lbl">L</span>
           </label>
@@ -171,7 +168,10 @@ function Home() {
         {reading.length === 0 ? (
           <Empty>Nothing in progress. Pick something from your shelf.</Empty>
         ) : (
-          <div className={"reading-grid size-" + readingSize}>
+          <div
+            className="reading-grid"
+            style={{ gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${readingSize}px), 1fr))` }}
+          >
             {reading.map((b, i) => (
               <BookCard key={b.id} book={b} userBook={b.user_books[0]} tilt={[-0.6, 0.4][i] ?? 0} />
             ))}
