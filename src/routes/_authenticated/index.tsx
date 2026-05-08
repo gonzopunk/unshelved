@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_authenticated/")({
   component: Home,
 });
 
-const FORMAT_LABEL: Record<string, string> = { print: "Print", ebook: "Ebook", audiobook: "Audiobook" };
+
 
 function Home() {
   const { data: library = [] } = useLibrary();
