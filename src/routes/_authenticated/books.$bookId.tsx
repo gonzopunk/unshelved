@@ -197,6 +197,10 @@ function BookDetail() {
             highlights={highlights}
             notes={notes}
             onAdd={() => setWeaveSource({ kind: "book", id: book.id, label: book.title })}
+            onEdit={(c) => {
+              setWeaveSource({ kind: c.source_kind, id: c.source_id, label: "Edit" });
+              setEditingConn(c);
+            }}
           />
         </TabsContent>
 
@@ -226,8 +230,9 @@ function BookDetail() {
       {weaveSource && (
         <AddConnectionModal
           open={!!weaveSource}
-          onOpenChange={(o) => { if (!o) setWeaveSource(null); }}
+          onOpenChange={(o) => { if (!o) { setWeaveSource(null); setEditingConn(null); } }}
           source={weaveSource}
+          editing={editingConn}
         />
       )}
     </main>
