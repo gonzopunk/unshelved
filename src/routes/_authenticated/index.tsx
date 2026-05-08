@@ -288,6 +288,19 @@ function Home() {
             — underlined in <em>{quote.books?.title}</em>
             {quote.page_number ? `, p. ${quote.page_number}` : ""}
           </div>
+          {connectedBooks.length > 0 && (
+            <div className="quote-conn">
+              Connected to{" "}
+              {connectedBooks.map((b, i) => (
+                <span key={b.id}>
+                  {i > 0 && (i === connectedBooks.length - 1 ? " and " : ", ")}
+                  <Link to="/books/$bookId" params={{ bookId: b.id }} className="quote-conn-link">
+                    <em>{b.title}</em>
+                  </Link>
+                </span>
+              ))}
+            </div>
+          )}
         </section>
       )}
 
