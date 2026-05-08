@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { Book } from "@/lib/queries";
+import SampleBadge from "@/components/SampleBadge";
 
 export default function BookSpine({ book }: { book: Book }) {
   const sec = book.cover_secondary_color;
@@ -20,6 +21,7 @@ export default function BookSpine({ book }: { book: Book }) {
       </div>
       <div className="absolute top-2 left-1/2 -translate-x-1/2 h-px w-6 opacity-30" style={{ background: book.cover_text_color }} />
       <div className="absolute bottom-2 left-1/2 -translate-x-1/2 h-px w-6 opacity-30" style={{ background: book.cover_text_color }} />
+      {book.is_sample && <SampleBadge />}
     </Link>
   );
 }

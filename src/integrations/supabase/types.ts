@@ -93,6 +93,7 @@ export type Database = {
           created_at: string
           format: Database["public"]["Enums"]["book_format"]
           id: string
+          is_sample: boolean
           title: string
           user_id: string
         }
@@ -107,6 +108,7 @@ export type Database = {
           created_at?: string
           format?: Database["public"]["Enums"]["book_format"]
           id?: string
+          is_sample?: boolean
           title: string
           user_id: string
         }
@@ -121,6 +123,7 @@ export type Database = {
           created_at?: string
           format?: Database["public"]["Enums"]["book_format"]
           id?: string
+          is_sample?: boolean
           title?: string
           user_id?: string
         }
@@ -130,6 +133,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_sample: boolean
           source_id: string
           source_kind: Database["public"]["Enums"]["connection_kind"]
           tags: string[]
@@ -141,6 +145,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_sample?: boolean
           source_id: string
           source_kind: Database["public"]["Enums"]["connection_kind"]
           tags?: string[]
@@ -152,6 +157,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_sample?: boolean
           source_id?: string
           source_kind?: Database["public"]["Enums"]["connection_kind"]
           tags?: string[]
@@ -167,6 +173,7 @@ export type Database = {
           book_id: string
           created_at: string
           id: string
+          is_sample: boolean
           page_number: number | null
           quote_text: string
           user_id: string
@@ -175,6 +182,7 @@ export type Database = {
           book_id: string
           created_at?: string
           id?: string
+          is_sample?: boolean
           page_number?: number | null
           quote_text: string
           user_id: string
@@ -183,6 +191,7 @@ export type Database = {
           book_id?: string
           created_at?: string
           id?: string
+          is_sample?: boolean
           page_number?: number | null
           quote_text?: string
           user_id?: string
@@ -323,6 +332,7 @@ export type Database = {
           author: string | null
           created_at: string
           id: string
+          is_sample: boolean
           title: string
           user_id: string
         }
@@ -330,6 +340,7 @@ export type Database = {
           author?: string | null
           created_at?: string
           id?: string
+          is_sample?: boolean
           title: string
           user_id: string
         }
@@ -337,6 +348,7 @@ export type Database = {
           author?: string | null
           created_at?: string
           id?: string
+          is_sample?: boolean
           title?: string
           user_id?: string
         }

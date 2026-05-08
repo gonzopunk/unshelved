@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import type { Book, UserBook } from "@/lib/queries";
+import SampleBadge from "@/components/SampleBadge";
 
 type Props = {
   book: Book;
@@ -52,7 +53,8 @@ export default function BookCard({ book, userBook, tilt = 0 }: Props) {
       className={"bc-card" + (paused ? " paused" : "") + (finished ? " finished" : "")}
       style={{ transform: `rotate(${tilt}deg)` }}
     >
-      <div className="bc-cover-wrap">
+      <div className="bc-cover-wrap relative">
+        {book.is_sample && <SampleBadge />}
         {isPrint && !finished && (
           <div className="bookmark-ribbon" style={{ ["--bk" as string]: book.bookmark_color }}>
             <div className="rb-body" />

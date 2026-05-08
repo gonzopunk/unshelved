@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, Link, useNavigate } from "@tanstack/react-rout
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
-import { Home, LayoutGrid, Plus, LogOut, Network } from "lucide-react";
+import { Home, LayoutGrid, Plus, LogOut, Network, Settings as SettingsIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AddBookModal from "@/components/AddBookModal";
 
@@ -47,6 +47,9 @@ function PillNav({ onAdd, onLogout }: { onAdd: () => void; onLogout: () => void 
           <Plus className="h-4 w-4" /> Add book
         </Button>
         <span className="h-6 w-px bg-border mx-2" />
+        <Link to="/settings" aria-label="Settings" activeProps={{ className: "bg-forest text-paper" }} inactiveProps={{ className: "text-muted-foreground hover:bg-muted" }} className="p-2 rounded-full transition-colors">
+          <SettingsIcon className="h-4 w-4" />
+        </Link>
         <button onClick={onLogout} aria-label="Sign out" className="ml-1 p-2 rounded-full hover:bg-muted text-muted-foreground">
           <LogOut className="h-4 w-4" />
         </button>
