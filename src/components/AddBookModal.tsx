@@ -228,9 +228,26 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
           )}
 
           <div className="flex gap-4">
-            <div className="w-24 h-32 rounded-lg shadow-paper flex flex-col justify-between p-2 font-display shrink-0" style={{ background: color.color, color: color.text }}>
-              <div className="text-[0.55rem] uppercase tracking-widest opacity-60">Unshelved</div>
-              <div className="text-xs leading-tight font-semibold line-clamp-3">{title || "Untitled"}</div>
+            <div
+              className="relative w-24 h-32 rounded-lg shadow-paper overflow-hidden font-display shrink-0"
+              style={{
+                background: secondary
+                  ? `linear-gradient(135deg, ${color.color} 0%, ${color.color} 60%, ${secondary} 100%)`
+                  : color.color,
+                color: color.text,
+              }}
+            >
+              {coverUrl ? (
+                <img src={coverUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              ) : (
+                <div className="absolute inset-0 flex flex-col justify-between p-2">
+                  <div className="text-[0.55rem] uppercase tracking-widest opacity-60">Unshelved</div>
+                  <div className="text-xs leading-tight font-semibold line-clamp-3">{title || "Untitled"}</div>
+                </div>
+              )}
+              {bookmark && (
+                <div className="absolute top-0 right-2 w-2 h-6 rounded-b" style={{ background: bookmark }} />
+              )}
             </div>
             <div className="flex-1 space-y-3">
               <div>
