@@ -15,7 +15,7 @@ import { useMemo, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/board")({
-  head: () => ({ meta: [{ title: "Board — Margins" }] }),
+  head: () => ({ meta: [{ title: "Board — Unshelved" }] }),
   component: BoardPage,
 });
 
