@@ -31,8 +31,8 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (open) { setSearch(""); setTarget(null); setWhy(""); setTagsInput(""); }
-  }, [open]);
+    if (open) { setSearch(""); setTarget(initialTarget); setWhy(""); setTagsInput(""); }
+  }, [open, initialTarget]);
 
   const candidates: Candidate[] = useMemo(() => {
     const fromLib: Candidate[] = library
