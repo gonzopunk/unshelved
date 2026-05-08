@@ -53,6 +53,42 @@ export type Database = {
         }
         Relationships: []
       }
+      connections: {
+        Row: {
+          created_at: string
+          id: string
+          source_id: string
+          source_kind: Database["public"]["Enums"]["connection_kind"]
+          tags: string[]
+          target_id: string
+          target_kind: Database["public"]["Enums"]["connection_kind"]
+          user_id: string
+          why: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          source_id: string
+          source_kind: Database["public"]["Enums"]["connection_kind"]
+          tags?: string[]
+          target_id: string
+          target_kind: Database["public"]["Enums"]["connection_kind"]
+          user_id: string
+          why?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          source_id?: string
+          source_kind?: Database["public"]["Enums"]["connection_kind"]
+          tags?: string[]
+          target_id?: string
+          target_kind?: Database["public"]["Enums"]["connection_kind"]
+          user_id?: string
+          why?: string | null
+        }
+        Relationships: []
+      }
       highlights: {
         Row: {
           book_id: string
@@ -182,6 +218,30 @@ export type Database = {
           },
         ]
       }
+      reference_books: {
+        Row: {
+          author: string | null
+          created_at: string
+          id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          author?: string | null
+          created_at?: string
+          id?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          author?: string | null
+          created_at?: string
+          id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_books: {
         Row: {
           board_position: number
@@ -261,6 +321,7 @@ export type Database = {
         | "loved"
         | "liked"
         | "meh"
+      connection_kind: "book" | "reference_book" | "highlight" | "note"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -390,6 +451,7 @@ export const Constants = {
     Enums: {
       book_format: ["print", "ebook", "audiobook"],
       book_status: ["want", "reading", "later", "dnf", "loved", "liked", "meh"],
+      connection_kind: ["book", "reference_book", "highlight", "note"],
     },
   },
 } as const
