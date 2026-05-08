@@ -66,7 +66,7 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
         why: why.trim() || null,
         tags,
       });
-      toast.success("Woven");
+      toast.success("Connected");
       onOpenChange(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not save");
@@ -79,7 +79,7 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="rounded-3xl max-w-lg bg-card max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">Weave a connection</DialogTitle>
+          <DialogTitle className="font-display text-2xl">Add a connection</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="rounded-xl bg-mist p-3">
