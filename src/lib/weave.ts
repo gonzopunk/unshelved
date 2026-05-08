@@ -88,7 +88,7 @@ export function useUpdateConnection() {
       target_kind?: ConnectionKind;
       target_id?: string;
     }) => {
-      const patch: Record<string, unknown> = {};
+      const patch: Database["public"]["Tables"]["connections"]["Update"] = {};
       if (why !== undefined) patch.why = why;
       if (tags !== undefined) patch.tags = tags;
       if (target_kind !== undefined) patch.target_kind = target_kind;
