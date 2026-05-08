@@ -329,35 +329,6 @@ function NewQuote({ bookId, userId }: { bookId: string; userId: string }) {
   );
 }
 
-function NewSession({ bookId, userId, format: fmt }: { bookId: string; userId: string; format: string }) {
-  const [pages, setPages] = useState("");
-  const [minutes, setMinutes] = useState("");
-  const qc = useQueryClient();
-  return (
-    <form onSubmit={async (e) => {
-      e.preventDefault();
-      await supabase.from("reading_sessions").insert({
-        book_id: bookId, user_id: userId,
-        pages_read: pages ? Number(pages) : 0,
-        minutes: minutes ? Number(minutes) : 0,
-      });
-      setPages(""); setMinutes("");
-      qc.invalidateQueries({ queryKey: ["book"] });
-    }} className="rounded-2xl bg-card shadow-paper p-4 flex flex-wrap gap-2 items-end">
-      {fmt !== "audiobook" && (
-        <div className="flex-1 min-w-32">
-          <label className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Pages</label>
-          <Input value={pages} onChange={(e) => setPages(e.target.value)} inputMode="numeric" />
-        </div>
-      )}
-      <div className="flex-1 min-w-32">
-        <label className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Minutes</label>
-        <Input value={minutes} onChange={(e) => setMinutes(e.target.value)} inputMode="numeric" />
-      </div>
-      <Button type="submit" className="rounded-full">Log session</Button>
-    </form>
-  );
-}
 
 function Empty({ children }: { children: React.ReactNode }) {
   return <div className="rounded-2xl bg-card shadow-paper p-6 text-center text-muted-foreground italic">{children}</div>;
