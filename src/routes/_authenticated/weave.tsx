@@ -123,7 +123,7 @@ function WeavePage() {
     const ep = lookup.get(id);
     if (!ep) return;
     if (shiftKey) {
-      // Two-step: first shift-click sets source; second shift-click on a different node opens modal.
+      // Two-step: first shift-click sets source; second shift-click on a different node prefills target and opens modal.
       if (!pendingSource) {
         setPendingSource({ kind: ep.kind as ConnectionKind, id: ep.id, label: ep.title });
         toast(`Connecting from “${ep.title}” — shift-click another book to link them.`);
@@ -134,8 +134,13 @@ function WeavePage() {
         toast("Cleared.");
         return;
       }
-      // Open modal; modal will let user pick the target — but we want to pre-fill it.
-      // For now we open it with source; the user picks the second from the search list, pre-typed.
+      setPendingTarget({
+        kind: ep.kind as ConnectionKind,
+        id: ep.id,
+        title: ep.title,
+        author: ep.author ?? null,
+        isReference: ep.kind === "reference_book",
+      });
       setModalOpen(true);
       return;
     }
@@ -144,6 +149,33 @@ function WeavePage() {
       navigate({ to: "/books/$bookId", params: { bookId: id } });
     }
   };
+
+  const handleLinkClick = (a: string, b: string) => {
+    setEdgePair({ a, b });
+  };
+
+  const edgeConnections = useMemo(() => {
+    if (!edgePair) return [];
+    const bookOf = (kind: ConnectionKind, id: string): string | null => {
+      if (kind === "book" || kind === "reference_book") return id;
+      const ep = lookup.get(id);
+      return ep?.bookId ?? null;
+    };
+    const key = [edgePair.a, edgePair.b].sort().join("::");
+    return connections.filter(c => {
+      const s = bookOf(c.source_kind, c.source_id);
+      const t = bookOf(c.target_kind, c.target_id);
+      if (!s || !t) return false;
+      return [s, t].sort().join("::") === key;
+    });
+  }, [edgePair, connections, lookup]);
+
+  const edgeTitle = useMemo(() => {
+    if (!edgePair) return "";
+    const a = lookup.get(edgePair.a)?.title ?? "Unknown";
+    const b = lookup.get(edgePair.b)?.title ?? "Unknown";
+    return `${a} ↔ ${b}`;
+  }, [edgePair, lookup]);
 
   return (
     <main className="max-w-5xl mx-auto px-6">
