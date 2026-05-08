@@ -8,9 +8,10 @@ type Props = {
   links: Link[];
   highlightedId?: string | null;
   onNodeClick?: (id: string, shiftKey: boolean) => void;
+  onLinkClick?: (sourceId: string, targetId: string) => void;
 };
 
-export default function WebGraph({ nodes, links, highlightedId, onNodeClick }: Props) {
+export default function WebGraph({ nodes, links, highlightedId, onNodeClick, onLinkClick }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 600, h: 500 });
   const [Graph, setGraph] = useState<React.ComponentType<Record<string, unknown>> | null>(null);
