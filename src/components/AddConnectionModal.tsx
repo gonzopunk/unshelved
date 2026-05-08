@@ -10,15 +10,16 @@ import { toast } from "sonner";
 
 type Source = { kind: ConnectionKind; id: string; label: string };
 
+type Candidate = { kind: ConnectionKind; id: string; title: string; author: string | null; isReference: boolean };
+
 type Props = {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   source: Source;
+  initialTarget?: Candidate | null;
 };
 
-type Candidate = { kind: ConnectionKind; id: string; title: string; author: string | null; isReference: boolean };
-
-export default function AddConnectionModal({ open, onOpenChange, source }: Props) {
+export default function AddConnectionModal({ open, onOpenChange, source, initialTarget = null }: Props) {
   const { data: library = [] } = useLibrary();
   const { data: refBooks = [] } = useReferenceBooks();
   const createConn = useCreateConnection();
@@ -30,8 +31,8 @@ export default function AddConnectionModal({ open, onOpenChange, source }: Props
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (open) { setSearch(""); setTarget(null); setWhy(""); setTagsInput(""); }
-  }, [open]);
+    if (open) { setSearch(""); setTarget(initialTarget); setWhy(""); setTagsInput(""); }
+  }, [open, initialTarget]);
 
   const candidates: Candidate[] = useMemo(() => {
     const fromLib: Candidate[] = library
@@ -65,7 +66,7 @@ export default function AddConnectionModal({ open, onOpenChange, source }: Props
         why: why.trim() || null,
         tags,
       });
-      toast.success("Woven");
+      toast.success("Connected");
       onOpenChange(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not save");
@@ -78,7 +79,7 @@ export default function AddConnectionModal({ open, onOpenChange, source }: Props
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="rounded-3xl max-w-lg bg-card max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">Weave a connection</DialogTitle>
+          <DialogTitle className="font-display text-2xl">Add a connection</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="rounded-xl bg-mist p-3">
@@ -146,7 +147,7 @@ export default function AddConnectionModal({ open, onOpenChange, source }: Props
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-full">Cancel</Button>
-            <Button onClick={save} disabled={busy || !target} className="rounded-full">{busy ? "Weaving…" : "Weave"}</Button>
+            <Button onClick={save} disabled={busy || !target} className="rounded-full">{busy ? "Saving…" : "Connect"}</Button>
           </div>
         </div>
       </DialogContent>

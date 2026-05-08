@@ -8,9 +8,10 @@ type Props = {
   links: Link[];
   highlightedId?: string | null;
   onNodeClick?: (id: string, shiftKey: boolean) => void;
+  onLinkClick?: (sourceId: string, targetId: string) => void;
 };
 
-export default function WebGraph({ nodes, links, highlightedId, onNodeClick }: Props) {
+export default function WebGraph({ nodes, links, highlightedId, onNodeClick, onLinkClick }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 600, h: 500 });
   const [Graph, setGraph] = useState<React.ComponentType<Record<string, unknown>> | null>(null);
@@ -62,6 +63,17 @@ export default function WebGraph({ nodes, links, highlightedId, onNodeClick }: P
           onNodeHover={(n: unknown) => {
             if (containerRef.current) {
               containerRef.current.style.cursor = n ? "pointer" : "default";
+            }
+          }}
+          onLinkClick={(l: unknown) => {
+            const link = l as { source: { id: string } | string; target: { id: string } | string };
+            const s = typeof link.source === "string" ? link.source : link.source.id;
+            const t = typeof link.target === "string" ? link.target : link.target.id;
+            onLinkClick?.(s, t);
+          }}
+          onLinkHover={(l: unknown) => {
+            if (containerRef.current) {
+              containerRef.current.style.cursor = l ? "pointer" : "default";
             }
           }}
           nodeCanvasObjectMode={() => "after"}

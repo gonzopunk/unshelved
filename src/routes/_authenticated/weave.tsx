@@ -10,6 +10,7 @@ import WebGraph from "@/components/WebGraph";
 import AddConnectionModal from "@/components/AddConnectionModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { List, Network } from "lucide-react";
 import { toast } from "sonner";
 
@@ -29,7 +30,9 @@ function WeavePage() {
   const [view, setView] = useState<"list" | "web">("web");
   const [filter, setFilter] = useState("");
   const [pendingSource, setPendingSource] = useState<{ kind: ConnectionKind; id: string; label: string } | null>(null);
+  const [pendingTarget, setPendingTarget] = useState<{ kind: ConnectionKind; id: string; title: string; author: string | null; isReference: boolean } | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [edgePair, setEdgePair] = useState<{ a: string; b: string } | null>(null);
 
   const { data: marginalia } = useQuery({
     queryKey: ["marginalia", "all", user?.id],
@@ -120,7 +123,7 @@ function WeavePage() {
     const ep = lookup.get(id);
     if (!ep) return;
     if (shiftKey) {
-      // Two-step: first shift-click sets source; second shift-click on a different node opens modal.
+      // Two-step: first shift-click sets source; second shift-click on a different node prefills target and opens modal.
       if (!pendingSource) {
         setPendingSource({ kind: ep.kind as ConnectionKind, id: ep.id, label: ep.title });
         toast(`Connecting from “${ep.title}” — shift-click another book to link them.`);
@@ -131,8 +134,13 @@ function WeavePage() {
         toast("Cleared.");
         return;
       }
-      // Open modal; modal will let user pick the target — but we want to pre-fill it.
-      // For now we open it with source; the user picks the second from the search list, pre-typed.
+      setPendingTarget({
+        kind: ep.kind as ConnectionKind,
+        id: ep.id,
+        title: ep.title,
+        author: ep.author ?? null,
+        isReference: ep.kind === "reference_book",
+      });
       setModalOpen(true);
       return;
     }
@@ -141,6 +149,33 @@ function WeavePage() {
       navigate({ to: "/books/$bookId", params: { bookId: id } });
     }
   };
+
+  const handleLinkClick = (a: string, b: string) => {
+    setEdgePair({ a, b });
+  };
+
+  const edgeConnections = useMemo(() => {
+    if (!edgePair) return [];
+    const bookOf = (kind: ConnectionKind, id: string): string | null => {
+      if (kind === "book" || kind === "reference_book") return id;
+      const ep = lookup.get(id);
+      return ep?.bookId ?? null;
+    };
+    const key = [edgePair.a, edgePair.b].sort().join("::");
+    return connections.filter(c => {
+      const s = bookOf(c.source_kind, c.source_id);
+      const t = bookOf(c.target_kind, c.target_id);
+      if (!s || !t) return false;
+      return [s, t].sort().join("::") === key;
+    });
+  }, [edgePair, connections, lookup]);
+
+  const edgeTitle = useMemo(() => {
+    if (!edgePair) return "";
+    const a = lookup.get(edgePair.a)?.title ?? "Unknown";
+    const b = lookup.get(edgePair.b)?.title ?? "Unknown";
+    return `${a} ↔ ${b}`;
+  }, [edgePair, lookup]);
 
   return (
     <main className="max-w-5xl mx-auto px-6">
@@ -192,12 +227,13 @@ function WeavePage() {
             links={graph.links}
             highlightedId={pendingSource?.id ?? null}
             onNodeClick={handleNodeClick}
+            onLinkClick={handleLinkClick}
           />
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground font-mono uppercase tracking-widest">
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: "#1F5266" }} /> Your books</span>
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: "#5DA8D5" }} /> References</span>
             <span className="normal-case tracking-normal font-sans italic">
-              Click a dot to open a book · Shift-click two books to connect them
+              Click a dot to open a book · Click a line to view that connection · Shift-click two books to connect them
             </span>
             {pendingSource && (
               <button
@@ -220,11 +256,33 @@ function WeavePage() {
           open={modalOpen}
           onOpenChange={(o) => {
             setModalOpen(o);
-            if (!o) setPendingSource(null);
+            if (!o) { setPendingSource(null); setPendingTarget(null); }
           }}
           source={pendingSource}
+          initialTarget={pendingTarget}
         />
       )}
+
+      <Dialog open={!!edgePair} onOpenChange={(o) => { if (!o) setEdgePair(null); }}>
+        <DialogContent className="rounded-3xl max-w-2xl bg-card max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl">{edgeTitle}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {edgeConnections.map(c => (
+              <ConnectionCard
+                key={c.id}
+                connection={c}
+                source={resolve(c.source_kind, c.source_id)}
+                target={resolve(c.target_kind, c.target_id)}
+              />
+            ))}
+            {edgeConnections.length === 0 && (
+              <div className="text-center py-6 text-muted-foreground italic">No connections found.</div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
