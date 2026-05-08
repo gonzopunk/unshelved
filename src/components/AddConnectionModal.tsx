@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLibrary } from "@/lib/queries";
-import { useReferenceBooks, useCreateConnection, useCreateReferenceBook, type ConnectionKind } from "@/lib/weave";
+import { useReferenceBooks, useCreateConnection, useUpdateConnection, useCreateReferenceBook, type ConnectionKind, type Connection } from "@/lib/weave";
 import { toast } from "sonner";
 
 type Source = { kind: ConnectionKind; id: string; label: string };
@@ -17,12 +17,15 @@ type Props = {
   onOpenChange: (o: boolean) => void;
   source: Source;
   initialTarget?: Candidate | null;
+  /** When provided, the modal edits this connection instead of creating a new one. */
+  editing?: Connection | null;
 };
 
-export default function AddConnectionModal({ open, onOpenChange, source, initialTarget = null }: Props) {
+export default function AddConnectionModal({ open, onOpenChange, source, initialTarget = null, editing = null }: Props) {
   const { data: library = [] } = useLibrary();
   const { data: refBooks = [] } = useReferenceBooks();
   const createConn = useCreateConnection();
+  const updateConn = useUpdateConnection();
   const createRef = useCreateReferenceBook();
   const [search, setSearch] = useState("");
   const [target, setTarget] = useState<Candidate | null>(null);
@@ -30,9 +33,31 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
   const [tagsInput, setTagsInput] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const isEditing = !!editing;
+
   useEffect(() => {
-    if (open) { setSearch(""); setTarget(initialTarget); setWhy(""); setTagsInput(""); }
-  }, [open, initialTarget]);
+    if (!open) return;
+    setSearch("");
+    if (editing) {
+      setWhy(editing.why ?? "");
+      setTagsInput(editing.tags.join(", "));
+      // Resolve current target from library/refBooks
+      const fromLib = library.find(b => b.id === editing.target_id);
+      const fromRef = refBooks.find(r => r.id === editing.target_id);
+      if (fromLib) {
+        setTarget({ kind: "book", id: fromLib.id, title: fromLib.title, author: fromLib.author, isReference: false });
+      } else if (fromRef) {
+        setTarget({ kind: "reference_book", id: fromRef.id, title: fromRef.title, author: fromRef.author, isReference: true });
+      } else {
+        // Highlight/note targets are not editable here; keep as null and let user pick a new target if they want.
+        setTarget(null);
+      }
+    } else {
+      setTarget(initialTarget);
+      setWhy("");
+      setTagsInput("");
+    }
+  }, [open, initialTarget, editing, library, refBooks]);
 
   const candidates: Candidate[] = useMemo(() => {
     const fromLib: Candidate[] = library
@@ -60,13 +85,24 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
     setBusy(true);
     try {
       const tags = tagsInput.split(",").map(t => t.trim()).filter(Boolean);
-      await createConn.mutateAsync({
-        source_kind: source.kind, source_id: source.id,
-        target_kind: target.kind, target_id: target.id,
-        why: why.trim() || null,
-        tags,
-      });
-      toast.success("Connected");
+      if (isEditing && editing) {
+        await updateConn.mutateAsync({
+          id: editing.id,
+          target_kind: target.kind,
+          target_id: target.id,
+          why: why.trim() || null,
+          tags,
+        });
+        toast.success("Updated");
+      } else {
+        await createConn.mutateAsync({
+          source_kind: source.kind, source_id: source.id,
+          target_kind: target.kind, target_id: target.id,
+          why: why.trim() || null,
+          tags,
+        });
+        toast.success("Connected");
+      }
       onOpenChange(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not save");
