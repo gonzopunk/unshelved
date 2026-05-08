@@ -47,53 +47,7 @@ type Props = {
   editing?: { book: Book; userBook: UserBook | null } | null;
 };
 
-// Compute dominant color from an image URL using canvas + simple bucket histogram.
-async function dominantColorFromUrl(url: string): Promise<{ color: string; text: string } | null> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      try {
-        const w = 50, h = 75;
-        const cv = document.createElement("canvas");
-        cv.width = w; cv.height = h;
-        const ctx = cv.getContext("2d");
-        if (!ctx) return resolve(null);
-        ctx.drawImage(img, 0, 0, w, h);
-        const { data } = ctx.getImageData(0, 0, w, h);
-        const buckets = new Map<string, { r: number; g: number; b: number; n: number }>();
-        for (let i = 0; i < data.length; i += 4) {
-          const a = data[i + 3];
-          if (a < 200) continue;
-          const r = data[i], g = data[i + 1], b = data[i + 2];
-          // Skip near-white / near-black
-          const max = Math.max(r, g, b), min = Math.min(r, g, b);
-          if (max > 240 && min > 240) continue;
-          if (max < 25) continue;
-          const key = `${r >> 5}-${g >> 5}-${b >> 5}`;
-          const cur = buckets.get(key) ?? { r: 0, g: 0, b: 0, n: 0 };
-          cur.r += r; cur.g += g; cur.b += b; cur.n += 1;
-          buckets.set(key, cur);
-        }
-        let best: { r: number; g: number; b: number; n: number } | null = null;
-        for (const v of buckets.values()) if (!best || v.n > best.n) best = v;
-        if (!best) return resolve(null);
-        const r = Math.round(best.r / best.n);
-        const g = Math.round(best.g / best.n);
-        const b = Math.round(best.b / best.n);
-        const hex = "#" + [r, g, b].map((x) => x.toString(16).padStart(2, "0")).join("").toUpperCase();
-        // Relative luminance
-        const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-        const text = lum > 0.6 ? "#1F2630" : "#FAFBF3";
-        resolve({ color: hex, text });
-      } catch {
-        resolve(null);
-      }
-    };
-    img.onerror = () => resolve(null);
-    img.src = url;
-  });
-}
+// Palette extraction lives in src/lib/palette.ts.
 
 export default function AddBookModal({ open, onOpenChange, editing }: Props) {
   const { user } = useAuth();
