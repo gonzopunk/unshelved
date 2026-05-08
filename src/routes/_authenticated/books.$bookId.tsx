@@ -6,7 +6,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
@@ -19,7 +19,7 @@ import { useBookConnections, useReferenceBooks, type ConnectionKind } from "@/li
 import { useLibrary } from "@/lib/queries";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { useMemo } from "react";
+
 
 export const Route = createFileRoute("/_authenticated/books/$bookId")({
   component: BookDetail,
