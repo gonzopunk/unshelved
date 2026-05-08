@@ -20,7 +20,9 @@ export type Database = {
           bookmark_color: string
           cover_color: string
           cover_generic: boolean
+          cover_secondary_color: string | null
           cover_text_color: string
+          cover_url: string | null
           created_at: string
           format: Database["public"]["Enums"]["book_format"]
           id: string
@@ -32,7 +34,9 @@ export type Database = {
           bookmark_color?: string
           cover_color?: string
           cover_generic?: boolean
+          cover_secondary_color?: string | null
           cover_text_color?: string
+          cover_url?: string | null
           created_at?: string
           format?: Database["public"]["Enums"]["book_format"]
           id?: string
@@ -44,7 +48,9 @@ export type Database = {
           bookmark_color?: string
           cover_color?: string
           cover_generic?: boolean
+          cover_secondary_color?: string | null
           cover_text_color?: string
+          cover_url?: string | null
           created_at?: string
           format?: Database["public"]["Enums"]["book_format"]
           id?: string
