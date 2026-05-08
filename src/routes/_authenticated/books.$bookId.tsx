@@ -130,6 +130,8 @@ function BookDetail() {
         </div>
       </div>
 
+      <QuickTagBar bookId={book.id} />
+
       <Tabs defaultValue="margins" className="mt-12">
         <TabsList className="rounded-full bg-card shadow-paper p-1">
           <TabsTrigger value="margins" className="rounded-full">Margins</TabsTrigger>
