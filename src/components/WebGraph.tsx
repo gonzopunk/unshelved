@@ -158,13 +158,21 @@ export default function WebGraph({
           width={size.w}
           height={size.h}
           nodeLabel={(n: unknown) => (n as Node).name}
-          nodeColor={(n: unknown) => (n as Node).color}
+          nodeColor={(n: unknown) => {
+            const node = n as Node;
+            if (dimmedNodeIds?.has(node.id)) return "rgba(31, 38, 48, 0.15)";
+            return node.color;
+          }}
           nodeRelSize={6}
           enableNodeDrag={!connectMode}
           linkColor={(l: unknown) => {
-            const c = (l as Link).count ?? 1;
+            const link = l as Link;
+            const s = typeof link.source === "string" ? link.source : (link.source as { id: string }).id;
+            const t = typeof link.target === "string" ? link.target : (link.target as { id: string }).id;
+            const dim = dimmedNodeIds?.has(s) || dimmedNodeIds?.has(t);
+            const c = link.count ?? 1;
             const a = Math.min(0.25 + (c - 1) * 0.12, 0.7);
-            return `rgba(31, 38, 48, ${a})`;
+            return dim ? `rgba(31, 38, 48, ${a * 0.2})` : `rgba(31, 38, 48, ${a})`;
           }}
           linkWidth={(l: unknown) => {
             const c = (l as Link).count ?? 1;
