@@ -10,6 +10,7 @@ import WebGraph from "@/components/WebGraph";
 import AddConnectionModal from "@/components/AddConnectionModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { List, Network } from "lucide-react";
 import { toast } from "sonner";
 
