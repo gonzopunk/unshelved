@@ -34,7 +34,7 @@ type DragState = {
 const HIT_RADIUS = 14; // px on screen, for picking nearest node
 
 export default function WebGraph({
-  nodes, links, highlightedId, onNodeClick, onLinkClick, onConnectDrag, connectMode = false,
+  nodes, links, highlightedId, dimmedNodeIds, onNodeClick, onLinkClick, onConnectDrag, connectMode = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<GraphRef | null>(null);
