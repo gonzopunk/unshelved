@@ -155,25 +155,34 @@ function Home() {
         </div>
 
         <div className="hero-stats">
-          <div className="stat">
+          <Link to="/board" className="stat stat-link">
             <div className="stat-num">{finishedThisYear}</div>
             <div className="stat-lbl">books this year</div>
             <div className="stat-bar">
               <div className="stat-fill" style={{ width: `${goalPct}%` }} />
             </div>
             <div className="stat-foot">goal {goal} · {goalPct}% there</div>
-          </div>
-          <div className="stat alt">
-            <div className="stat-num">
-              {focusUb?.current_page ?? 0}
-              <span className="stat-num-sm">/{focusUb?.total_pages ?? "?"}</span>
-            </div>
-            <div className="stat-lbl">{focus?.title ?? "Nothing in progress"}</div>
-            <div className="stat-bar light">
-              <div className="stat-fill terra" style={{ width: `${focusPct}%` }} />
-            </div>
-            <div className="stat-foot">{focusPct}% complete</div>
-          </div>
+          </Link>
+          {focus ? (
+            <Link to="/books/$bookId" params={{ bookId: focus.id }} className="stat alt stat-link">
+              <div className="stat-num">
+                {focusUb?.current_page ?? 0}
+                <span className="stat-num-sm">/{focusUb?.total_pages ?? "?"}</span>
+              </div>
+              <div className="stat-lbl">{focus.title}</div>
+              <div className="stat-bar light">
+                <div className="stat-fill terra" style={{ width: `${focusPct}%` }} />
+              </div>
+              <div className="stat-foot">{focusPct}% complete</div>
+            </Link>
+          ) : (
+            <Link to="/board" className="stat alt stat-link">
+              <div className="stat-num">0<span className="stat-num-sm">/?</span></div>
+              <div className="stat-lbl">Nothing in progress</div>
+              <div className="stat-bar light"><div className="stat-fill terra" style={{ width: `0%` }} /></div>
+              <div className="stat-foot">pick something to read →</div>
+            </Link>
+          )}
         </div>
       </section>
 
