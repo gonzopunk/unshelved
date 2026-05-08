@@ -163,6 +163,11 @@ export default function CommandPalette({ open, onOpenChange }: { open: boolean; 
           </>
         )}
       </CommandList>
+      <div className="flex items-center justify-end gap-3 border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1"><Kbd>↵</Kbd> open</span>
+        <span className="flex items-center gap-1"><Kbd>esc</Kbd> close</span>
+        <span className="flex items-center gap-1"><Kbd>{isMac ? "⌘K" : "Ctrl K"}</Kbd> toggle anywhere</span>
+      </div>
     </CommandDialog>
   );
 }
