@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDeleteConnection, type Connection, type ConnectionKind } from "@/lib/weave";
 
@@ -31,8 +31,8 @@ function Endpoint({ e }: { e: EndpointInfo }) {
 }
 
 export default function ConnectionCard({
-  connection, source, target,
-}: { connection: Connection; source: EndpointInfo; target: EndpointInfo }) {
+  connection, source, target, onEdit,
+}: { connection: Connection; source: EndpointInfo; target: EndpointInfo; onEdit?: (c: Connection) => void }) {
   const del = useDeleteConnection();
   return (
     <div className="rounded-2xl bg-card shadow-paper p-4">
@@ -50,11 +50,18 @@ export default function ConnectionCard({
             <span key={t} className="font-mono text-[0.6rem] uppercase tracking-widest px-2 py-0.5 rounded-full bg-mist text-muted-foreground">{t}</span>
           ))}
         </div>
-        <Button variant="ghost" size="sm" className="rounded-full text-muted-foreground hover:text-destructive" onClick={() => {
-          if (confirm("Unweave this connection?")) del.mutate(connection.id);
-        }}>
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          {onEdit && (
+            <Button variant="ghost" size="sm" className="rounded-full text-muted-foreground hover:text-primary" onClick={() => onEdit(connection)} aria-label="Edit connection">
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" className="rounded-full text-muted-foreground hover:text-destructive" onClick={() => {
+            if (confirm("Unweave this connection?")) del.mutate(connection.id);
+          }} aria-label="Delete connection">
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import BookCard from "@/components/BookCard";
+import AddBookModal from "@/components/AddBookModal";
 import { useAllSessions, computeStreak, fmtMinutes } from "@/lib/sessions";
 
 const SIZE_KEY = "unshelved.readingSize";
@@ -24,6 +25,7 @@ function Home() {
   const { data: profile } = useProfile();
   const { user } = useAuth();
   const [readingSize, setReadingSize] = useState<number>(220);
+  const [addOpen, setAddOpen] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
     const saved = localStorage.getItem(SIZE_KEY);
@@ -81,7 +83,7 @@ function Home() {
     : Math.round(Number(focusUb?.progress_pct ?? 0));
 
   const quote = highlights[0] as
-    | { id: string; quote_text: string; page_number: number | null; books?: { title: string; author: string } | null }
+    | { id: string; book_id: string; quote_text: string; page_number: number | null; books?: { title: string; author: string } | null }
     | undefined;
 
   const { data: quoteConnections = [] } = useQuery({
@@ -153,25 +155,34 @@ function Home() {
         </div>
 
         <div className="hero-stats">
-          <div className="stat">
+          <Link to="/board" className="stat stat-link">
             <div className="stat-num">{finishedThisYear}</div>
             <div className="stat-lbl">books this year</div>
             <div className="stat-bar">
               <div className="stat-fill" style={{ width: `${goalPct}%` }} />
             </div>
             <div className="stat-foot">goal {goal} · {goalPct}% there</div>
-          </div>
-          <div className="stat alt">
-            <div className="stat-num">
-              {focusUb?.current_page ?? 0}
-              <span className="stat-num-sm">/{focusUb?.total_pages ?? "?"}</span>
-            </div>
-            <div className="stat-lbl">{focus?.title ?? "Nothing in progress"}</div>
-            <div className="stat-bar light">
-              <div className="stat-fill terra" style={{ width: `${focusPct}%` }} />
-            </div>
-            <div className="stat-foot">{focusPct}% complete</div>
-          </div>
+          </Link>
+          {focus ? (
+            <Link to="/books/$bookId" params={{ bookId: focus.id }} className="stat alt stat-link">
+              <div className="stat-num">
+                {focusUb?.current_page ?? 0}
+                <span className="stat-num-sm">/{focusUb?.total_pages ?? "?"}</span>
+              </div>
+              <div className="stat-lbl">{focus.title}</div>
+              <div className="stat-bar light">
+                <div className="stat-fill terra" style={{ width: `${focusPct}%` }} />
+              </div>
+              <div className="stat-foot">{focusPct}% complete</div>
+            </Link>
+          ) : (
+            <Link to="/board" className="stat alt stat-link">
+              <div className="stat-num">0<span className="stat-num-sm">/?</span></div>
+              <div className="stat-lbl">Nothing in progress</div>
+              <div className="stat-bar light"><div className="stat-fill terra" style={{ width: `0%` }} /></div>
+              <div className="stat-foot">pick something to read →</div>
+            </Link>
+          )}
         </div>
       </section>
 
@@ -239,10 +250,10 @@ function Home() {
                 <div className="sb-mark" />
               </Link>
             ))}
-            <div className="shelf-add">
+            <button type="button" onClick={() => setAddOpen(true)} className="shelf-add" aria-label="Add a book">
               <div className="add-plus">+</div>
               <div className="add-lbl">add</div>
-            </div>
+            </button>
           </div>
           <div className="shelf-floor" />
         </section>
@@ -282,12 +293,14 @@ function Home() {
 
       {quote && (
         <section className="quote">
-          <div className="quote-mark">"</div>
-          <blockquote>{quote.quote_text}</blockquote>
-          <div className="quote-attr">
-            — underlined in <em>{quote.books?.title}</em>
-            {quote.page_number ? `, p. ${quote.page_number}` : ""}
-          </div>
+          <Link to="/books/$bookId" params={{ bookId: quote.book_id }} className="quote-body-link">
+            <div className="quote-mark">"</div>
+            <blockquote>{quote.quote_text}</blockquote>
+            <div className="quote-attr">
+              — underlined in <em>{quote.books?.title}</em>
+              {quote.page_number ? `, p. ${quote.page_number}` : ""}
+            </div>
+          </Link>
           {connectedBooks.length > 0 && (
             <div className="quote-conn">
               Connected to{" "}
@@ -311,6 +324,7 @@ function Home() {
 
       <HomepageStyles />
       <span className="sr-only">{initials}</span>
+      <AddBookModal open={addOpen} onOpenChange={setAddOpen} />
     </div>
   );
 }
@@ -407,6 +421,8 @@ function HomepageStyles() {
         box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 18px 40px -28px rgba(31,38,48,0.22);
       }
       .stat.alt { background: #D5E8F2; }
+      .stat-link { display: block; text-decoration: none; color: inherit; transition: transform 0.15s ease, box-shadow 0.15s ease; cursor: pointer; }
+      .stat-link:hover { transform: translateY(-2px); box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 24px 48px -24px rgba(31,38,48,0.28); }
       .stat-num {
         font-family: 'Newsreader', serif;
         font-size: 56px; font-weight: 400; line-height: 1;
@@ -577,7 +593,10 @@ function HomepageStyles() {
         border: 1.5px dashed rgba(31,38,48,0.18);
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 8px; color: rgba(31,38,48,0.45); margin-left: auto;
+        background: transparent; cursor: pointer; padding: 0;
+        transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
       }
+      .shelf-add:hover { border-color: var(--forest); color: var(--forest); transform: translateY(-2px); }
       .add-plus { font-size: 22px; font-family: 'Newsreader', serif; }
       .add-lbl { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
       .shelf-floor {
@@ -646,6 +665,8 @@ function HomepageStyles() {
       .quote-conn { margin-top: 14px; font-size: 12px; color: rgba(250,251,243,0.6); position: relative; z-index: 1; }
       .quote-conn-link { color: rgba(250,251,243,0.85); text-decoration: none; border-bottom: 1px dotted rgba(250,251,243,0.4); }
       .quote-conn-link:hover { color: var(--cream); border-bottom-color: var(--cream); }
+      .quote-body-link { display: block; text-decoration: none; color: inherit; }
+      .quote-body-link:hover blockquote { color: var(--cream); }
 
       .hp-foot {
         display: flex; justify-content: space-between;

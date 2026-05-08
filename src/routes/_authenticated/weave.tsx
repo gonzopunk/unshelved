@@ -34,6 +34,15 @@ function WeavePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [edgePair, setEdgePair] = useState<{ a: string; b: string } | null>(null);
   const [connectMode, setConnectMode] = useState(false);
+  const [editingConn, setEditingConn] = useState<Connection | null>(null);
+
+  const openEdit = (c: Connection) => {
+    const s = lookup.get(c.source_id);
+    const label = s?.title ?? "Source";
+    setPendingSource({ kind: c.source_kind, id: c.source_id, label });
+    setEditingConn(c);
+    setModalOpen(true);
+  };
 
   const { data: marginalia } = useQuery({
     queryKey: ["marginalia", "all", user?.id],
@@ -230,6 +239,7 @@ function WeavePage() {
               connection={c}
               source={resolve(c.source_kind, c.source_id)}
               target={resolve(c.target_kind, c.target_id)}
+              onEdit={openEdit}
             />
           ))}
           {filteredConnections.length === 0 && (
@@ -284,10 +294,11 @@ function WeavePage() {
           open={modalOpen}
           onOpenChange={(o) => {
             setModalOpen(o);
-            if (!o) { setPendingSource(null); setPendingTarget(null); }
+            if (!o) { setPendingSource(null); setPendingTarget(null); setEditingConn(null); }
           }}
           source={pendingSource}
           initialTarget={pendingTarget}
+          editing={editingConn}
         />
       )}
 
@@ -303,6 +314,7 @@ function WeavePage() {
                 connection={c}
                 source={resolve(c.source_kind, c.source_id)}
                 target={resolve(c.target_kind, c.target_id)}
+                onEdit={(conn) => { setEdgePair(null); openEdit(conn); }}
               />
             ))}
             {edgeConnections.length === 0 && (

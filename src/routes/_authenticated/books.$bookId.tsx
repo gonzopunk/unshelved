@@ -17,7 +17,7 @@ import AddBookModal from "@/components/AddBookModal";
 import AddConnectionModal from "@/components/AddConnectionModal";
 import QuickTagBar from "@/components/QuickTagBar";
 import ConnectionCard, { type EndpointInfo } from "@/components/ConnectionCard";
-import { useBookConnections, useReferenceBooks, type ConnectionKind } from "@/lib/weave";
+import { useBookConnections, useReferenceBooks, type ConnectionKind, type Connection } from "@/lib/weave";
 import { useLibrary } from "@/lib/queries";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -51,6 +51,7 @@ function BookDetail() {
   const navigate = useNavigate();
   const [editOpen, setEditOpen] = useState(false);
   const [weaveSource, setWeaveSource] = useState<{ kind: ConnectionKind; id: string; label: string } | null>(null);
+  const [editingConn, setEditingConn] = useState<Connection | null>(null);
 
   if (isLoading || !data) {
     return <div className="text-center py-20 text-muted-foreground">Loading…</div>;
@@ -196,6 +197,10 @@ function BookDetail() {
             highlights={highlights}
             notes={notes}
             onAdd={() => setWeaveSource({ kind: "book", id: book.id, label: book.title })}
+            onEdit={(c) => {
+              setWeaveSource({ kind: c.source_kind, id: c.source_id, label: "Edit" });
+              setEditingConn(c);
+            }}
           />
         </TabsContent>
 
@@ -225,8 +230,9 @@ function BookDetail() {
       {weaveSource && (
         <AddConnectionModal
           open={!!weaveSource}
-          onOpenChange={(o) => { if (!o) setWeaveSource(null); }}
+          onOpenChange={(o) => { if (!o) { setWeaveSource(null); setEditingConn(null); } }}
           source={weaveSource}
+          editing={editingConn}
         />
       )}
     </main>
@@ -234,12 +240,13 @@ function BookDetail() {
 }
 
 function WeaveTab({
-  book, highlights, notes, onAdd,
+  book, highlights, notes, onAdd, onEdit,
 }: {
   book: { id: string; title: string; author: string | null };
   highlights: { id: string; book_id: string; quote_text: string }[];
   notes: { id: string; book_id: string; content: string }[];
   onAdd: () => void;
+  onEdit?: (c: Connection) => void;
 }) {
   const highlightIds = useMemo(() => highlights.map(h => h.id), [highlights]);
   const noteIds = useMemo(() => notes.map(n => n.id), [notes]);
@@ -279,6 +286,7 @@ function WeaveTab({
               connection={c}
               source={resolve(c.source_kind, c.source_id)}
               target={resolve(c.target_kind, c.target_id)}
+              onEdit={onEdit}
             />
           ))}
         </div>
