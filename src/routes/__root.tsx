@@ -41,8 +41,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Margins — your reading life, kept" },
+      { title: "Unshelved — paging through your reading life" },
       { name: "description", content: "A warm, paper-feel book tracker. Shelves, sessions, quotes, and notes." },
+      { property: "og:title", content: "Unshelved — paging through your reading life" },
+      { name: "twitter:title", content: "Unshelved — paging through your reading life" },
+      { property: "og:description", content: "A warm, paper-feel book tracker. Shelves, sessions, quotes, and notes." },
+      { name: "twitter:description", content: "A warm, paper-feel book tracker. Shelves, sessions, quotes, and notes." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/62f10d4d-9bdb-47df-a45b-24908463c228/id-preview-96779b39--2bbed697-cc3e-4194-8fb6-1d80c30510bf.lovable.app-1778201682693.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/62f10d4d-9bdb-47df-a45b-24908463c228/id-preview-96779b39--2bbed697-cc3e-4194-8fb6-1d80c30510bf.lovable.app-1778201682693.png" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:type", content: "website" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
