@@ -137,7 +137,7 @@ export function computeStats(
   fmt: string,
   remainingUnits: number | null,
 ): SessionStats {
-  const unitLabel = fmt === "audiobook" ? "min/h" : "pages/h";
+  const unitLabel = fmt === "audiobook" ? "× speed" : "pages/h";
   if (sessions.length === 0) {
     return { count: 0, thisWeek: 0, totalMinutes: 0, longestMinutes: 0, pacePerHour: null, unitLabel, etaMinutes: null, etaDate: null };
   }
@@ -170,21 +170,14 @@ export function computeStats(
     wSum += w;
     w *= decay;
   }
-  let pacePerHour: number | null = null;
-  if (wSum > 0 && mSum > 0) {
-    const perMin = pSum / mSum;
-    pacePerHour = fmt === "audiobook" ? perMin * 60 / 60 : perMin * 60;
-    // For audiobook, "min/h" doesn't really make sense — convert to "x speed" later if needed.
-    // Keep simple: pages per hour, or seconds-listened per hour expressed in minutes.
-    if (fmt === "audiobook") pacePerHour = (pSum / mSum) * 60 / 60; // listened-minutes per real-minute ≈ 1
-    if (fmt === "audiobook") pacePerHour = perMin; // seconds listened per real-minute (≈ 60)
-  }
 
+  let pacePerHour: number | null = null;
   let etaMinutes: number | null = null;
   let etaDate: Date | null = null;
-  if (pacePerHour && pacePerHour > 0 && remainingUnits != null && remainingUnits > 0) {
-    const perMin = (pSum / mSum); // units per minute
-    if (perMin > 0) {
+  if (wSum > 0 && mSum > 0) {
+    const perMin = pSum / mSum; // units per real-minute
+    pacePerHour = fmt === "audiobook" ? perMin / 60 : perMin * 60; // sec/min → ×; pages/min → /h
+    if (remainingUnits != null && remainingUnits > 0 && perMin > 0) {
       etaMinutes = remainingUnits / perMin;
       etaDate = new Date(Date.now() + etaMinutes * 60_000);
     }
