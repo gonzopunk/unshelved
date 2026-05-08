@@ -15,6 +15,7 @@ import { useAuth } from "@/lib/auth";
 import { useLibrary } from "@/lib/queries";
 import { useAllConnections } from "@/lib/weave";
 import { BookOpen, Quote, StickyNote, Network, Home, LayoutGrid, Settings as SettingsIcon } from "lucide-react";
+import { Kbd, useIsMac } from "@/components/Kbd";
 
 export default function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const [query, setQuery] = useState("");
