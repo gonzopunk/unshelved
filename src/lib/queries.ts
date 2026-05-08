@@ -113,3 +113,23 @@ export function useUpdateProgress() {
     },
   });
 }
+
+/** Distinct dominant colors from the user's library, in library order.
+ * Useful for chart palettes — pass a desired count to cap. */
+export function useLibraryPalette(count = 8): string[] {
+  const { data: library = [] } = useLibrary();
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const b of library) {
+    const c = b.cover_color?.toUpperCase();
+    if (!c || seen.has(c)) continue;
+    seen.add(c);
+    out.push(c);
+    if (b.cover_secondary_color) {
+      const s = b.cover_secondary_color.toUpperCase();
+      if (!seen.has(s)) { seen.add(s); out.push(s); }
+    }
+    if (out.length >= count) break;
+  }
+  return out;
+}
