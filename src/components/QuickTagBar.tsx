@@ -75,26 +75,37 @@ function ScaleAxis({ axis, bookId, value }: { axis: TagAxis; bookId: string; val
   const current = value?.scale_value ?? null;
   const dots = [];
   for (let i = min; i <= max; i++) dots.push(i);
-  const glyph = axis.key === "spice" ? "🌶" : "●";
+  const isSpice = axis.key === "spice";
+  const isPace = axis.key === "pace";
+  const glyph = isSpice ? "🌶" : "●";
+  const paceLabels: Record<number, string> = {
+    1: "glacial",
+    2: "languid",
+    3: "steady",
+    4: "brisk",
+    5: "blistering",
+  };
   return (
     <div className="flex items-center gap-1.5">
       <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{axis.label}</span>
       <div className="flex items-center gap-0.5">
         {dots.map((d) => {
           const active = current !== null && d <= current;
+          const title = isPace ? paceLabels[d] ?? `${d}` : `${axis.label} ${d}`;
           return (
             <button
               key={d}
               type="button"
+              title={title}
               onClick={() =>
                 current === d
                   ? clear.mutate({ book_id: bookId, axis_id: axis.id })
                   : set.mutate({ book_id: bookId, axis_id: axis.id, scale_value: d })
               }
               className={`h-5 w-5 rounded-full text-xs leading-none transition ${
-                active ? "" : "opacity-25 hover:opacity-60"
-              }`}
-              aria-label={`${axis.label} ${d}`}
+                isSpice ? "text-red-600" : ""
+              } ${active ? "" : "opacity-25 hover:opacity-60"}`}
+              aria-label={`${axis.label} ${d}${isPace ? ` (${paceLabels[d]})` : ""}`}
             >
               {glyph}
             </button>
