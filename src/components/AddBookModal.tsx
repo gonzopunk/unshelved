@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { BookStatus, BookFormat, Book, UserBook } from "@/lib/queries";
+import { extractCoverPalette } from "@/lib/palette";
 
 const PALETTE = [
   { color: "#1F5266", text: "#FAFBF3", name: "Forest" },
