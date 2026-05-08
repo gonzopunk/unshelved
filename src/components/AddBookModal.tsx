@@ -117,9 +117,16 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
     setResults([]);
     setSearch("");
     if (doc.cover_i) {
-      const url = `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`;
-      const dom = await dominantColorFromUrl(url);
-      if (dom) setColor({ color: dom.color, text: dom.text, name: "From cover" });
+      const url = `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`;
+      setCoverUrl(url);
+      const pal = await extractCoverPalette(url);
+      if (pal) {
+        setColor({ color: pal.dominant, text: pal.text, name: "From cover" });
+        setSecondary(pal.secondary);
+        setBookmark(pal.bookmark);
+      }
+    } else {
+      setCoverUrl(null);
     }
   };
 
@@ -127,12 +134,19 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
     if (!user || !title.trim()) return;
     setBusy(true);
     try {
-      const bookmark = color.color === "#D17648" ? "#1F5266" : "#D17648";
+      const finalBookmark =
+        bookmark ?? (color.color === "#D17648" ? "#1F5266" : "#D17648");
+      const payload = {
+        title, author, format,
+        cover_color: color.color,
+        cover_text_color: color.text,
+        bookmark_color: finalBookmark,
+        cover_secondary_color: secondary,
+        cover_url: coverUrl,
+        cover_generic: !coverUrl,
+      };
       if (editing) {
-        const { error: bookErr } = await supabase.from("books").update({
-          title, author, format,
-          cover_color: color.color, cover_text_color: color.text, bookmark_color: bookmark,
-        }).eq("id", editing.book.id);
+        const { error: bookErr } = await supabase.from("books").update(payload).eq("id", editing.book.id);
         if (bookErr) throw bookErr;
         if (editing.userBook) {
           await supabase.from("user_books").update({ status: shelf }).eq("id", editing.userBook.id);
@@ -141,8 +155,7 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
         }
       } else {
         const { data: book, error: bookErr } = await supabase.from("books").insert({
-          user_id: user.id, title, author, format,
-          cover_color: color.color, cover_text_color: color.text, bookmark_color: bookmark,
+          user_id: user.id, ...payload,
         }).select().single();
         if (bookErr) throw bookErr;
         await supabase.from("user_books").insert({
