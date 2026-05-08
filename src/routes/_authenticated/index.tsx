@@ -83,7 +83,7 @@ function Home() {
     : Math.round(Number(focusUb?.progress_pct ?? 0));
 
   const quote = highlights[0] as
-    | { id: string; quote_text: string; page_number: number | null; books?: { title: string; author: string } | null }
+    | { id: string; book_id: string; quote_text: string; page_number: number | null; books?: { title: string; author: string } | null }
     | undefined;
 
   const { data: quoteConnections = [] } = useQuery({
@@ -250,10 +250,10 @@ function Home() {
                 <div className="sb-mark" />
               </Link>
             ))}
-            <div className="shelf-add">
+            <button type="button" onClick={() => setAddOpen(true)} className="shelf-add" aria-label="Add a book">
               <div className="add-plus">+</div>
               <div className="add-lbl">add</div>
-            </div>
+            </button>
           </div>
           <div className="shelf-floor" />
         </section>
@@ -293,12 +293,14 @@ function Home() {
 
       {quote && (
         <section className="quote">
-          <div className="quote-mark">"</div>
-          <blockquote>{quote.quote_text}</blockquote>
-          <div className="quote-attr">
-            — underlined in <em>{quote.books?.title}</em>
-            {quote.page_number ? `, p. ${quote.page_number}` : ""}
-          </div>
+          <Link to="/books/$bookId" params={{ bookId: quote.book_id }} className="quote-body-link">
+            <div className="quote-mark">"</div>
+            <blockquote>{quote.quote_text}</blockquote>
+            <div className="quote-attr">
+              — underlined in <em>{quote.books?.title}</em>
+              {quote.page_number ? `, p. ${quote.page_number}` : ""}
+            </div>
+          </Link>
           {connectedBooks.length > 0 && (
             <div className="quote-conn">
               Connected to{" "}
