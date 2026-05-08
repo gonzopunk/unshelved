@@ -324,6 +324,7 @@ function Home() {
 
       <HomepageStyles />
       <span className="sr-only">{initials}</span>
+      <AddBookModal open={addOpen} onOpenChange={setAddOpen} />
     </div>
   );
 }
