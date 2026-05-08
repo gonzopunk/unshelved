@@ -49,7 +49,7 @@ export default function SessionRow({
       content: session.session_note,
     });
     qc.invalidateQueries({ queryKey: ["book"] });
-    toast.success("Promoted to Margins notes");
+    toast.success("Promoted to notes");
   };
 
   return (
