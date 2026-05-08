@@ -141,19 +141,21 @@ function Home() {
         <div className="section-head">
           <h2>Currently reading</h2>
           <span className="section-rule" />
-          <div className="size-toggle" role="group" aria-label="Card size">
-            {(["sm", "md", "lg"] as ReadingSize[]).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => changeSize(s)}
-                aria-pressed={readingSize === s}
-                className={"size-btn" + (readingSize === s ? " on" : "")}
-              >
-                {s === "sm" ? "S" : s === "md" ? "M" : "L"}
-              </button>
-            ))}
-          </div>
+          <label className="size-slider" aria-label="Card size">
+            <span className="size-slider-lbl">S</span>
+            <input
+              type="range"
+              min={0}
+              max={2}
+              step={1}
+              value={readingSize === "sm" ? 0 : readingSize === "md" ? 1 : 2}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                changeSize(v === 0 ? "sm" : v === 1 ? "md" : "lg");
+              }}
+            />
+            <span className="size-slider-lbl">L</span>
+          </label>
           <Link to="/board" className="section-link">All shelves →</Link>
         </div>
         {reading.length === 0 ? (
