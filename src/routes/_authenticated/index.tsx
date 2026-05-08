@@ -141,19 +141,21 @@ function Home() {
         <div className="section-head">
           <h2>Currently reading</h2>
           <span className="section-rule" />
-          <div className="size-toggle" role="group" aria-label="Card size">
-            {(["sm", "md", "lg"] as ReadingSize[]).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => changeSize(s)}
-                aria-pressed={readingSize === s}
-                className={"size-btn" + (readingSize === s ? " on" : "")}
-              >
-                {s === "sm" ? "S" : s === "md" ? "M" : "L"}
-              </button>
-            ))}
-          </div>
+          <label className="size-slider" aria-label="Card size">
+            <span className="size-slider-lbl">S</span>
+            <input
+              type="range"
+              min={0}
+              max={2}
+              step={1}
+              value={readingSize === "sm" ? 0 : readingSize === "md" ? 1 : 2}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                changeSize(v === 0 ? "sm" : v === 1 ? "md" : "lg");
+              }}
+            />
+            <span className="size-slider-lbl">L</span>
+          </label>
           <Link to="/board" className="section-link">All shelves →</Link>
         </div>
         {reading.length === 0 ? (
@@ -386,19 +388,31 @@ function HomepageStyles() {
         .reading-grid.size-md,
         .reading-grid.size-lg { grid-template-columns: 1fr; }
       }
-      .size-toggle {
-        display: inline-flex; align-items: center; gap: 2px;
-        background: var(--paper); border-radius: 999px; padding: 3px;
+      .size-slider {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: var(--paper); border-radius: 999px; padding: 4px 12px;
         box-shadow: inset 0 0 0 1px rgba(31,38,48,0.1);
       }
-      .size-btn {
-        width: 26px; height: 24px; border-radius: 999px; border: none;
-        background: transparent; cursor: pointer;
-        font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
-        color: rgba(31,38,48,0.55); transition: background 0.15s, color 0.15s;
+      .size-slider-lbl {
+        font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600;
+        color: rgba(31,38,48,0.55); letter-spacing: 0.08em;
       }
-      .size-btn:hover { color: var(--ink); }
-      .size-btn.on { background: var(--forest); color: var(--paper); }
+      .size-slider input[type="range"] {
+        -webkit-appearance: none; appearance: none;
+        width: 80px; height: 4px; background: rgba(31,38,48,0.15);
+        border-radius: 999px; outline: none; cursor: pointer;
+      }
+      .size-slider input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none; appearance: none;
+        width: 14px; height: 14px; border-radius: 50%;
+        background: var(--forest); cursor: pointer; border: 2px solid var(--paper);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      }
+      .size-slider input[type="range"]::-moz-range-thumb {
+        width: 14px; height: 14px; border-radius: 50%;
+        background: var(--forest); cursor: pointer; border: 2px solid var(--paper);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      }
 
       .read-card {
         display: grid; grid-template-columns: 168px 1fr; gap: 24px;
