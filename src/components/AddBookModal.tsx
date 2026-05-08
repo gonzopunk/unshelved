@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { BookStatus, BookFormat, Book, UserBook } from "@/lib/queries";
+import { extractCoverPalette } from "@/lib/palette";
 
 const PALETTE = [
   { color: "#1F5266", text: "#FAFBF3", name: "Forest" },
@@ -46,53 +47,7 @@ type Props = {
   editing?: { book: Book; userBook: UserBook | null } | null;
 };
 
-// Compute dominant color from an image URL using canvas + simple bucket histogram.
-async function dominantColorFromUrl(url: string): Promise<{ color: string; text: string } | null> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      try {
-        const w = 50, h = 75;
-        const cv = document.createElement("canvas");
-        cv.width = w; cv.height = h;
-        const ctx = cv.getContext("2d");
-        if (!ctx) return resolve(null);
-        ctx.drawImage(img, 0, 0, w, h);
-        const { data } = ctx.getImageData(0, 0, w, h);
-        const buckets = new Map<string, { r: number; g: number; b: number; n: number }>();
-        for (let i = 0; i < data.length; i += 4) {
-          const a = data[i + 3];
-          if (a < 200) continue;
-          const r = data[i], g = data[i + 1], b = data[i + 2];
-          // Skip near-white / near-black
-          const max = Math.max(r, g, b), min = Math.min(r, g, b);
-          if (max > 240 && min > 240) continue;
-          if (max < 25) continue;
-          const key = `${r >> 5}-${g >> 5}-${b >> 5}`;
-          const cur = buckets.get(key) ?? { r: 0, g: 0, b: 0, n: 0 };
-          cur.r += r; cur.g += g; cur.b += b; cur.n += 1;
-          buckets.set(key, cur);
-        }
-        let best: { r: number; g: number; b: number; n: number } | null = null;
-        for (const v of buckets.values()) if (!best || v.n > best.n) best = v;
-        if (!best) return resolve(null);
-        const r = Math.round(best.r / best.n);
-        const g = Math.round(best.g / best.n);
-        const b = Math.round(best.b / best.n);
-        const hex = "#" + [r, g, b].map((x) => x.toString(16).padStart(2, "0")).join("").toUpperCase();
-        // Relative luminance
-        const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-        const text = lum > 0.6 ? "#1F2630" : "#FAFBF3";
-        resolve({ color: hex, text });
-      } catch {
-        resolve(null);
-      }
-    };
-    img.onerror = () => resolve(null);
-    img.src = url;
-  });
-}
+// Palette extraction lives in src/lib/palette.ts.
 
 export default function AddBookModal({ open, onOpenChange, editing }: Props) {
   const { user } = useAuth();
@@ -101,6 +56,9 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
   const [author, setAuthor] = useState("");
   const [format, setFormat] = useState<BookFormat>("print");
   const [color, setColor] = useState(PALETTE[0]);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [secondary, setSecondary] = useState<string | null>(null);
+  const [bookmark, setBookmark] = useState<string | null>(null);
   const [shelf, setShelf] = useState<BookStatus>("want");
   const [busy, setBusy] = useState(false);
   const [totalPages, setTotalPages] = useState<number | null>(null);
@@ -118,9 +76,13 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
       setFormat(editing.book.format);
       setColor(PALETTE.find(p => p.color === editing.book.cover_color) ?? { color: editing.book.cover_color, text: editing.book.cover_text_color, name: "Custom" });
       setShelf(editing.userBook?.status ?? "want");
+      setCoverUrl(editing.book.cover_url ?? null);
+      setSecondary(editing.book.cover_secondary_color ?? null);
+      setBookmark(editing.book.bookmark_color ?? null);
       setSearch(""); setResults([]); setTotalPages(null);
     } else if (open) {
       setTitle(""); setAuthor(""); setFormat("print"); setColor(PALETTE[0]); setShelf("want");
+      setCoverUrl(null); setSecondary(null); setBookmark(null);
       setSearch(""); setResults([]); setTotalPages(null);
     }
   }, [editing, open]);
@@ -155,9 +117,16 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
     setResults([]);
     setSearch("");
     if (doc.cover_i) {
-      const url = `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`;
-      const dom = await dominantColorFromUrl(url);
-      if (dom) setColor({ color: dom.color, text: dom.text, name: "From cover" });
+      const url = `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`;
+      setCoverUrl(url);
+      const pal = await extractCoverPalette(url);
+      if (pal) {
+        setColor({ color: pal.dominant, text: pal.text, name: "From cover" });
+        setSecondary(pal.secondary);
+        setBookmark(pal.bookmark);
+      }
+    } else {
+      setCoverUrl(null);
     }
   };
 
@@ -165,12 +134,19 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
     if (!user || !title.trim()) return;
     setBusy(true);
     try {
-      const bookmark = color.color === "#D17648" ? "#1F5266" : "#D17648";
+      const finalBookmark =
+        bookmark ?? (color.color === "#D17648" ? "#1F5266" : "#D17648");
+      const payload = {
+        title, author, format,
+        cover_color: color.color,
+        cover_text_color: color.text,
+        bookmark_color: finalBookmark,
+        cover_secondary_color: secondary,
+        cover_url: coverUrl,
+        cover_generic: !coverUrl,
+      };
       if (editing) {
-        const { error: bookErr } = await supabase.from("books").update({
-          title, author, format,
-          cover_color: color.color, cover_text_color: color.text, bookmark_color: bookmark,
-        }).eq("id", editing.book.id);
+        const { error: bookErr } = await supabase.from("books").update(payload).eq("id", editing.book.id);
         if (bookErr) throw bookErr;
         if (editing.userBook) {
           await supabase.from("user_books").update({ status: shelf }).eq("id", editing.userBook.id);
@@ -179,8 +155,7 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
         }
       } else {
         const { data: book, error: bookErr } = await supabase.from("books").insert({
-          user_id: user.id, title, author, format,
-          cover_color: color.color, cover_text_color: color.text, bookmark_color: bookmark,
+          user_id: user.id, ...payload,
         }).select().single();
         if (bookErr) throw bookErr;
         await supabase.from("user_books").insert({
@@ -253,9 +228,26 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
           )}
 
           <div className="flex gap-4">
-            <div className="w-24 h-32 rounded-lg shadow-paper flex flex-col justify-between p-2 font-display shrink-0" style={{ background: color.color, color: color.text }}>
-              <div className="text-[0.55rem] uppercase tracking-widest opacity-60">Unshelved</div>
-              <div className="text-xs leading-tight font-semibold line-clamp-3">{title || "Untitled"}</div>
+            <div
+              className="relative w-24 h-32 rounded-lg shadow-paper overflow-hidden font-display shrink-0"
+              style={{
+                background: secondary
+                  ? `linear-gradient(135deg, ${color.color} 0%, ${color.color} 60%, ${secondary} 100%)`
+                  : color.color,
+                color: color.text,
+              }}
+            >
+              {coverUrl ? (
+                <img src={coverUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              ) : (
+                <div className="absolute inset-0 flex flex-col justify-between p-2">
+                  <div className="text-[0.55rem] uppercase tracking-widest opacity-60">Unshelved</div>
+                  <div className="text-xs leading-tight font-semibold line-clamp-3">{title || "Untitled"}</div>
+                </div>
+              )}
+              {bookmark && (
+                <div className="absolute top-0 right-2 w-2 h-6 rounded-b" style={{ background: bookmark }} />
+              )}
             </div>
             <div className="flex-1 space-y-3">
               <div>

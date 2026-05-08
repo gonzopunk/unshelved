@@ -67,19 +67,36 @@ export default function BookCard({ book, userBook, tilt = 0 }: Props) {
 
         <div
           className={"bc-cover" + (isEbook ? " screen" : "")}
-          style={{ background: book.cover_color, color: book.cover_text_color }}
+          style={{
+            background: book.cover_secondary_color
+              ? `linear-gradient(135deg, ${book.cover_color} 0%, ${book.cover_color} 55%, ${book.cover_secondary_color} 100%)`
+              : book.cover_color,
+            color: book.cover_text_color,
+          }}
         >
-          <div className="cv-fmt"><FmtIcon format={book.format} /> {FMT_LABEL[book.format]}</div>
+          {book.cover_url && (
+            <img
+              src={book.cover_url}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+              loading="lazy"
+            />
+          )}
+          {!book.cover_url && (
+            <div className="cv-fmt"><FmtIcon format={book.format} /> {FMT_LABEL[book.format]}</div>
+          )}
           {isEbook && (
             <div className="ebook-track">
               <div className="ebook-dot" style={{ top: `${Math.max(5, Math.min(95, pct))}%` }} />
             </div>
           )}
-          <div className="cv-meta">
-            <div className="cv-rule" />
-            <div className="cv-title">{book.title}</div>
-            <div className="cv-author">{book.author}</div>
-          </div>
+          {!book.cover_url && (
+            <div className="cv-meta">
+              <div className="cv-rule" />
+              <div className="cv-title">{book.title}</div>
+              <div className="cv-author">{book.author}</div>
+            </div>
+          )}
           {finished && <div className="finished-stamp">Finished</div>}
         </div>
       </div>
