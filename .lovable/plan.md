@@ -1,74 +1,59 @@
-## Decisions locked in
+## Goal
 
-- **Sticky flag**: editing a sample never clears `is_sample`. Re-adding a book is trivial, so we don't need an "adopted" concept.
-- **Settings page**: create `/settings` now as the home for the Clear button (and future preferences like yearly goal, theme, account).
-- **Sample pill**: yes — visible by default. A small, low-contrast "Sample" tag on seeded book covers makes it obvious to new users that the library is a starter set, not their own data. Reinforces that "Clear sample library" is safe.
+Make the Connections graph more useful and inviting without adding pressure or clutter. Three first-batch improvements you already greenlit, plus one tiny resurfaced-quote tweak.
 
----
+## What we'll build
 
-## Schema
+### 1. Click a node → open that book
 
-Migration adds an invisible flag to four seeded tables:
+In the Web view, clicking a dot navigates to that book's page (or to a stub view for reference books). Hover already shows the title; click should follow through.
 
-- `books.is_sample boolean not null default false`
-- `reference_books.is_sample boolean not null default false`
-- `highlights.is_sample boolean not null default false`
-- `connections.is_sample boolean not null default false`
+- Wire `onNodeClick` in `weave.tsx` to `router.navigate({ to: "/books/$bookId", params: { bookId: id } })` for owned books.
+- Reference-book nodes: for now, no nav (cursor stays default). A dedicated reference page is a later, separate task.
+- Cursor turns to pointer on hover over book nodes.
 
-Update `handle_new_user()` so every seeded `INSERT` sets `is_sample = true`. (Existing accounts keep `false` everywhere — they get nothing to clear, which is correct: their data is already real.)
+### 2. Shift-drag to create a connection
 
-No changes to `user_books`, `book_tags`, `book_axis_values`, `reading_sessions` — they delete-cascade off `book_id` (verify FK ON DELETE CASCADE in migration; add if missing).
+Hold Shift, drag from one book node to another, release → opens the existing AddConnectionModal pre-filled with both endpoints. No right-click (right-click is reserved by browsers and unreliable on trackpads).
 
----
+- Use the `react-force-graph-2d` `onNodeDrag` / `onNodeDragEnd` events with a Shift-key check.
+- During the drag, draw a temporary line from the source node to the cursor.
+- On release over another node, open `AddConnectionModal` with `source` and `target` pre-set.
+- A small hint chip under the legend: "Hold Shift + drag between books to connect them."
 
-## "Clear sample library" — Settings page
+### 3. Edge weight by connection count
 
-New route: `src/routes/_authenticated/settings.tsx`
+When two books have multiple connections (e.g. three quotes from book A all link to book B), bundle them into a single thicker, slightly darker line. Hover shows the count; clicking opens a side panel listing those connections.
 
-Contents (v1):
+- Group `links` in `weave.tsx` by an unordered `{a,b}` key, store `count`.
+- Pass `count` into `WebGraph`; `linkWidth = 1 + Math.log2(count) * 1.4`, `linkColor` opacity `0.25 + Math.min(count - 1, 4) * 0.1`.
+- Tooltip via `linkLabel`: `"3 connections"`.
+- (Optional, same PR if simple) Click a bundled edge → router navigate to `/connections?between=A,B` filter; otherwise defer.
 
-- **Page title + intro line**.
-- **Sample library** section
-  - Description: "Your account was started with 7 books, a few quotes, and some example connections so the app feels alive on day one. Clear them whenever you're ready — your real books, notes, sessions, and tags stay."
-  - Button: **Clear sample library** → confirm dialog ("Delete the 7 starter books and their notes, sessions, tags, and connections? This can't be undone.") → on confirm, deletes from `books`, `reference_books`, `highlights`, `connections` where `is_sample = true`. Cascades handle dependents.
-  - Hide the whole section once `count(is_sample = true) === 0`.
-- **Profile / preferences** section — placeholder card with display name + yearly goal (already on `profiles`), so the page isn't empty. Wire up later if it's not trivial.
+### 4. Tiny: connections on resurfaced quote cards
 
-Add **Settings** link to the nav (`src/routes/_authenticated.tsx`) — small gear icon next to the sign-out divider.
+On the home page's resurfaced-quote card, show a subtle line of related connections under the quote: "Connected to: *Book Title*, *Book Title*". Each is a link to that book. Pure display tweak using `useAllConnections()` filtered by `source_id/target_id === highlight.id`.
 
----
+## Explicitly NOT in this batch
 
-## Sample pill
-
-Small badge on cover thumbnails for `is_sample` books:
-
-- Component: tiny rounded chip, `text-[10px] uppercase tracking-widest`, semi-transparent paper background, positioned top-right of the cover.
-- Surfaces in: `BookCard`, `BookSpine`, the Board view, and the book detail header.
-- Reference books on the Connections graph: skip — the graph is busy enough, and references are clearly "external" already.
-- Once cleared, the pill disappears with the books.
-
----
+- **Tag-colored edges as a global legend** — confirmed too noisy with freeform tags.
+- **Built-in axis filter chips with color-coded options** — captured for the *next* batch alongside scale/filtering work; needs its own design pass on which axes to surface and how chips compose.
+- **Mini-webs / focused subgraphs** — defer until library size makes it pay off.
+- **Suggested connections** — rejected (would dilute the meaning of a connection).
+- **Reading-stats overlay** — rejected (clutter).
+- **Export card** — parked.
 
 ## Files touched
 
-**Migration**
-- `supabase/migrations/<ts>_sample_flag.sql` — add columns, rewrite `handle_new_user` to set `is_sample = true`, ensure cascade FKs.
+- `src/routes/_authenticated/weave.tsx` — bundle links, wire click + shift-drag, hint text.
+- `src/components/WebGraph.tsx` — accept `count` per link, render width/opacity/label, expose drag callbacks, pointer cursor.
+- `src/routes/_authenticated/index.tsx` — add "Connected to:" line under the resurfaced quote.
+- (No DB changes.)
 
-**New**
-- `src/routes/_authenticated/settings.tsx` — Settings page.
-- `src/components/SampleBadge.tsx` — the cover pill.
+## Open question
 
-**Edited**
-- `src/routes/_authenticated.tsx` — add Settings nav link.
-- `src/components/BookCard.tsx`, `src/components/BookSpine.tsx` — render `<SampleBadge />` when `is_sample`.
-- `src/routes/_authenticated/books.$bookId.tsx` — show pill near title.
-- `src/lib/queries.ts` — include `is_sample` in book selects (auto via `select *` if already used; otherwise add).
-- `src/integrations/supabase/types.ts` — regenerated post-migration.
+For #3, when the user clicks a bundled edge with N connections, do you want:
+- (a) a small popover listing them inline on the graph, or
+- (b) navigate to the list view filtered to those two books?
 
----
-
-## Out of scope
-
-- Per-item "remove this sample" affordance (bulk button is enough).
-- Re-seeding samples after clearing.
-- Marking the built-in `tag_axes` as sample — those are useful defaults users expect to keep.
+I'll default to (b) unless you say otherwise — it reuses existing UI and keeps the graph clean.

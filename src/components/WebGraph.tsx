@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import type { Connection } from "@/lib/weave";
 
 type Node = { id: string; name: string; kind: "book" | "reference_book"; color: string };
+type Link = { source: string; target: string; count?: number };
 
 type Props = {
   nodes: Node[];
-  links: { source: string; target: string }[];
-  onNodeClick?: (id: string) => void;
+  links: Link[];
+  highlightedId?: string | null;
+  onNodeClick?: (id: string, shiftKey: boolean) => void;
 };
 
-export default function WebGraph({ nodes, links, onNodeClick }: Props) {
+export default function WebGraph({ nodes, links, highlightedId, onNodeClick }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 600, h: 500 });
   const [Graph, setGraph] = useState<React.ComponentType<Record<string, unknown>> | null>(null);
@@ -43,14 +44,37 @@ export default function WebGraph({ nodes, links, onNodeClick }: Props) {
           nodeLabel={(n: unknown) => (n as Node).name}
           nodeColor={(n: unknown) => (n as Node).color}
           nodeRelSize={6}
-          linkColor={() => "rgba(31, 38, 48, 0.25)"}
-          linkWidth={1.5}
+          linkColor={(l: unknown) => {
+            const c = (l as Link).count ?? 1;
+            const a = Math.min(0.25 + (c - 1) * 0.12, 0.7);
+            return `rgba(31, 38, 48, ${a})`;
+          }}
+          linkWidth={(l: unknown) => {
+            const c = (l as Link).count ?? 1;
+            return 1 + Math.log2(c) * 1.4;
+          }}
+          linkLabel={(l: unknown) => {
+            const c = (l as Link).count ?? 1;
+            return c > 1 ? `${c} connections` : "1 connection";
+          }}
           backgroundColor="transparent"
-          onNodeClick={(n: unknown) => onNodeClick?.((n as Node).id)}
+          onNodeClick={(n: unknown, e: MouseEvent) => onNodeClick?.((n as Node).id, !!e?.shiftKey)}
+          onNodeHover={(n: unknown) => {
+            if (containerRef.current) {
+              containerRef.current.style.cursor = n ? "pointer" : "default";
+            }
+          }}
           nodeCanvasObjectMode={() => "after"}
           nodeCanvasObject={(node: unknown, ctx: CanvasRenderingContext2D, globalScale: number) => {
             const n = node as Node & { x?: number; y?: number };
             if (n.x == null || n.y == null) return;
+            if (highlightedId && n.id === highlightedId) {
+              ctx.beginPath();
+              ctx.arc(n.x, n.y, 10, 0, Math.PI * 2);
+              ctx.strokeStyle = "#D17648";
+              ctx.lineWidth = 2 / globalScale;
+              ctx.stroke();
+            }
             const fontSize = 12 / globalScale;
             ctx.font = `${fontSize}px serif`;
             ctx.textAlign = "center";

@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import BookCard from "@/components/BookCard";
 import { useAllSessions, computeStreak, fmtMinutes } from "@/lib/sessions";
 
@@ -81,8 +81,36 @@ function Home() {
     : Math.round(Number(focusUb?.progress_pct ?? 0));
 
   const quote = highlights[0] as
-    | { quote_text: string; page_number: number | null; books?: { title: string; author: string } | null }
+    | { id: string; quote_text: string; page_number: number | null; books?: { title: string; author: string } | null }
     | undefined;
+
+  const { data: quoteConnections = [] } = useQuery({
+    queryKey: ["quote-connections", quote?.id],
+    enabled: !!quote?.id,
+    queryFn: async () => {
+      const id = quote!.id;
+      const { data } = await supabase
+        .from("connections")
+        .select("source_kind, source_id, target_kind, target_id")
+        .or(`source_id.eq.${id},target_id.eq.${id}`);
+      return data ?? [];
+    },
+  });
+  const connectedBooks = useMemo(() => {
+    const out: { id: string; title: string }[] = [];
+    const seen = new Set<string>();
+    for (const c of quoteConnections) {
+      const otherIsSource = c.target_id === quote?.id;
+      const otherKind = otherIsSource ? c.source_kind : c.target_kind;
+      const otherId = otherIsSource ? c.source_id : c.target_id;
+      if (otherKind !== "book") continue;
+      const b = library.find((bk) => bk.id === otherId);
+      if (!b || seen.has(b.id)) continue;
+      seen.add(b.id);
+      out.push({ id: b.id, title: b.title });
+    }
+    return out.slice(0, 3);
+  }, [quoteConnections, quote?.id, library]);
 
   const dayName = format(new Date(), "EEEE");
   const partOfDay = (() => {
@@ -260,6 +288,19 @@ function Home() {
             — underlined in <em>{quote.books?.title}</em>
             {quote.page_number ? `, p. ${quote.page_number}` : ""}
           </div>
+          {connectedBooks.length > 0 && (
+            <div className="quote-conn">
+              Connected to{" "}
+              {connectedBooks.map((b, i) => (
+                <span key={b.id}>
+                  {i > 0 && (i === connectedBooks.length - 1 ? " and " : ", ")}
+                  <Link to="/books/$bookId" params={{ bookId: b.id }} className="quote-conn-link">
+                    <em>{b.title}</em>
+                  </Link>
+                </span>
+              ))}
+            </div>
+          )}
         </section>
       )}
 
@@ -602,6 +643,9 @@ function HomepageStyles() {
       @media (max-width: 900px) { .quote { padding: 32px 28px; } .quote blockquote { font-size: 26px; } }
       .quote-attr { font-size: 13px; color: rgba(250,251,243,0.7); position: relative; z-index: 1; }
       .quote-attr em { color: var(--cream); font-style: italic; }
+      .quote-conn { margin-top: 14px; font-size: 12px; color: rgba(250,251,243,0.6); position: relative; z-index: 1; }
+      .quote-conn-link { color: rgba(250,251,243,0.85); text-decoration: none; border-bottom: 1px dotted rgba(250,251,243,0.4); }
+      .quote-conn-link:hover { color: var(--cream); border-bottom-color: var(--cream); }
 
       .hp-foot {
         display: flex; justify-content: space-between;
