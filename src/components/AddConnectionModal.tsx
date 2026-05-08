@@ -10,15 +10,16 @@ import { toast } from "sonner";
 
 type Source = { kind: ConnectionKind; id: string; label: string };
 
+type Candidate = { kind: ConnectionKind; id: string; title: string; author: string | null; isReference: boolean };
+
 type Props = {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   source: Source;
+  initialTarget?: Candidate | null;
 };
 
-type Candidate = { kind: ConnectionKind; id: string; title: string; author: string | null; isReference: boolean };
-
-export default function AddConnectionModal({ open, onOpenChange, source }: Props) {
+export default function AddConnectionModal({ open, onOpenChange, source, initialTarget = null }: Props) {
   const { data: library = [] } = useLibrary();
   const { data: refBooks = [] } = useReferenceBooks();
   const createConn = useCreateConnection();
