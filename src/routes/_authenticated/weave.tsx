@@ -321,6 +321,19 @@ function WeavePage() {
         )}
       </div>
 
+      <div className="flex flex-wrap items-center gap-2 mb-6">
+        <FilterChip label="Format" options={filterOptions.formats} selected={fFormat} onChange={setFFormat} />
+        <FilterChip label="Status" options={filterOptions.statuses} selected={fStatus} onChange={setFStatus} />
+        <FilterChip label="Author" options={filterOptions.authors} selected={fAuthor} onChange={setFAuthor} />
+        <FilterChip label="Year read" options={filterOptions.years} selected={fYear} onChange={setFYear} />
+        <FilterChip label="Tags" options={filterOptions.tags} selected={fTag} onChange={setFTag} />
+        {anyFilterActive && (
+          <button onClick={clearAllFilters} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-ink px-2 py-1">
+            <X className="h-3 w-3" /> Clear all
+          </button>
+        )}
+      </div>
+
       {isLoading ? (
         <div className="text-center py-20 text-muted-foreground">Loading…</div>
       ) : connections.length === 0 ? (
