@@ -199,15 +199,23 @@ function BookDetail() {
           />
         </TabsContent>
 
-        <TabsContent value="sessions" className="mt-6">
-          <NewSession bookId={book.id} userId={user!.id} format={book.format} />
-          <div className="mt-4 rounded-2xl bg-card shadow-paper divide-y divide-border">
+        <TabsContent value="sessions" className="mt-6 space-y-4">
+          <PaceStrip
+            sessions={sessions}
+            format={book.format}
+            remainingUnits={
+              book.format === "audiobook"
+                ? (userBook.total_seconds ?? 0) - (userBook.current_seconds ?? 0)
+                : (userBook.total_pages ?? 0) - (userBook.current_page ?? 0)
+            }
+            accent={book.cover_color}
+          />
+          <NewSessionCard bookId={book.id} userId={user!.id} format={book.format} userBook={userBook} />
+          <RhythmStrip sessions={sessions} />
+          <div className="rounded-2xl bg-card shadow-paper divide-y divide-border">
             {sessions.length === 0 && <Empty>No reading sessions logged.</Empty>}
-            {sessions.map(s => (
-              <div key={s.id} className="flex items-center justify-between p-4 font-mono text-sm">
-                <span>{format(new Date(s.started_at), "MMM d, yyyy")}</span>
-                <span className="text-muted-foreground">{s.pages_read ? `${s.pages_read} pages` : `${s.minutes} min`}</span>
-              </div>
+            {sessions.map((s) => (
+              <SessionRow key={s.id} session={s} bookId={book.id} userId={user!.id} format={book.format} />
             ))}
           </div>
         </TabsContent>
