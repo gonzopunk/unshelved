@@ -6,6 +6,7 @@ import { Home, LayoutGrid, Plus, LogOut, Network, Settings as SettingsIcon, Sear
 import { Button } from "@/components/ui/button";
 import AddBookModal from "@/components/AddBookModal";
 import CommandPalette from "@/components/CommandPalette";
+import { Kbd, useIsMac } from "@/components/Kbd";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthLayout,
