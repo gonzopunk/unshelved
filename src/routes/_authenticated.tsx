@@ -15,6 +15,18 @@ function AuthLayout() {
   const { session, loading } = useAuth();
   const navigate = useNavigate();
   const [addOpen, setAddOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
@@ -26,16 +38,17 @@ function AuthLayout() {
 
   return (
     <div className="min-h-screen pb-24">
-      <PillNav onAdd={() => setAddOpen(true)} onLogout={async () => { await supabase.auth.signOut(); navigate({ to: "/login" }); }} />
+      <PillNav onAdd={() => setAddOpen(true)} onSearch={() => setPaletteOpen(true)} onLogout={async () => { await supabase.auth.signOut(); navigate({ to: "/login" }); }} />
       <div className="pt-28">
         <Outlet />
       </div>
       <AddBookModal open={addOpen} onOpenChange={setAddOpen} />
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </div>
   );
 }
 
-function PillNav({ onAdd, onLogout }: { onAdd: () => void; onLogout: () => void }) {
+function PillNav({ onAdd, onSearch, onLogout }: { onAdd: () => void; onSearch: () => void; onLogout: () => void }) {
   return (
     <div className="fixed top-5 left-1/2 -translate-x-1/2 z-40">
       <nav className="flex items-center gap-1 rounded-full bg-paper/80 backdrop-blur-md shadow-lift px-2 py-2 border border-border">
