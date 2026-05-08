@@ -147,7 +147,7 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-full">Cancel</Button>
-            <Button onClick={save} disabled={busy || !target} className="rounded-full">{busy ? "Weaving…" : "Weave"}</Button>
+            <Button onClick={save} disabled={busy || !target} className="rounded-full">{busy ? "Saving…" : "Connect"}</Button>
           </div>
         </div>
       </DialogContent>
