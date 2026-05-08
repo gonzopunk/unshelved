@@ -81,8 +81,36 @@ function Home() {
     : Math.round(Number(focusUb?.progress_pct ?? 0));
 
   const quote = highlights[0] as
-    | { quote_text: string; page_number: number | null; books?: { title: string; author: string } | null }
+    | { id: string; quote_text: string; page_number: number | null; books?: { title: string; author: string } | null }
     | undefined;
+
+  const { data: quoteConnections = [] } = useQuery({
+    queryKey: ["quote-connections", quote?.id],
+    enabled: !!quote?.id,
+    queryFn: async () => {
+      const id = quote!.id;
+      const { data } = await supabase
+        .from("connections")
+        .select("source_kind, source_id, target_kind, target_id")
+        .or(`source_id.eq.${id},target_id.eq.${id}`);
+      return data ?? [];
+    },
+  });
+  const connectedBooks = useMemo(() => {
+    const out: { id: string; title: string }[] = [];
+    const seen = new Set<string>();
+    for (const c of quoteConnections) {
+      const otherIsSource = c.target_id === quote?.id;
+      const otherKind = otherIsSource ? c.source_kind : c.target_kind;
+      const otherId = otherIsSource ? c.source_id : c.target_id;
+      if (otherKind !== "book") continue;
+      const b = library.find((bk) => bk.id === otherId);
+      if (!b || seen.has(b.id)) continue;
+      seen.add(b.id);
+      out.push({ id: b.id, title: b.title });
+    }
+    return out.slice(0, 3);
+  }, [quoteConnections, quote?.id, library]);
 
   const dayName = format(new Date(), "EEEE");
   const partOfDay = (() => {
