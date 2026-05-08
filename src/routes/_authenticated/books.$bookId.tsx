@@ -132,6 +132,7 @@ function BookDetail() {
       <Tabs defaultValue="margins" className="mt-12">
         <TabsList className="rounded-full bg-card shadow-paper p-1">
           <TabsTrigger value="margins" className="rounded-full">Margins</TabsTrigger>
+          <TabsTrigger value="weave" className="rounded-full">Weave</TabsTrigger>
           <TabsTrigger value="sessions" className="rounded-full">Sessions</TabsTrigger>
         </TabsList>
 
@@ -149,7 +150,15 @@ function BookDetail() {
                 {notes.map(n => (
                   <div key={n.id} className="rounded-2xl bg-card shadow-paper p-4">
                     <p className="whitespace-pre-wrap">{n.content}</p>
-                    <div className="font-mono text-xs text-muted-foreground mt-2">{format(new Date(n.created_at), "MMM d, yyyy · h:mm a")}</div>
+                    <div className="mt-2 flex items-center justify-between">
+                      <div className="font-mono text-xs text-muted-foreground">{format(new Date(n.created_at), "MMM d, yyyy · h:mm a")}</div>
+                      <button
+                        onClick={() => setWeaveSource({ kind: "note", id: n.id, label: `Note on ${book.title}` })}
+                        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition"
+                      >
+                        <Network className="h-3 w-3" /> Weave
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -162,12 +171,29 @@ function BookDetail() {
                 {highlights.map(h => (
                   <blockquote key={h.id} className="rounded-2xl bg-card shadow-paper p-5 border-l-4 border-terra">
                     <p className="font-display italic text-lg leading-snug">"{h.quote_text}"</p>
-                    {h.page_number && <div className="font-mono text-xs text-muted-foreground mt-2">p. {h.page_number}</div>}
+                    <div className="mt-2 flex items-center justify-between">
+                      {h.page_number ? <div className="font-mono text-xs text-muted-foreground">p. {h.page_number}</div> : <span />}
+                      <button
+                        onClick={() => setWeaveSource({ kind: "highlight", id: h.id, label: `Quote from ${book.title}` })}
+                        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition"
+                      >
+                        <Network className="h-3 w-3" /> Weave
+                      </button>
+                    </div>
                   </blockquote>
                 ))}
               </div>
             </TabsContent>
           </Tabs>
+        </TabsContent>
+
+        <TabsContent value="weave" className="mt-6">
+          <WeaveTab
+            book={book}
+            highlights={highlights}
+            notes={notes}
+            onAdd={() => setWeaveSource({ kind: "book", id: book.id, label: book.title })}
+          />
         </TabsContent>
 
         <TabsContent value="sessions" className="mt-6">
@@ -185,7 +211,68 @@ function BookDetail() {
       </Tabs>
 
       <AddBookModal open={editOpen} onOpenChange={setEditOpen} editing={{ book, userBook }} />
+      {weaveSource && (
+        <AddConnectionModal
+          open={!!weaveSource}
+          onOpenChange={(o) => { if (!o) setWeaveSource(null); }}
+          source={weaveSource}
+        />
+      )}
     </main>
+  );
+}
+
+function WeaveTab({
+  book, highlights, notes, onAdd,
+}: {
+  book: { id: string; title: string; author: string | null };
+  highlights: { id: string; book_id: string; quote_text: string }[];
+  notes: { id: string; book_id: string; content: string }[];
+  onAdd: () => void;
+}) {
+  const highlightIds = useMemo(() => highlights.map(h => h.id), [highlights]);
+  const noteIds = useMemo(() => notes.map(n => n.id), [notes]);
+  const { data: connections = [], isLoading } = useBookConnections(book.id, highlightIds, noteIds);
+  const { data: library = [] } = useLibrary();
+  const { data: refBooks = [] } = useReferenceBooks();
+
+  const lookup = useMemo(() => {
+    const m = new Map<string, EndpointInfo>();
+    for (const b of library) m.set(b.id, { kind: "book", id: b.id, title: b.title, author: b.author });
+    for (const r of refBooks) m.set(r.id, { kind: "reference_book", id: r.id, title: r.title, author: r.author, isReference: true });
+    for (const h of highlights) m.set(h.id, { kind: "highlight", id: h.id, title: `Quote from ${book.title}`, bookId: h.book_id, snippet: h.quote_text });
+    for (const n of notes) m.set(n.id, { kind: "note", id: n.id, title: `Note on ${book.title}`, bookId: n.book_id, snippet: n.content });
+    return m;
+  }, [library, refBooks, highlights, notes, book.title]);
+
+  const resolve = (kind: ConnectionKind, id: string): EndpointInfo =>
+    lookup.get(id) ?? { kind, id, title: "Unknown" };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm text-muted-foreground italic">How this book — and what's in it — speaks to the rest of your library.</p>
+        <Button size="sm" className="rounded-full gap-1.5" onClick={onAdd}>
+          <Network className="h-4 w-4" /> Weave
+        </Button>
+      </div>
+      {isLoading ? (
+        <Empty>Loading…</Empty>
+      ) : connections.length === 0 ? (
+        <Empty>No connections yet. Weave this book to another book or quote.</Empty>
+      ) : (
+        <div className="space-y-3">
+          {connections.map(c => (
+            <ConnectionCard
+              key={c.id}
+              connection={c}
+              source={resolve(c.source_kind, c.source_id)}
+              target={resolve(c.target_kind, c.target_id)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
