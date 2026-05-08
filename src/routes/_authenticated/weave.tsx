@@ -155,6 +155,21 @@ function WeavePage() {
     setEdgePair({ a, b });
   };
 
+  const handleConnectDrag = (sourceId: string, targetId: string) => {
+    const s = lookup.get(sourceId);
+    const t = lookup.get(targetId);
+    if (!s || !t) return;
+    setPendingSource({ kind: s.kind as ConnectionKind, id: s.id, label: s.title });
+    setPendingTarget({
+      kind: t.kind as ConnectionKind,
+      id: t.id,
+      title: t.title,
+      author: t.author ?? null,
+      isReference: t.kind === "reference_book",
+    });
+    setModalOpen(true);
+  };
+
   const edgeConnections = useMemo(() => {
     if (!edgePair) return [];
     const bookOf = (kind: ConnectionKind, id: string): string | null => {
