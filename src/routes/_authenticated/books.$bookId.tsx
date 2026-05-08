@@ -88,7 +88,10 @@ function BookDetail() {
         <GeneratedCover book={book} className="w-full aspect-[3/4] rounded-2xl shadow-lift" />
 
         <div>
-          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">{book.format}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">{book.format}</p>
+            {book.is_sample && <SampleBadge variant="inline" />}
+          </div>
           <h1 className="font-display text-4xl md:text-5xl mt-1">{book.title}</h1>
           <p className="text-lg text-muted-foreground mt-1">{book.author}</p>
 
