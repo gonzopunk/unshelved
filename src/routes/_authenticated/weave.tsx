@@ -173,20 +173,18 @@ function WeavePage() {
     });
   }, [connections, filter, lookup, fFormat, fStatus, fAuthor, fYear, fTag]);
 
-  // For the web view: dim nodes that aren't part of any matching connection.
-  const dimmedNodeIds = useMemo(() => {
-    if (!anyFilterActive) return undefined;
+  // Web view: ids of nodes touched by any matching connection (null = no filters).
+  const visibleNodeIds = useMemo(() => {
+    if (!anyFilterActive) return null;
     const visible = new Set<string>();
     for (const c of connections) {
       if (!connectionMatchesFilters(c)) continue;
-      const sBook = endpointBookId(c.source_kind, c.source_id) ?? (c.source_kind === "reference_book" ? c.source_id : null);
-      const tBook = endpointBookId(c.target_kind, c.target_id) ?? (c.target_kind === "reference_book" ? c.target_id : null);
+      const sBook = c.source_kind === "reference_book" ? c.source_id : endpointBookId(c.source_kind, c.source_id);
+      const tBook = c.target_kind === "reference_book" ? c.target_id : endpointBookId(c.target_kind, c.target_id);
       if (sBook) visible.add(sBook);
       if (tBook) visible.add(tBook);
     }
-    const dim = new Set<string>();
-    // We need to know all node ids — use graph nodes (computed below). We'll compute lazily by returning a Set of "visible" instead.
-    return { kind: "visible" as const, visible, dim };
+    return visible;
   }, [connections, anyFilterActive, fFormat, fStatus, fAuthor, fYear, fTag]);
 
   // Graph data: only book↔book endpoints. Bundle parallel links and store count.
