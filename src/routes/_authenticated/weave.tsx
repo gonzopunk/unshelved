@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,9 +7,11 @@ import { useLibrary } from "@/lib/queries";
 import { useReferenceBooks, useAllConnections, type Connection, type ConnectionKind } from "@/lib/weave";
 import ConnectionCard, { type EndpointInfo } from "@/components/ConnectionCard";
 import WebGraph from "@/components/WebGraph";
+import AddConnectionModal from "@/components/AddConnectionModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { List, Network } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/weave")({
   component: WeavePage,
@@ -20,11 +22,14 @@ type Note = { id: string; book_id: string; content: string };
 
 function WeavePage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { data: library = [] } = useLibrary();
   const { data: refBooks = [] } = useReferenceBooks();
   const { data: connections = [], isLoading } = useAllConnections();
   const [view, setView] = useState<"list" | "web">("web");
   const [filter, setFilter] = useState("");
+  const [pendingSource, setPendingSource] = useState<{ kind: ConnectionKind; id: string; label: string } | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const { data: marginalia } = useQuery({
     queryKey: ["marginalia", "all", user?.id],
@@ -73,7 +78,7 @@ function WeavePage() {
     });
   }, [connections, filter, lookup]);
 
-  // Graph data: only book↔book endpoints (books and reference books). Quote/note connections collapse to their owning book.
+  // Graph data: only book↔book endpoints. Bundle parallel links and store count.
   const graph = useMemo(() => {
     const bookOf = (kind: ConnectionKind, id: string): { id: string; isRef: boolean } | null => {
       if (kind === "book") return { id, isRef: false };
@@ -83,14 +88,21 @@ function WeavePage() {
       return null;
     };
     const nodeIds = new Set<string>();
-    const links: { source: string; target: string }[] = [];
+    const counts = new Map<string, number>();
+    const pairs = new Map<string, { source: string; target: string }>();
     for (const c of connections) {
       const s = bookOf(c.source_kind, c.source_id);
       const t = bookOf(c.target_kind, c.target_id);
       if (!s || !t || s.id === t.id) continue;
       nodeIds.add(s.id); nodeIds.add(t.id);
-      links.push({ source: s.id, target: t.id });
+      const key = [s.id, t.id].sort().join("::");
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+      if (!pairs.has(key)) pairs.set(key, { source: s.id, target: t.id });
     }
+    const links = Array.from(pairs.entries()).map(([key, p]) => ({
+      ...p,
+      count: counts.get(key) ?? 1,
+    }));
     const nodes = Array.from(nodeIds).map(id => {
       const ep = lookup.get(id);
       const isRef = ep?.kind === "reference_book";
@@ -103,6 +115,32 @@ function WeavePage() {
     });
     return { nodes, links };
   }, [connections, lookup]);
+
+  const handleNodeClick = (id: string, shiftKey: boolean) => {
+    const ep = lookup.get(id);
+    if (!ep) return;
+    if (shiftKey) {
+      // Two-step: first shift-click sets source; second shift-click on a different node opens modal.
+      if (!pendingSource) {
+        setPendingSource({ kind: ep.kind as ConnectionKind, id: ep.id, label: ep.title });
+        toast(`Connecting from “${ep.title}” — shift-click another book to link them.`);
+        return;
+      }
+      if (pendingSource.id === id) {
+        setPendingSource(null);
+        toast("Cleared.");
+        return;
+      }
+      // Open modal; modal will let user pick the target — but we want to pre-fill it.
+      // For now we open it with source; the user picks the second from the search list, pre-typed.
+      setModalOpen(true);
+      return;
+    }
+    // Plain click → navigate to book page (only for owned books)
+    if (ep.kind === "book") {
+      navigate({ to: "/books/$bookId", params: { bookId: id } });
+    }
+  };
 
   return (
     <main className="max-w-5xl mx-auto px-6">
@@ -149,10 +187,26 @@ function WeavePage() {
         </div>
       ) : (
         <>
-          <WebGraph nodes={graph.nodes} links={graph.links} />
-          <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground font-mono uppercase tracking-widest">
+          <WebGraph
+            nodes={graph.nodes}
+            links={graph.links}
+            highlightedId={pendingSource?.id ?? null}
+            onNodeClick={handleNodeClick}
+          />
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground font-mono uppercase tracking-widest">
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: "#1F5266" }} /> Your books</span>
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: "#5DA8D5" }} /> References</span>
+            <span className="normal-case tracking-normal font-sans italic">
+              Click a dot to open a book · Shift-click two books to connect them
+            </span>
+            {pendingSource && (
+              <button
+                onClick={() => setPendingSource(null)}
+                className="normal-case tracking-normal font-sans rounded-full bg-terracotta/10 text-terracotta px-2 py-0.5 hover:bg-terracotta/20"
+              >
+                Cancel — connecting from “{pendingSource.label}”
+              </button>
+            )}
           </div>
         </>
       )}
@@ -160,6 +214,17 @@ function WeavePage() {
       <Button variant="outline" className="mt-8 rounded-full" asChild>
         <a href="/">Back to library</a>
       </Button>
+
+      {pendingSource && (
+        <AddConnectionModal
+          open={modalOpen}
+          onOpenChange={(o) => {
+            setModalOpen(o);
+            if (!o) setPendingSource(null);
+          }}
+          source={pendingSource}
+        />
+      )}
     </main>
   );
 }
