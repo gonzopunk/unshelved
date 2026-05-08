@@ -44,6 +44,7 @@ function BookDetail() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [editOpen, setEditOpen] = useState(false);
+  const [weaveSource, setWeaveSource] = useState<{ kind: ConnectionKind; id: string; label: string } | null>(null);
 
   if (isLoading || !data) {
     return <div className="text-center py-20 text-muted-foreground">Loading…</div>;
