@@ -23,7 +23,7 @@ function WeavePage() {
   const { data: library = [] } = useLibrary();
   const { data: refBooks = [] } = useReferenceBooks();
   const { data: connections = [], isLoading } = useAllConnections();
-  const [view, setView] = useState<"list" | "web">("list");
+  const [view, setView] = useState<"list" | "web">("web");
   const [filter, setFilter] = useState("");
 
   const { data: marginalia } = useQuery({
