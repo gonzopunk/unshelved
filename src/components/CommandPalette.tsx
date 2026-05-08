@@ -15,10 +15,12 @@ import { useAuth } from "@/lib/auth";
 import { useLibrary } from "@/lib/queries";
 import { useAllConnections } from "@/lib/weave";
 import { BookOpen, Quote, StickyNote, Network, Home, LayoutGrid, Settings as SettingsIcon } from "lucide-react";
+import { Kbd, useIsMac } from "@/components/Kbd";
 
 export default function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
+  const isMac = useIsMac();
   const { user } = useAuth();
   const { data: library } = useLibrary();
   const { data: connections } = useAllConnections();
@@ -161,6 +163,11 @@ export default function CommandPalette({ open, onOpenChange }: { open: boolean; 
           </>
         )}
       </CommandList>
+      <div className="flex items-center justify-end gap-3 border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1"><Kbd>↵</Kbd> open</span>
+        <span className="flex items-center gap-1"><Kbd>esc</Kbd> close</span>
+        <span className="flex items-center gap-1"><Kbd>{isMac ? "⌘K" : "Ctrl K"}</Kbd> toggle anywhere</span>
+      </div>
     </CommandDialog>
   );
 }
