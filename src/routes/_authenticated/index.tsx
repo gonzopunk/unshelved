@@ -125,8 +125,8 @@ function Home() {
           <Empty>Nothing in progress. Pick something from your shelf.</Empty>
         ) : (
           <div className="reading-grid">
-            {reading.map((b) => (
-              <ReadingCard key={b.id} book={b} />
+            {reading.map((b, i) => (
+              <BookCard key={b.id} book={b} userBook={b.user_books[0]} tilt={[-0.6, 0.4][i] ?? 0} />
             ))}
           </div>
         )}
