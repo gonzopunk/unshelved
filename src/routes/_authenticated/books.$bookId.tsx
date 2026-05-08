@@ -10,11 +10,16 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Pause, Play, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Pause, Play, Pencil, Trash2, Network } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AddBookModal from "@/components/AddBookModal";
+import AddConnectionModal from "@/components/AddConnectionModal";
+import ConnectionCard, { type EndpointInfo } from "@/components/ConnectionCard";
+import { useBookConnections, useReferenceBooks, type ConnectionKind } from "@/lib/weave";
+import { useLibrary } from "@/lib/queries";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { useMemo } from "react";
 
 export const Route = createFileRoute("/_authenticated/books/$bookId")({
   component: BookDetail,
