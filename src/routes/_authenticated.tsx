@@ -61,12 +61,11 @@ function PillNav({ onAdd, onSearch, onLogout }: { onAdd: () => void; onSearch: (
         <NavItem to="/weave" icon={<Network className="h-4 w-4" />} label="Connections" />
         <button
           onClick={onSearch}
-          aria-label="Search"
-          className="ml-1 flex items-center gap-2 rounded-full border border-border bg-muted/40 hover:bg-muted text-muted-foreground transition-colors px-3 py-1.5 sm:min-w-[180px]"
+          aria-label={`Search (${isMac ? "⌘K" : "Ctrl K"})`}
+          title={`Search (${isMac ? "⌘K" : "Ctrl K"})`}
+          className="ml-1 p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"
         >
-          <Search className="h-4 w-4 shrink-0" />
-          <span className="hidden sm:inline text-sm flex-1 text-left">Search…</span>
-          <Kbd className="hidden sm:inline-flex">{isMac ? "⌘K" : "Ctrl K"}</Kbd>
+          <Search className="h-4 w-4" />
         </button>
         <Button size="sm" onClick={onAdd} className="rounded-full ml-1 gap-1.5">
           <Plus className="h-4 w-4" /> Add book
