@@ -260,13 +260,13 @@ function WeaveTab({
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-muted-foreground italic">How this book — and what's in it — speaks to the rest of your library.</p>
         <Button size="sm" className="rounded-full gap-1.5" onClick={onAdd}>
-          <Network className="h-4 w-4" /> Weave
+          <Network className="h-4 w-4" /> Connect
         </Button>
       </div>
       {isLoading ? (
         <Empty>Loading…</Empty>
       ) : connections.length === 0 ? (
-        <Empty>No connections yet. Weave this book to another book or quote.</Empty>
+        <Empty>No connections yet. Connect this book to another book or quote.</Empty>
       ) : (
         <div className="space-y-3">
           {connections.map(c => (
