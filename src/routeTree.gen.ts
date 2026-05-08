@@ -13,6 +13,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedWeaveRouteImport } from './routes/_authenticated/weave'
 import { Route as AuthenticatedBoardRouteImport } from './routes/_authenticated/board'
 import { Route as AuthenticatedBooksBookIdRouteImport } from './routes/_authenticated/books.$bookId'
 
@@ -35,6 +36,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedWeaveRoute = AuthenticatedWeaveRouteImport.update({
+  id: '/weave',
+  path: '/weave',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedBoardRoute = AuthenticatedBoardRouteImport.update({
   id: '/board',
   path: '/board',
@@ -52,12 +58,14 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/board': typeof AuthenticatedBoardRoute
+  '/weave': typeof AuthenticatedWeaveRoute
   '/books/$bookId': typeof AuthenticatedBooksBookIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/board': typeof AuthenticatedBoardRoute
+  '/weave': typeof AuthenticatedWeaveRoute
   '/': typeof AuthenticatedIndexRoute
   '/books/$bookId': typeof AuthenticatedBooksBookIdRoute
 }
@@ -67,20 +75,22 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/_authenticated/board': typeof AuthenticatedBoardRoute
+  '/_authenticated/weave': typeof AuthenticatedWeaveRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/books/$bookId': typeof AuthenticatedBooksBookIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/signup' | '/board' | '/books/$bookId'
+  fullPaths: '/' | '/login' | '/signup' | '/board' | '/weave' | '/books/$bookId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/signup' | '/board' | '/' | '/books/$bookId'
+  to: '/login' | '/signup' | '/board' | '/weave' | '/' | '/books/$bookId'
   id:
     | '__root__'
     | '/_authenticated'
     | '/login'
     | '/signup'
     | '/_authenticated/board'
+    | '/_authenticated/weave'
     | '/_authenticated/'
     | '/_authenticated/books/$bookId'
   fileRoutesById: FileRoutesById
@@ -121,6 +131,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/weave': {
+      id: '/_authenticated/weave'
+      path: '/weave'
+      fullPath: '/weave'
+      preLoaderRoute: typeof AuthenticatedWeaveRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/board': {
       id: '/_authenticated/board'
       path: '/board'
@@ -140,12 +157,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedBoardRoute: typeof AuthenticatedBoardRoute
+  AuthenticatedWeaveRoute: typeof AuthenticatedWeaveRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedBooksBookIdRoute: typeof AuthenticatedBooksBookIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedBoardRoute: AuthenticatedBoardRoute,
+  AuthenticatedWeaveRoute: AuthenticatedWeaveRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedBooksBookIdRoute: AuthenticatedBooksBookIdRoute,
 }
