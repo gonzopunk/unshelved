@@ -226,62 +226,6 @@ function Empty({ children }: { children: React.ReactNode }) {
   return <div className="hp-empty">{children}</div>;
 }
 
-function ReadingCard({ book }: { book: BookWithShelf }) {
-  const ub = book.user_books[0];
-  const pct = ub?.total_pages
-    ? Math.min(100, Math.round(((ub.current_page ?? 0) / ub.total_pages) * 100))
-    : Math.round(Number(ub?.progress_pct ?? 0));
-  const started = ub?.started_at ? format(new Date(ub.started_at), "MMM d") : "—";
-  return (
-    <article className="read-card">
-      <div className="cover-wrap">
-        <div className="cover" style={{ background: book.cover_color, color: book.cover_text_color }}>
-          <div className="cv-stripe" />
-          <div className="cv-meta">
-            <div className="cv-author">{book.author}</div>
-            <div className="cv-title">{book.title}</div>
-          </div>
-          <div className="cv-corner">·</div>
-        </div>
-        {book.format === "print" && (
-          <div className="bookmark" style={{ background: book.bookmark_color }} />
-        )}
-        {book.format === "audiobook" && (
-          <div className="audio-spool-hp">
-            {[6, 10, 14, 8, 12, 6].map((h, i) => (
-              <div key={i} className="asbar" style={{ height: h }} />
-            ))}
-          </div>
-        )}
-      </div>
-      <div className="read-info">
-        <div className="read-row">
-          <div className="read-title">{book.title}</div>
-          <div className={"read-fmt " + book.format}>{FORMAT_LABEL[book.format]}</div>
-        </div>
-        <div className="read-author">
-          {book.author}
-          {ub?.total_pages ? (
-            <span className="read-pages"> · p. {ub.current_page ?? 0} / {ub.total_pages}</span>
-          ) : null}
-        </div>
-        <div className="read-bar">
-          <div className="read-fill" style={{ width: `${pct}%`, background: book.cover_color }} />
-        </div>
-        <div className="read-meta">
-          <span>Started {started}</span>
-          <span className="dot-sep">·</span>
-          <span>{pct}% complete</span>
-        </div>
-        <div className="read-actions">
-          <Link to="/books/$bookId" params={{ bookId: book.id }} className="chip-btn primary">Continue</Link>
-          <button className="chip-btn">+ note</button>
-          <button className="chip-btn">+ quote</button>
-        </div>
-      </div>
-    </article>
-  );
-}
 
 function HomepageStyles() {
   return (
