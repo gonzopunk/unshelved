@@ -169,12 +169,12 @@ function BoardPage() {
         </div>
       </div>
 
-      <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+      <DndContext sensors={sensors} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd}>
         <section className="bv-section">
           <div className="bv-section-head">
             <h2>Shelves</h2>
             <span className="bv-rule" />
-            <span className="bv-section-hint">drag between columns ↔</span>
+            <span className="bv-section-hint">drag to reorder or move between columns ↔</span>
           </div>
           <div className="bv-cols cols-4">
             {SHELVES.map((col) => (
@@ -196,7 +196,7 @@ function BoardPage() {
           </div>
         </section>
 
-        <DragOverlay>
+        <DragOverlay dropAnimation={null}>
           {activeBook && activeCol && <MiniCard book={activeBook} colId={activeCol} overlay />}
         </DragOverlay>
       </DndContext>
