@@ -2,11 +2,15 @@ import { createFileRoute, Outlet, Link, useNavigate } from "@tanstack/react-rout
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
-import { Home, LayoutGrid, Plus, LogOut, Network, Settings as SettingsIcon, Search } from "lucide-react";
+import { Home, LayoutGrid, Plus, LogOut, Network, Settings as SettingsIcon, Search, BookPlus, Upload, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import AddBookModal from "@/components/AddBookModal";
 import CommandPalette from "@/components/CommandPalette";
-import { Kbd, useIsMac } from "@/components/Kbd";
+import ImportWizard from "@/components/import/ImportWizard";
+import { useIsMac } from "@/components/Kbd";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthLayout,
@@ -16,6 +20,7 @@ function AuthLayout() {
   const { session, loading } = useAuth();
   const navigate = useNavigate();
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
@@ -39,17 +44,23 @@ function AuthLayout() {
 
   return (
     <div className="min-h-screen pb-24">
-      <PillNav onAdd={() => setAddOpen(true)} onSearch={() => setPaletteOpen(true)} onLogout={async () => { await supabase.auth.signOut(); navigate({ to: "/login" }); }} />
+      <PillNav
+        onAdd={() => setAddOpen(true)}
+        onImport={() => setImportOpen(true)}
+        onSearch={() => setPaletteOpen(true)}
+        onLogout={async () => { await supabase.auth.signOut(); navigate({ to: "/login" }); }}
+      />
       <div className="pt-28">
         <Outlet />
       </div>
       <AddBookModal open={addOpen} onOpenChange={setAddOpen} />
-      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      <ImportWizard open={importOpen} onOpenChange={setImportOpen} />
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} onImport={() => setImportOpen(true)} />
     </div>
   );
 }
 
-function PillNav({ onAdd, onSearch, onLogout }: { onAdd: () => void; onSearch: () => void; onLogout: () => void }) {
+function PillNav({ onAdd, onImport, onSearch, onLogout }: { onAdd: () => void; onImport: () => void; onSearch: () => void; onLogout: () => void }) {
   const isMac = useIsMac();
   return (
     <div className="fixed top-5 left-1/2 -translate-x-1/2 z-40">
@@ -67,9 +78,21 @@ function PillNav({ onAdd, onSearch, onLogout }: { onAdd: () => void; onSearch: (
         >
           <Search className="h-4 w-4" />
         </button>
-        <Button size="sm" onClick={onAdd} className="rounded-full ml-1 gap-1.5">
-          <Plus className="h-4 w-4" /> Add book
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" className="rounded-full ml-1 gap-1.5 pr-2">
+              <Plus className="h-4 w-4" /> Add <ChevronDown className="h-3 w-3 -ml-0.5 opacity-70" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="rounded-2xl">
+            <DropdownMenuItem onClick={onAdd} className="gap-2 rounded-xl">
+              <BookPlus className="h-4 w-4" /> Add a book
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onImport} className="gap-2 rounded-xl">
+              <Upload className="h-4 w-4" /> Import library…
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <span className="h-6 w-px bg-border mx-2" />
         <Link to="/settings" aria-label="Settings" activeProps={{ className: "bg-forest text-paper" }} inactiveProps={{ className: "text-muted-foreground hover:bg-muted" }} className="p-2 rounded-full transition-colors">
           <SettingsIcon className="h-4 w-4" />
