@@ -14,7 +14,7 @@ export default function QuoteEntry({ entry, display }: { entry: NotationEntry; d
           isScroll ? "text-2xl leading-relaxed" : "text-lg leading-snug"
         }`}
       >
-        \u201C{entry.body}\u201D
+        “{entry.body}”
       </blockquote>
       <Meta entry={entry} />
     </article>
