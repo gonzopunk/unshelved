@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useLibrary } from "@/lib/queries";
 import { useAllConnections } from "@/lib/weave";
-import { BookOpen, Quote, StickyNote, Network, Home, LayoutGrid, Settings as SettingsIcon, Upload } from "lucide-react";
+import { BookOpen, Quote, StickyNote, Network, Home, LayoutGrid, Settings as SettingsIcon, Upload, NotebookPen } from "lucide-react";
 import { Kbd, useIsMac } from "@/components/Kbd";
 
 export default function CommandPalette({ open, onOpenChange, onImport }: { open: boolean; onOpenChange: (v: boolean) => void; onImport?: () => void }) {
@@ -94,6 +94,9 @@ export default function CommandPalette({ open, onOpenChange, onImport }: { open:
             <CommandItem onSelect={() => go("/")}><Home className="mr-2 h-4 w-4" /> Home</CommandItem>
             <CommandItem onSelect={() => go("/board")}><LayoutGrid className="mr-2 h-4 w-4" /> Board</CommandItem>
             <CommandItem onSelect={() => go("/weave")}><Network className="mr-2 h-4 w-4" /> Connections</CommandItem>
+            <CommandItem onSelect={() => go("/notations/commonplace")}><NotebookPen className="mr-2 h-4 w-4" /> Open Notations</CommandItem>
+            <CommandItem onSelect={() => go("/notations/notes")}><StickyNote className="mr-2 h-4 w-4" /> Open Notes</CommandItem>
+            <CommandItem onSelect={() => go("/notations/quotes")}><Quote className="mr-2 h-4 w-4" /> Open Quotes</CommandItem>
             <CommandItem onSelect={() => go("/settings")}><SettingsIcon className="mr-2 h-4 w-4" /> Settings</CommandItem>
             {onImport && (
               <CommandItem onSelect={() => { onOpenChange(false); onImport(); }}>
