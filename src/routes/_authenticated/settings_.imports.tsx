@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import ImportWizard from "@/components/import/ImportWizard";
 
-export const Route = createFileRoute("/_authenticated/settings/imports")({
+export const Route = createFileRoute("/_authenticated/settings_/imports")({
   component: ImportsPage,
 });
 
