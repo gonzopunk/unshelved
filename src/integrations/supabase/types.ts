@@ -93,6 +93,7 @@ export type Database = {
           created_at: string
           format: Database["public"]["Enums"]["book_format"]
           id: string
+          import_batch_id: string | null
           is_sample: boolean
           title: string
           user_id: string
@@ -108,6 +109,7 @@ export type Database = {
           created_at?: string
           format?: Database["public"]["Enums"]["book_format"]
           id?: string
+          import_batch_id?: string | null
           is_sample?: boolean
           title: string
           user_id: string
@@ -123,6 +125,7 @@ export type Database = {
           created_at?: string
           format?: Database["public"]["Enums"]["book_format"]
           id?: string
+          import_batch_id?: string | null
           is_sample?: boolean
           title?: string
           user_id?: string
@@ -205,6 +208,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      import_batches: {
+        Row: {
+          created_at: string
+          id: string
+          row_count: number
+          source: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          row_count?: number
+          source: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          row_count?: number
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       notes: {
         Row: {
@@ -437,6 +464,7 @@ export type Database = {
           current_seconds: number | null
           finished_at: string | null
           id: string
+          import_batch_id: string | null
           note: string | null
           paused: boolean
           progress_pct: number | null
@@ -454,6 +482,7 @@ export type Database = {
           current_seconds?: number | null
           finished_at?: string | null
           id?: string
+          import_batch_id?: string | null
           note?: string | null
           paused?: boolean
           progress_pct?: number | null
@@ -471,6 +500,7 @@ export type Database = {
           current_seconds?: number | null
           finished_at?: string | null
           id?: string
+          import_batch_id?: string | null
           note?: string | null
           paused?: boolean
           progress_pct?: number | null
