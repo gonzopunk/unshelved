@@ -1,178 +1,162 @@
-# Round 3 — Tagging that earns its keep, Margins that travel
+# Round 3 — Data, expression, and export
 
-Round 2 made it cheap to bring a library *in*. Round 3 makes the library *legible*: every book gets a rich, multi-axis identity, and every quote/note becomes searchable across the whole shelf — not trapped on a single book page. This is the substrate that powers Weave filters, future stats, and recs.
+Round 2 made it cheap to get a real library *in*. Round 3 makes that library *legible* and *shareable*: charts you'd want to show someone, a typeset commonplace book that reads like a private anthology, drag-rankable tier lists, and a unified export pipeline so any of it can leave the app as PDF, PNG, or CSV.
 
-Pulled from `roadmap.md` items **3 (Deep, User-Definable Tagging)** and **4 (Margins, deepened)**, plus the connective tissue between them.
-
-Broken into three passes you can ship and live with independently.
+Three passes, shippable independently. Suggested order: B → A → C (commonplace book is the soul of the app and unblocks export polish; charts come second; tier maker + full export matrix last).
 
 ---
 
-## Pass A — Tag Axes & the Tagging UX
+## Pass A — Data tab + Bookcloud
 
-The data model already has `tag_axes` and `book_axis_values` — they're under-used. Pass A turns them into a first-class system.
+A new top-level `/data` route. Editorial, not dashboard-y — every chart is opinionated, click-throughable, and uses the existing palette tokens (forest, paper, ink, accents from cover palettes).
 
-### What ships
+### Routes & files
+- `src/routes/_authenticated/data.tsx` — top-level tab, sub-nav for `Charts` and `Bookcloud`.
+- `src/lib/stats.ts` — pure functions: `paceHeatmap()`, `volumeOverTime()`, `breakdownBy(field)`, `webDensityOverTime()`, `bookcloudTerms()`. All take pre-fetched data, return shaped arrays — easy to test, easy to feed to Recharts.
+- `src/components/data/` — `PaceHeatmap.tsx`, `VolumeChart.tsx`, `BreakdownBar.tsx`, `WebDensityChart.tsx`, `Bookcloud.tsx`, `ChartCard.tsx` (shared frame: title, helper line, click-through CTA).
 
-- **Built-in axes**, seeded for every new user (and backfilled for existing):
-  - `pace` (scale 1–5)
-  - `spice` (scale 0–5)
-  - `mood` (multi-select: cozy, melancholy, propulsive, cerebral, hopeful, bleak, playful, dread, lush, dry)
-  - `pov` (single: 1st, close 3rd, omniscient, multi-POV, 2nd)
-  - `tropes` (free multi-select with autocomplete)
-  - `content_warnings` (multi-select from a curated list + free-form)
-  - `genre` (multi-select, autocomplete)
-- **Free-form tags** stay (existing `tags` + `book_tags`) — coexist, don't replace.
-- **Axis editor** under Settings → Tags & Axes: rename labels, hide built-ins, reorder, add custom axes (scale or multi-select), edit allowed values.
-- **Per-book Tag Sheet** (replaces the thin `QuickTagBar`): a single popover on the book page with all axes laid out — sliders for scales, chip pickers for multi-select, free tags at the bottom. One save, optimistic.
-- **Tag chips everywhere**: book cards on `/`, `/board`, and book detail show 2–3 most distinctive axis values (e.g. `pace 4 · cozy · 1st`).
-- **Onboarding nudge**: when a book has zero axis values, the detail page surfaces a soft "Tag this book" prompt above the fold.
+### Charts (v1 set)
+1. **Reading pace heatmap** — calendar grid (last 12 months), cell intensity = pages or minutes that day, sourced from `reading_sessions`. Hover → date + pages + book(s). Click a day → filtered Sessions list for that day.
+2. **Volume over time, by format** — stacked area (print/ebook/audiobook), pages/week or minutes/week toggle. Click a band → filtered Library by format + date range.
+3. **Breakdown bars** — one component, three views via segmented control: by author, by tag-axis (mood, genre, etc.), by rating. Horizontal bars, top 12 + "Show all". Click a bar → filtered Library.
+4. **Web density** — line chart: connections-per-finished-book over time. Sparse early, dense later = the app working as intended. Click a point → Weave filtered by month.
 
-### Technical sketch
+All charts use the chart token system in `src/components/ui/chart.tsx`. Color slots map to forest / accent / ink-muted so palette stays cohesive.
 
-```text
-src/components/tags/
-  TagSheet.tsx        — full multi-axis editor popover
-  AxisField.tsx       — renders one axis (scale | multi | single)
-  AxisChip.tsx        — read-only chip used on cards
-  AutocompleteInput.tsx — shared chip input (used by free tags + tropes)
+### Bookcloud
+- A weighted typographic cloud (no SVG bubble nonsense — actual text, sized 14–56px, color from cover palette of most-rated book in that term).
+- Sources: tags (from `book_tags`), tag-axis values (from `book_axis_values`), authors. Toggle which sources to include.
+- Weight = frequency × (avg rating ÷ 3). So a tag you used twice and loved both times beats a tag you used five times and shrugged at.
+- Click a term → `/library?tag=X` (or `?author=`, `?axis=mood:cozy`).
 
-src/routes/_authenticated/settings.tags.tsx — axis editor
+### Filter passthrough (the click-through contract)
+Library and Weave already support some filtering. Pass A extends `library` and `weave` route search params so every chart can deep-link:
+- `library?author=...&format=...&status=...&tag=...&axis=mood:cozy&dateFrom=...&dateTo=...`
+- `weave?month=2026-04&tag=...`
 
-src/lib/tags.ts       — already exists; extend with:
-  - listAxes(), upsertAxisValue(), seedBuiltInAxes()
-  - distinctiveAxesFor(book) helper for card chips
-```
+Add a small `<ActiveFilters>` strip on Library and Weave that shows incoming filters as removable chips so users understand why the view is filtered.
 
-Schema work is small — the tables already exist. Migration adds:
+### Out of scope for Pass A
+- Year-in-review magazine spread (roadmap item 6 — separate round, this is just the chart vocabulary).
+- Saved chart configurations.
+- Comparative views ("this year vs last year").
 
+---
+
+## Pass B — Commonplace book view
+
+The soul piece. A `/margins` (or `/commonplace`) route that renders every highlight + note as one continuous, beautifully-typeset scroll. This is the view you'd screenshot, print, or quietly read on a Sunday.
+
+### Routes & files
+- `src/routes/_authenticated/commonplace.tsx`.
+- `src/components/commonplace/` — `Entry.tsx` (single quote or note), `Divider.tsx` (between books or months), `BookHeader.tsx`, `GroupingToolbar.tsx`, `PrintHeader.tsx`.
+- `src/styles/commonplace.css` (or extend `styles.css`) — print stylesheet + display typography. Body in a refined serif (e.g. Source Serif, GT Sectra if licensed, or system serif fallback stack). Quotes in italic, larger size, generous leading. Attribution in small caps. Notes in body weight, indented.
+
+### Behavior
+- **Grouping toggle**: Chronological (newest first), By book, By tag-axis (e.g. all "melancholy" highlights), By month.
+- **Filter bar**: book, tag, axis-value, date range, kind (quote/note/both). Persists in URL search params.
+- **Entry shape**:
+  - Quote: large italic body, page number + book title + author below in muted small caps, hover reveals "Weave", "Copy", "Open book" actions.
+  - Note: body text, book attribution below, same hover actions.
+- **Search**: ⌘F-feel inline search box that filters in place (debounced client-side substring match for v1; full-text in Pass C if needed).
+- **Print stylesheet**: removes nav/chrome, renders header with user display name + date range + "A Commonplace Book", uses serif throughout, page-break rules so quotes don't split awkwardly.
+- **Density toggle**: Reading (today's default) vs Compact (more per screen, for browsing).
+
+### Data
+No schema changes required for v1 — `highlights` and `notes` already exist. Single query: load all highlights + notes for user with their book joins, sort/group client-side. (If perf becomes an issue past ~500 entries, paginate by month.)
+
+### Stretch within Pass B
+- "Today's resurfaced quote" hero strip at the top, deterministic seed by date.
+- Keyboard nav: `j`/`k` to move between entries, `o` to open the source book.
+
+### Out of scope
+- Editing entries inline (already exists on book detail page; link out).
+- Weekly resurface email (roadmap, future round).
+
+---
+
+## Pass C — Tier maker + unified export
+
+Two features, one round, because they share the export pipeline.
+
+### Tier maker
+
+**Routes & files**
+- `src/routes/_authenticated/tiers.tsx` — index of saved tier lists + "New tier list".
+- `src/routes/_authenticated/tiers.$tierId.tsx` — editor.
+- `src/components/tiers/` — `TierRow.tsx`, `TierBoard.tsx`, `TierBookCard.tsx`, `TierAxisPicker.tsx`.
+
+**Schema (one new table)**
 ```sql
--- one trigger to seed built-in axes for new users (idempotent)
-create or replace function public.seed_builtin_axes_for_user(_uid uuid)
-  returns void language plpgsql security definer set search_path = public as $$ ... $$;
-
--- one-shot RPC for backfill on first load:
-create or replace function public.ensure_builtin_axes()
-  returns void language plpgsql security definer set search_path = public as $$
-    select public.seed_builtin_axes_for_user(auth.uid());
-  $$;
+create table public.tier_lists (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  title text not null,
+  axis text,                    -- nullable: "best plot", "prose", or null for general
+  rows jsonb not null default '[]'::jsonb,
+  -- rows = [{ key: 'S', label: 'S', book_ids: [...] }, { key: 'A', ... }, ...]
+  unranked_book_ids jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+-- RLS: own tier_lists all (auth.uid() = user_id)
 ```
 
-No destructive changes; existing custom tags untouched.
+**Behavior**
+- Create from any library subset (filtered library → "Make a tier list of these").
+- Default rows S/A/B/C/D/F, editable labels, add/remove rows, recolor row.
+- Drag books between rows + an "Unranked" tray at bottom. Use `@dnd-kit/core` (already in deps; verify).
+- Save auto on drag end (debounced).
+- "Export as image" → PNG via Pass C export pipeline.
+
+### Unified export pipeline
+
+One module, three output types, called from many places.
+
+**File**: `src/lib/export/index.ts` with `exportPdf()`, `exportPng()`, `exportCsv()`.
+
+**Mechanics**
+- **PDF**: `@react-pdf/renderer` (server-side via `createServerFn`) or print-stylesheet → "Save as PDF" for v1 (cheaper, native, already works for commonplace book). Default to print-stylesheet route for commonplace + tier list; reserve `@react-pdf` for connection-card PDFs where layout precision matters.
+- **PNG**: `html-to-image` (small, browser-only) on a hidden render node. Used for: single quote cards, tier list, web snapshot, single ConnectionCard.
+- **CSV**: `papaparse.unparse` (already in deps from Round 2). Used for: library, highlights, notes, connections.
+
+**Endpoints (where the export buttons live)**
+- Library page → "Export CSV" (respects current filters).
+- Commonplace book → "Print / Save as PDF" (uses print stylesheet).
+- Single highlight (hover action on Entry or Book detail) → "Export as quote card PNG".
+- Tier list editor → "Export as PNG".
+- Weave → "Export web snapshot PNG" + "Export connections CSV".
+- Single ConnectionCard → "Export as card PDF".
+
+**Quote-card PNG template**
+- Square 1080×1080.
+- Cover palette (`books.cover_color` + `cover_secondary_color`) as background gradient.
+- Quote in display serif, attribution in small caps, "Unshelved" wordmark in corner. One template, one component (`<QuoteCard>`), used for both PNG export and the resurfaced-quote home strip — single source of truth.
+
+### Out of scope for Pass C
+- Public/shareable links to tier lists (roadmap item 10).
+- Year-in-Unshelved magazine spread (roadmap item 6).
+- Animated/video exports.
 
 ---
 
-## Pass B — Global Margins (`/margins`)
+## Cross-cutting
 
-Today notes and quotes only exist on the book detail page. Pass B promotes them to a top-level commonplace book.
-
-### What ships
-
-- **New route `/margins`** in the top nav, between Library and Weave.
-- **Unified feed** of every `note` and `highlight` you've written, newest first, grouped by month with sticky month headers.
-- **Filters**:
-  - kind: notes / quotes / both
-  - book (autocomplete chip)
-  - axis values (e.g. `mood: melancholy`) — pulls in Pass A's data
-  - free tag chips
-  - date range
-  - has-page-number, has-quote-text length > N
-- **Search** across `quote_text` and `content` with Postgres `websearch_to_tsquery` (cheap GIN index).
-- **Card design**:
-  - Quote card: large pull-quote in display serif, book + page below, swatch in the book's `cover_color`, "Weave" + "Copy" actions on hover.
-  - Note card: smaller, body type, same metadata footer.
-- **Detail drawer**: click any card → side drawer with full text, related connections (existing Weave query), edit / delete inline.
-- **Today's resurface**: top of `/margins` shows 1 quote and 1 note from "this week, last year" or random if no anniversary — single dismissable strip, not a modal.
-- **Export**: "Copy as Markdown" on any card; "Export filtered set" button (downloads `.md` + `.json`).
-
-### Technical sketch
-
-```text
-src/routes/_authenticated/margins.tsx
-src/components/margins/
-  MarginsFeed.tsx       — virtualized list with month dividers
-  MarginsFilters.tsx    — sticky left rail (collapses on mobile to a sheet)
-  QuoteCard.tsx
-  NoteCard.tsx
-  ResurfaceStrip.tsx
-  MarginDrawer.tsx
-src/lib/margins.ts      — combined query: highlights ∪ notes with shared shape
-```
-
-Schema: one migration, additive.
-
-```sql
-alter table public.highlights add column if not exists tags text[] default '{}';
-alter table public.notes      add column if not exists tags text[] default '{}';
-
-create index if not exists highlights_text_fts
-  on public.highlights using gin (to_tsvector('english', quote_text));
-create index if not exists notes_text_fts
-  on public.notes      using gin (to_tsvector('english', content));
-```
-
-No new RLS — existing per-user policies cover it.
-
----
-
-## Pass C — Tag-aware Weave + Resurface email + polish
-
-Pass C is the connective tissue: it makes Pass A and B *feel* like one feature, not two.
-
-### What ships
-
-- **Weave filter expansion**: the `FilterChip` rail on `/weave` gains an "Axes" group. Pick `mood: cozy` and the graph + list constrain to connections whose endpoints share that value. Same UX on the per-book Weave tab.
-- **Distinctive-axis chips on Weave nodes**: web view labels show one axis value under the title for quicker scanning.
-- **Smart Margins clusters**: at the top of `/margins`, three auto-generated chip groups appear based on your data:
-  - "Most quoted books" (top 3)
-  - "Most-tagged moods this year"
-  - "Quotes you wove from" (highlights that anchor ≥1 connection)
-  Each clicks to a pre-filtered view.
-- **Weekly Resurface email** (opt-in toggle in Settings → Notifications):
-  - Edge function `weekly-resurface` runs Sunday 09:00 in user's stored timezone (default UTC).
-  - Picks 3 quotes + 1 note via a deterministic seed (so the same user/week always gets the same picks — replayable).
-  - Sent via Resend; template lives in `supabase/functions/weekly-resurface/template.ts`.
-  - One-click "unsubscribe" sets `profiles.resurface_email = false`.
-- **Command Palette additions**: "Open Margins", "Filter Margins by mood…", "Open Tag Sheet for current book", "Edit tag axes".
-- **Card chip everywhere**: `BookCard`, `BookSpine`, `/board` columns get the same 2–3 distinctive-axes chip strip from Pass A — closes the loop visually.
-
-### Technical sketch
-
-```text
-supabase/functions/weekly-resurface/
-  index.ts              — reads profiles where resurface_email = true
-  template.ts           — minimal HTML, system-font, single accent color
-  pick.ts               — seeded RNG + scoring
-
-src/routes/_authenticated/settings.notifications.tsx — toggle + preview
-```
-
-Schema additions:
-
-```sql
-alter table public.profiles
-  add column if not exists timezone text default 'UTC',
-  add column if not exists resurface_email boolean not null default false,
-  add column if not exists resurface_last_sent_at timestamptz;
-```
-
-Cron: pg_cron job calling the edge function hourly; the function self-filters by local-hour-of-week so we don't need a per-user scheduler.
-
----
-
-## Out of scope for round 3 (deferred to round 4)
-
-- Open-Reader Sync (KOSync, Audiobookshelf) — roadmap item 5, separate moat work.
-- Editorial Stats Dashboard — needs Pass A's data to be dense first; revisit after a few weeks of real tagging.
-- Public/shared Margins or Weave links — social surface, not now.
-- AI-suggested connections from quote text — interesting but premature.
-
----
+- **Command Palette additions** (one-line each): `Open Data`, `Open Commonplace book`, `New tier list`, `Export library as CSV`, `Print commonplace book`.
+- **Top-nav**: add `Data` and `Commonplace` (or fold both into a single `Library` dropdown if the bar gets crowded — decide once Pass A is live and we can see real density).
+- **Memory hooks**: if user picks a serif during Pass B, save it to `mem://design/typography` so future rounds (year-in-review, share cards) inherit it.
 
 ## Suggested shipping order
+1. **Pass B (Commonplace book)** — biggest soul-per-effort, validates the typographic direction the rest of Round 3 will lean on.
+2. **Pass A (Data + Bookcloud)** — needs the click-through filter contract, which benefits from existing routes being a bit more polished post-B.
+3. **Pass C (Tier maker + Exports)** — unified export benefits from having both Commonplace (PDF target) and Data (PNG snapshot target) already shipped.
 
-1. **Pass A** first — every other pass and every future feature is better when axis data exists. ~1 build session.
-2. **Pass B** standalone — independently shippable; doesn't strictly need Pass A but is dramatically better with it.
-3. **Pass C** last — it's polish + the email loop; only worthwhile once A and B are real.
+---
 
-Approve and I'll start with Pass A.
+## Out of scope for all of Round 3
+- KOReader / Audiobookshelf sync (roadmap item 5).
+- Year-in-Unshelved magazine spread (roadmap item 6).
+- Series & author intelligence (item 8).
+- Recommendations (item 9).
+- Social / buddy reads (item 10).
+- AI-suggested connections.
