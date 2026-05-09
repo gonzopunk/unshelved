@@ -1,64 +1,132 @@
-import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import FilterBar from "@/components/notations/FilterBar";
-import DisplayToggle from "@/components/notations/DisplayToggle";
-import GroupingToolbar from "@/components/notations/GroupingToolbar";
-import { useNotations, type Grouping, type Display } from "@/lib/notations";
+import EntryShell from "@/components/notations/EntryShell";
+import {
+  useNotations,
+  useFilteredSorted,
+  emptyFilters,
+  type NotationFilters,
+  type Sort,
+} from "@/lib/notations";
 
 export const Route = createFileRoute("/_authenticated/notations")({
   validateSearch: (search: Record<string, unknown>) => search,
-  component: NotationsLayout,
+  component: NotationsPage,
 });
 
-function NotationsLayout() {
-  const { data } = useNotations();
-  const location = useLocation();
-  const path = location.pathname;
-  const isCommonplace =
-    path.endsWith("/commonplace") || path === "/notations" || path === "/notations/";
-  const defaultDisplay: Display = isCommonplace ? "scroll" : "stream";
-  const defaultGrouping: Grouping = isCommonplace ? "book" : "newest";
+function NotationsPage() {
+  const { data, isLoading } = useNotations();
+  const navigate = useNavigate();
+  const search = useSearch({ strict: false }) as Partial<NotationFilters> & { sort?: Sort };
+
+  const kind: NotationFilters["kind"] = (search.kind as NotationFilters["kind"]) ?? "both";
+  const sort: Sort = search.sort ?? "newest";
+
+  const filters: NotationFilters = {
+    ...emptyFilters,
+    ...search,
+    bookIds: search.bookIds ?? [],
+    authorNames: search.authorNames ?? [],
+    seriesValues: search.seriesValues ?? [],
+    dateFrom: search.dateFrom ?? null,
+    dateTo: search.dateTo ?? null,
+    kind,
+    q: search.q ?? "",
+  };
+
+  const setKind = (k: NotationFilters["kind"]) =>
+    navigate({
+      to: ".",
+      search: (prev: Record<string, unknown>) => ({ ...prev, kind: k === "both" ? undefined : k }),
+      replace: true,
+    } as never);
+  const setSort = (s: Sort) =>
+    navigate({
+      to: ".",
+      search: (prev: Record<string, unknown>) => ({ ...prev, sort: s === "newest" ? undefined : s }),
+      replace: true,
+    } as never);
+
+  const { entries, total } = useFilteredSorted(filters, sort, data);
 
   return (
-    <div className="max-w-5xl mx-auto px-6">
+    <div className="max-w-3xl mx-auto px-6">
       <header className="mb-6">
-        <div className="flex items-baseline justify-between gap-4 flex-wrap">
-          <h1 className="font-display text-4xl">Notations</h1>
-          <DisplayToggle defaultDisplay={defaultDisplay} />
-        </div>
+        <h1 className="font-display text-4xl">Notations</h1>
         <p className="text-sm text-muted-foreground mt-1 max-w-prose">
-          Every mark you’ve left on a book — notes, quotes, and the commonplace
-          weaving them together. Slice by book, author, series, tag, mood.
+          Every mark you’ve left on a book — notes and quotes, side by side.
         </p>
       </header>
 
-      <nav className="flex items-center gap-1 mb-5">
-        <SubLink to="/notations/notes">Notes</SubLink>
-        <SubLink to="/notations/quotes">Quotes</SubLink>
-        <SubLink to="/notations/commonplace">Commonplace</SubLink>
-      </nav>
-
-      <FilterBar data={data} showKind={isCommonplace} />
-
-      <div className="mt-4">
-        <GroupingToolbar defaultGrouping={defaultGrouping} />
+      <div className="flex flex-wrap items-center gap-3 mb-5">
+        <Segmented
+          value={kind}
+          onChange={(v) => setKind(v as NotationFilters["kind"])}
+          options={[
+            { value: "both", label: "Both" },
+            { value: "notes", label: "Notes" },
+            { value: "quotes", label: "Quotes" },
+          ]}
+        />
+        <span className="h-5 w-px bg-border" />
+        <Segmented
+          value={sort}
+          onChange={(v) => setSort(v as Sort)}
+          options={[
+            { value: "newest", label: "Newest" },
+            { value: "oldest", label: "Oldest" },
+          ]}
+        />
       </div>
 
+      <FilterBar data={data} />
+
       <div className="mt-6 pb-24">
-        <Outlet />
+        {isLoading ? (
+          <div className="text-sm text-muted-foreground">Loading…</div>
+        ) : total === 0 ? (
+          <div className="rounded-2xl bg-card shadow-paper p-8 text-center text-muted-foreground">
+            Nothing matches these filters yet.
+          </div>
+        ) : (
+          <>
+            <div className="font-mono text-xs text-muted-foreground mb-4">
+              {total} {total === 1 ? "entry" : "entries"}
+            </div>
+            <div className="space-y-3">
+              {entries.map((e) => (
+                <EntryShell key={`${e.kind}-${e.id}`} entry={e} />
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-function SubLink({ to, children }: { to: string; children: React.ReactNode }) {
+function Segmented({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+}) {
   return (
-    <Link
-      to={to}
-      activeProps={{ className: "bg-forest text-paper border-forest" }}
-      inactiveProps={{ className: "bg-card text-ink border-border hover:bg-muted" }}
-      className="rounded-full border px-4 py-1.5 text-sm transition"
-    >
-      {children}
-    </Link>
+    <div className="inline-flex items-center rounded-full bg-muted p-1 text-xs">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          onClick={() => onChange(o.value)}
+          className={`px-3 py-1 rounded-full transition ${
+            value === o.value ? "bg-card shadow-paper text-ink" : "text-muted-foreground"
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
   );
 }
