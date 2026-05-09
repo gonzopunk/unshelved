@@ -7,15 +7,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import type { NotationsData, NotationFilters } from "@/lib/notations";
 import { emptyFilters } from "@/lib/notations";
 
-type SearchShape = Partial<NotationFilters> & { kind?: NotationFilters["kind"] };
+type SearchShape = Partial<NotationFilters>;
 
-export default function FilterBar({
-  data,
-  showKind,
-}: {
-  data: NotationsData | undefined;
-  showKind: boolean;
-}) {
+export default function FilterBar({ data }: { data: NotationsData | undefined }) {
   const navigate = useNavigate();
   const search = useSearch({ strict: false }) as SearchShape;
 
@@ -25,11 +19,9 @@ export default function FilterBar({
     bookIds: search.bookIds ?? [],
     authorNames: search.authorNames ?? [],
     seriesValues: search.seriesValues ?? [],
-    tagIds: search.tagIds ?? [],
-    axisFilter: search.axisFilter ?? null,
     dateFrom: search.dateFrom ?? null,
     dateTo: search.dateTo ?? null,
-    kind: search.kind ?? "both",
+    kind: (search.kind as NotationFilters["kind"]) ?? "both",
     q: search.q ?? "",
   };
 
@@ -38,7 +30,6 @@ export default function FilterBar({
       to: ".",
       search: (prev: Record<string, unknown>) => {
         const next = { ...prev, ...patch };
-        // strip empties for cleaner URLs
         for (const [k, v] of Object.entries(next)) {
           if (v === null || v === "" || (Array.isArray(v) && v.length === 0)) delete (next as Record<string, unknown>)[k];
         }
@@ -52,43 +43,25 @@ export default function FilterBar({
       to: ".",
       search: (prev: Record<string, unknown>) => {
         const keep: Record<string, unknown> = {};
-        if (prev.display) keep.display = prev.display;
-        if (prev.grouping) keep.grouping = prev.grouping;
+        if (prev.kind) keep.kind = prev.kind;
+        if (prev.sort) keep.sort = prev.sort;
         return keep;
       },
       replace: true,
     } as never);
 
-  const tagsById = useMemo(
-    () => new Map((data?.tags ?? []).map((t) => [t.id, t])),
-    [data?.tags],
-  );
   const booksById = useMemo(
     () => new Map((data?.books ?? []).map((b) => [b.id, b])),
     [data?.books],
   );
 
-  const axisOptions = useMemo(() => {
-    if (!data) return [] as { key: string; label: string; value: string }[];
-    const out: { key: string; label: string; value: string }[] = [];
-    for (const a of data.axes) {
-      if (a.key === "series") continue; // series has its own filter
-      const vs = data.axisValuesByKey[a.key] ?? [];
-      for (const v of vs) out.push({ key: a.key, label: a.label, value: v });
-    }
-    return out;
-  }, [data]);
-
   const hasAny =
     filters.bookIds.length ||
     filters.authorNames.length ||
     filters.seriesValues.length ||
-    filters.tagIds.length ||
-    filters.axisFilter ||
     filters.dateFrom ||
     filters.dateTo ||
-    filters.q ||
-    (showKind && filters.kind !== "both");
+    filters.q;
 
   return (
     <div className="space-y-3">
@@ -119,46 +92,12 @@ export default function FilterBar({
             </span>
           }
         />
-        <MultiSelect
-          label="Tag"
-          values={filters.tagIds}
-          options={(data?.tags ?? []).map((t) => ({ value: t.id, label: t.name }))}
-          onChange={(tagIds) => update({ tagIds })}
-        />
-
-        {axisOptions.length > 0 && (
-          <SingleSelect
-            label="Axis"
-            value={filters.axisFilter}
-            options={axisOptions.map((o) => ({
-              value: `${o.key}:${o.value}`,
-              label: `${o.label}: ${o.value}`,
-            }))}
-            onChange={(axisFilter) => update({ axisFilter })}
-          />
-        )}
 
         <DateRange
           from={filters.dateFrom}
           to={filters.dateTo}
           onChange={(dateFrom, dateTo) => update({ dateFrom, dateTo })}
         />
-
-        {showKind && (
-          <div className="inline-flex items-center rounded-full bg-muted p-1 text-xs">
-            {(["both", "notes", "quotes"] as const).map((k) => (
-              <button
-                key={k}
-                onClick={() => update({ kind: k })}
-                className={`px-3 py-1 rounded-full transition capitalize ${
-                  filters.kind === k ? "bg-card shadow-paper text-ink" : "text-muted-foreground"
-                }`}
-              >
-                {k}
-              </button>
-            ))}
-          </div>
-        )}
 
         {hasAny && (
           <button
@@ -184,20 +123,11 @@ export default function FilterBar({
           {filters.seriesValues.map((s) => (
             <Chip key={s} label={`Series: ${s}`} onRemove={() => update({ seriesValues: filters.seriesValues.filter((x) => x !== s) })} />
           ))}
-          {filters.tagIds.map((id) => (
-            <Chip key={id} label={`Tag: ${tagsById.get(id)?.name ?? id}`} onRemove={() => update({ tagIds: filters.tagIds.filter((x) => x !== id) })} />
-          ))}
-          {filters.axisFilter && (
-            <Chip label={filters.axisFilter} onRemove={() => update({ axisFilter: null })} />
-          )}
           {(filters.dateFrom || filters.dateTo) && (
             <Chip
               label={`${filters.dateFrom ?? "…"} → ${filters.dateTo ?? "…"}`}
               onRemove={() => update({ dateFrom: null, dateTo: null })}
             />
-          )}
-          {showKind && filters.kind !== "both" && (
-            <Chip label={`Kind: ${filters.kind}`} onRemove={() => update({ kind: "both" })} />
           )}
         </div>
       )}
@@ -293,56 +223,6 @@ function MultiSelect({
             </div>
           </>
         )}
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function SingleSelect({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string | null;
-  options: { value: string; label: string }[];
-  onChange: (v: string | null) => void;
-}) {
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs transition ${
-            value ? "bg-forest text-paper border-forest" : "bg-card border-border text-ink hover:bg-muted"
-          }`}
-        >
-          {label}
-          <ChevronDown className="h-3 w-3 opacity-70" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-64 p-2 rounded-xl" align="start">
-        <div className="max-h-64 overflow-y-auto space-y-0.5">
-          <button
-            onClick={() => onChange(null)}
-            className={`w-full text-left px-2 py-1.5 rounded-md hover:bg-muted text-sm ${
-              value === null ? "font-semibold" : ""
-            }`}
-          >
-            (any)
-          </button>
-          {options.map((o) => (
-            <button
-              key={o.value}
-              onClick={() => onChange(o.value)}
-              className={`w-full text-left px-2 py-1.5 rounded-md hover:bg-muted text-sm ${
-                value === o.value ? "font-semibold bg-muted" : ""
-              }`}
-            >
-              {o.label}
-            </button>
-          ))}
-        </div>
       </PopoverContent>
     </Popover>
   );

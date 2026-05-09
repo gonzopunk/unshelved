@@ -94,9 +94,7 @@ export default function CommandPalette({ open, onOpenChange, onImport }: { open:
             <CommandItem onSelect={() => go("/")}><Home className="mr-2 h-4 w-4" /> Home</CommandItem>
             <CommandItem onSelect={() => go("/board")}><LayoutGrid className="mr-2 h-4 w-4" /> Board</CommandItem>
             <CommandItem onSelect={() => go("/weave")}><Network className="mr-2 h-4 w-4" /> Connections</CommandItem>
-            <CommandItem onSelect={() => go("/notations/commonplace")}><NotebookPen className="mr-2 h-4 w-4" /> Open Notations</CommandItem>
-            <CommandItem onSelect={() => go("/notations/notes")}><StickyNote className="mr-2 h-4 w-4" /> Open Notes</CommandItem>
-            <CommandItem onSelect={() => go("/notations/quotes")}><Quote className="mr-2 h-4 w-4" /> Open Quotes</CommandItem>
+            <CommandItem onSelect={() => go("/notations")}><NotebookPen className="mr-2 h-4 w-4" /> Open Notations</CommandItem>
             <CommandItem onSelect={() => go("/settings")}><SettingsIcon className="mr-2 h-4 w-4" /> Settings</CommandItem>
             {onImport && (
               <CommandItem onSelect={() => { onOpenChange(false); onImport(); }}>

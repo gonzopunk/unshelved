@@ -17,11 +17,7 @@ import { Route as AuthenticatedWeaveRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedNotationsRouteImport } from './routes/_authenticated/notations'
 import { Route as AuthenticatedBoardRouteImport } from './routes/_authenticated/board'
-import { Route as AuthenticatedNotationsIndexRouteImport } from './routes/_authenticated/notations.index'
 import { Route as AuthenticatedSettingsImportsRouteImport } from './routes/_authenticated/settings_.imports'
-import { Route as AuthenticatedNotationsQuotesRouteImport } from './routes/_authenticated/notations.quotes'
-import { Route as AuthenticatedNotationsNotesRouteImport } from './routes/_authenticated/notations.notes'
-import { Route as AuthenticatedNotationsCommonplaceRouteImport } from './routes/_authenticated/notations.commonplace'
 import { Route as AuthenticatedBooksBookIdRouteImport } from './routes/_authenticated/books.$bookId'
 
 const SignupRoute = SignupRouteImport.update({
@@ -63,35 +59,11 @@ const AuthenticatedBoardRoute = AuthenticatedBoardRouteImport.update({
   path: '/board',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedNotationsIndexRoute =
-  AuthenticatedNotationsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedNotationsRoute,
-  } as any)
 const AuthenticatedSettingsImportsRoute =
   AuthenticatedSettingsImportsRouteImport.update({
     id: '/settings_/imports',
     path: '/settings/imports',
     getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedNotationsQuotesRoute =
-  AuthenticatedNotationsQuotesRouteImport.update({
-    id: '/quotes',
-    path: '/quotes',
-    getParentRoute: () => AuthenticatedNotationsRoute,
-  } as any)
-const AuthenticatedNotationsNotesRoute =
-  AuthenticatedNotationsNotesRouteImport.update({
-    id: '/notes',
-    path: '/notes',
-    getParentRoute: () => AuthenticatedNotationsRoute,
-  } as any)
-const AuthenticatedNotationsCommonplaceRoute =
-  AuthenticatedNotationsCommonplaceRouteImport.update({
-    id: '/commonplace',
-    path: '/commonplace',
-    getParentRoute: () => AuthenticatedNotationsRoute,
   } as any)
 const AuthenticatedBooksBookIdRoute =
   AuthenticatedBooksBookIdRouteImport.update({
@@ -105,29 +77,22 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/board': typeof AuthenticatedBoardRoute
-  '/notations': typeof AuthenticatedNotationsRouteWithChildren
+  '/notations': typeof AuthenticatedNotationsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/weave': typeof AuthenticatedWeaveRoute
   '/books/$bookId': typeof AuthenticatedBooksBookIdRoute
-  '/notations/commonplace': typeof AuthenticatedNotationsCommonplaceRoute
-  '/notations/notes': typeof AuthenticatedNotationsNotesRoute
-  '/notations/quotes': typeof AuthenticatedNotationsQuotesRoute
   '/settings/imports': typeof AuthenticatedSettingsImportsRoute
-  '/notations/': typeof AuthenticatedNotationsIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/board': typeof AuthenticatedBoardRoute
+  '/notations': typeof AuthenticatedNotationsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/weave': typeof AuthenticatedWeaveRoute
   '/': typeof AuthenticatedIndexRoute
   '/books/$bookId': typeof AuthenticatedBooksBookIdRoute
-  '/notations/commonplace': typeof AuthenticatedNotationsCommonplaceRoute
-  '/notations/notes': typeof AuthenticatedNotationsNotesRoute
-  '/notations/quotes': typeof AuthenticatedNotationsQuotesRoute
   '/settings/imports': typeof AuthenticatedSettingsImportsRoute
-  '/notations': typeof AuthenticatedNotationsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -135,16 +100,12 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/_authenticated/board': typeof AuthenticatedBoardRoute
-  '/_authenticated/notations': typeof AuthenticatedNotationsRouteWithChildren
+  '/_authenticated/notations': typeof AuthenticatedNotationsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/weave': typeof AuthenticatedWeaveRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/books/$bookId': typeof AuthenticatedBooksBookIdRoute
-  '/_authenticated/notations/commonplace': typeof AuthenticatedNotationsCommonplaceRoute
-  '/_authenticated/notations/notes': typeof AuthenticatedNotationsNotesRoute
-  '/_authenticated/notations/quotes': typeof AuthenticatedNotationsQuotesRoute
   '/_authenticated/settings_/imports': typeof AuthenticatedSettingsImportsRoute
-  '/_authenticated/notations/': typeof AuthenticatedNotationsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -157,25 +118,18 @@ export interface FileRouteTypes {
     | '/settings'
     | '/weave'
     | '/books/$bookId'
-    | '/notations/commonplace'
-    | '/notations/notes'
-    | '/notations/quotes'
     | '/settings/imports'
-    | '/notations/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
     | '/signup'
     | '/board'
+    | '/notations'
     | '/settings'
     | '/weave'
     | '/'
     | '/books/$bookId'
-    | '/notations/commonplace'
-    | '/notations/notes'
-    | '/notations/quotes'
     | '/settings/imports'
-    | '/notations'
   id:
     | '__root__'
     | '/_authenticated'
@@ -187,11 +141,7 @@ export interface FileRouteTypes {
     | '/_authenticated/weave'
     | '/_authenticated/'
     | '/_authenticated/books/$bookId'
-    | '/_authenticated/notations/commonplace'
-    | '/_authenticated/notations/notes'
-    | '/_authenticated/notations/quotes'
     | '/_authenticated/settings_/imports'
-    | '/_authenticated/notations/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -258,40 +208,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBoardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/notations/': {
-      id: '/_authenticated/notations/'
-      path: '/'
-      fullPath: '/notations/'
-      preLoaderRoute: typeof AuthenticatedNotationsIndexRouteImport
-      parentRoute: typeof AuthenticatedNotationsRoute
-    }
     '/_authenticated/settings_/imports': {
       id: '/_authenticated/settings_/imports'
       path: '/settings/imports'
       fullPath: '/settings/imports'
       preLoaderRoute: typeof AuthenticatedSettingsImportsRouteImport
       parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/notations/quotes': {
-      id: '/_authenticated/notations/quotes'
-      path: '/quotes'
-      fullPath: '/notations/quotes'
-      preLoaderRoute: typeof AuthenticatedNotationsQuotesRouteImport
-      parentRoute: typeof AuthenticatedNotationsRoute
-    }
-    '/_authenticated/notations/notes': {
-      id: '/_authenticated/notations/notes'
-      path: '/notes'
-      fullPath: '/notations/notes'
-      preLoaderRoute: typeof AuthenticatedNotationsNotesRouteImport
-      parentRoute: typeof AuthenticatedNotationsRoute
-    }
-    '/_authenticated/notations/commonplace': {
-      id: '/_authenticated/notations/commonplace'
-      path: '/commonplace'
-      fullPath: '/notations/commonplace'
-      preLoaderRoute: typeof AuthenticatedNotationsCommonplaceRouteImport
-      parentRoute: typeof AuthenticatedNotationsRoute
     }
     '/_authenticated/books/$bookId': {
       id: '/_authenticated/books/$bookId'
@@ -303,30 +225,9 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthenticatedNotationsRouteChildren {
-  AuthenticatedNotationsCommonplaceRoute: typeof AuthenticatedNotationsCommonplaceRoute
-  AuthenticatedNotationsNotesRoute: typeof AuthenticatedNotationsNotesRoute
-  AuthenticatedNotationsQuotesRoute: typeof AuthenticatedNotationsQuotesRoute
-  AuthenticatedNotationsIndexRoute: typeof AuthenticatedNotationsIndexRoute
-}
-
-const AuthenticatedNotationsRouteChildren: AuthenticatedNotationsRouteChildren =
-  {
-    AuthenticatedNotationsCommonplaceRoute:
-      AuthenticatedNotationsCommonplaceRoute,
-    AuthenticatedNotationsNotesRoute: AuthenticatedNotationsNotesRoute,
-    AuthenticatedNotationsQuotesRoute: AuthenticatedNotationsQuotesRoute,
-    AuthenticatedNotationsIndexRoute: AuthenticatedNotationsIndexRoute,
-  }
-
-const AuthenticatedNotationsRouteWithChildren =
-  AuthenticatedNotationsRoute._addFileChildren(
-    AuthenticatedNotationsRouteChildren,
-  )
-
 interface AuthenticatedRouteChildren {
   AuthenticatedBoardRoute: typeof AuthenticatedBoardRoute
-  AuthenticatedNotationsRoute: typeof AuthenticatedNotationsRouteWithChildren
+  AuthenticatedNotationsRoute: typeof AuthenticatedNotationsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWeaveRoute: typeof AuthenticatedWeaveRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -336,7 +237,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedBoardRoute: AuthenticatedBoardRoute,
-  AuthenticatedNotationsRoute: AuthenticatedNotationsRouteWithChildren,
+  AuthenticatedNotationsRoute: AuthenticatedNotationsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWeaveRoute: AuthenticatedWeaveRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
@@ -356,3 +257,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

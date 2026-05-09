@@ -1,20 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { Network, Copy, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
-import type { NotationEntry, Display } from "@/lib/notations";
+import type { NotationEntry } from "@/lib/notations";
 import { toast } from "sonner";
 
-export default function NoteEntry({ entry, display }: { entry: NotationEntry; display: Display }) {
-  const isScroll = display === "scroll";
+export default function NoteEntry({ entry }: { entry: NotationEntry }) {
   return (
-    <article
-      className={`group rounded-2xl bg-card shadow-paper p-5 ${isScroll ? "px-6 py-6" : ""}`}
-    >
-      <p
-        className={`whitespace-pre-wrap font-sans ${
-          isScroll ? "text-lg leading-relaxed" : "text-base leading-normal"
-        }`}
-      >
+    <article className="group rounded-2xl bg-card shadow-paper p-5">
+      <p className="whitespace-pre-wrap font-sans text-base leading-normal">
         {entry.body}
       </p>
       <Meta entry={entry} />
