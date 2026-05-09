@@ -19,6 +19,9 @@ import { Route as AuthenticatedNotationsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedBoardRouteImport } from './routes/_authenticated/board'
 import { Route as AuthenticatedNotationsIndexRouteImport } from './routes/_authenticated/notations.index'
 import { Route as AuthenticatedSettingsImportsRouteImport } from './routes/_authenticated/settings_.imports'
+import { Route as AuthenticatedNotationsQuotesRouteImport } from './routes/_authenticated/notations.quotes'
+import { Route as AuthenticatedNotationsNotesRouteImport } from './routes/_authenticated/notations.notes'
+import { Route as AuthenticatedNotationsCommonplaceRouteImport } from './routes/_authenticated/notations.commonplace'
 import { Route as AuthenticatedBooksBookIdRouteImport } from './routes/_authenticated/books.$bookId'
 
 const SignupRoute = SignupRouteImport.update({
@@ -72,6 +75,24 @@ const AuthenticatedSettingsImportsRoute =
     path: '/settings/imports',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedNotationsQuotesRoute =
+  AuthenticatedNotationsQuotesRouteImport.update({
+    id: '/quotes',
+    path: '/quotes',
+    getParentRoute: () => AuthenticatedNotationsRoute,
+  } as any)
+const AuthenticatedNotationsNotesRoute =
+  AuthenticatedNotationsNotesRouteImport.update({
+    id: '/notes',
+    path: '/notes',
+    getParentRoute: () => AuthenticatedNotationsRoute,
+  } as any)
+const AuthenticatedNotationsCommonplaceRoute =
+  AuthenticatedNotationsCommonplaceRouteImport.update({
+    id: '/commonplace',
+    path: '/commonplace',
+    getParentRoute: () => AuthenticatedNotationsRoute,
+  } as any)
 const AuthenticatedBooksBookIdRoute =
   AuthenticatedBooksBookIdRouteImport.update({
     id: '/books/$bookId',
@@ -88,6 +109,9 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/weave': typeof AuthenticatedWeaveRoute
   '/books/$bookId': typeof AuthenticatedBooksBookIdRoute
+  '/notations/commonplace': typeof AuthenticatedNotationsCommonplaceRoute
+  '/notations/notes': typeof AuthenticatedNotationsNotesRoute
+  '/notations/quotes': typeof AuthenticatedNotationsQuotesRoute
   '/settings/imports': typeof AuthenticatedSettingsImportsRoute
   '/notations/': typeof AuthenticatedNotationsIndexRoute
 }
@@ -99,6 +123,9 @@ export interface FileRoutesByTo {
   '/weave': typeof AuthenticatedWeaveRoute
   '/': typeof AuthenticatedIndexRoute
   '/books/$bookId': typeof AuthenticatedBooksBookIdRoute
+  '/notations/commonplace': typeof AuthenticatedNotationsCommonplaceRoute
+  '/notations/notes': typeof AuthenticatedNotationsNotesRoute
+  '/notations/quotes': typeof AuthenticatedNotationsQuotesRoute
   '/settings/imports': typeof AuthenticatedSettingsImportsRoute
   '/notations': typeof AuthenticatedNotationsIndexRoute
 }
@@ -113,6 +140,9 @@ export interface FileRoutesById {
   '/_authenticated/weave': typeof AuthenticatedWeaveRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/books/$bookId': typeof AuthenticatedBooksBookIdRoute
+  '/_authenticated/notations/commonplace': typeof AuthenticatedNotationsCommonplaceRoute
+  '/_authenticated/notations/notes': typeof AuthenticatedNotationsNotesRoute
+  '/_authenticated/notations/quotes': typeof AuthenticatedNotationsQuotesRoute
   '/_authenticated/settings_/imports': typeof AuthenticatedSettingsImportsRoute
   '/_authenticated/notations/': typeof AuthenticatedNotationsIndexRoute
 }
@@ -127,6 +157,9 @@ export interface FileRouteTypes {
     | '/settings'
     | '/weave'
     | '/books/$bookId'
+    | '/notations/commonplace'
+    | '/notations/notes'
+    | '/notations/quotes'
     | '/settings/imports'
     | '/notations/'
   fileRoutesByTo: FileRoutesByTo
@@ -138,6 +171,9 @@ export interface FileRouteTypes {
     | '/weave'
     | '/'
     | '/books/$bookId'
+    | '/notations/commonplace'
+    | '/notations/notes'
+    | '/notations/quotes'
     | '/settings/imports'
     | '/notations'
   id:
@@ -151,6 +187,9 @@ export interface FileRouteTypes {
     | '/_authenticated/weave'
     | '/_authenticated/'
     | '/_authenticated/books/$bookId'
+    | '/_authenticated/notations/commonplace'
+    | '/_authenticated/notations/notes'
+    | '/_authenticated/notations/quotes'
     | '/_authenticated/settings_/imports'
     | '/_authenticated/notations/'
   fileRoutesById: FileRoutesById
@@ -233,6 +272,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsImportsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/notations/quotes': {
+      id: '/_authenticated/notations/quotes'
+      path: '/quotes'
+      fullPath: '/notations/quotes'
+      preLoaderRoute: typeof AuthenticatedNotationsQuotesRouteImport
+      parentRoute: typeof AuthenticatedNotationsRoute
+    }
+    '/_authenticated/notations/notes': {
+      id: '/_authenticated/notations/notes'
+      path: '/notes'
+      fullPath: '/notations/notes'
+      preLoaderRoute: typeof AuthenticatedNotationsNotesRouteImport
+      parentRoute: typeof AuthenticatedNotationsRoute
+    }
+    '/_authenticated/notations/commonplace': {
+      id: '/_authenticated/notations/commonplace'
+      path: '/commonplace'
+      fullPath: '/notations/commonplace'
+      preLoaderRoute: typeof AuthenticatedNotationsCommonplaceRouteImport
+      parentRoute: typeof AuthenticatedNotationsRoute
+    }
     '/_authenticated/books/$bookId': {
       id: '/_authenticated/books/$bookId'
       path: '/books/$bookId'
@@ -244,11 +304,18 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedNotationsRouteChildren {
+  AuthenticatedNotationsCommonplaceRoute: typeof AuthenticatedNotationsCommonplaceRoute
+  AuthenticatedNotationsNotesRoute: typeof AuthenticatedNotationsNotesRoute
+  AuthenticatedNotationsQuotesRoute: typeof AuthenticatedNotationsQuotesRoute
   AuthenticatedNotationsIndexRoute: typeof AuthenticatedNotationsIndexRoute
 }
 
 const AuthenticatedNotationsRouteChildren: AuthenticatedNotationsRouteChildren =
   {
+    AuthenticatedNotationsCommonplaceRoute:
+      AuthenticatedNotationsCommonplaceRoute,
+    AuthenticatedNotationsNotesRoute: AuthenticatedNotationsNotesRoute,
+    AuthenticatedNotationsQuotesRoute: AuthenticatedNotationsQuotesRoute,
     AuthenticatedNotationsIndexRoute: AuthenticatedNotationsIndexRoute,
   }
 

@@ -1,25 +1,22 @@
-import { createFileRoute, Link, Outlet, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import FilterBar from "@/components/notations/FilterBar";
 import DisplayToggle from "@/components/notations/DisplayToggle";
 import GroupingToolbar from "@/components/notations/GroupingToolbar";
-import { useNotations } from "@/lib/notations";
+import { useNotations, type Grouping, type Display } from "@/lib/notations";
 
 export const Route = createFileRoute("/_authenticated/notations")({
-  // Permissive validateSearch: pass-through (we read defensively in components).
   validateSearch: (search: Record<string, unknown>) => search,
   component: NotationsLayout,
 });
 
 function NotationsLayout() {
   const { data } = useNotations();
-  const search = useSearch({ strict: false }) as { display?: "stream" | "scroll" };
-  // Determine sub-route from URL to set sensible defaults.
-  const path = typeof window !== "undefined" ? window.location.pathname : "";
-  const isCommonplace = path.endsWith("/commonplace") || path.endsWith("/notations") || path.endsWith("/notations/");
-  const isQuotes = path.endsWith("/quotes");
-  const defaultDisplay = isCommonplace ? "scroll" : "stream";
-  const defaultGrouping = isCommonplace ? "book" : "newest";
-  void search;
+  const location = useLocation();
+  const path = location.pathname;
+  const isCommonplace =
+    path.endsWith("/commonplace") || path === "/notations" || path === "/notations/";
+  const defaultDisplay: Display = isCommonplace ? "scroll" : "stream";
+  const defaultGrouping: Grouping = isCommonplace ? "book" : "newest";
 
   return (
     <div className="max-w-5xl mx-auto px-6">
@@ -43,14 +40,12 @@ function NotationsLayout() {
       <FilterBar data={data} showKind={isCommonplace} />
 
       <div className="mt-4">
-        <GroupingToolbar defaultGrouping={defaultGrouping as "newest" | "book"} />
+        <GroupingToolbar defaultGrouping={defaultGrouping} />
       </div>
 
       <div className="mt-6 pb-24">
         <Outlet />
       </div>
-      {/* hint to type-checker that var used (avoid lint) */}
-      <span className="hidden">{isQuotes ? "" : ""}</span>
     </div>
   );
 }
