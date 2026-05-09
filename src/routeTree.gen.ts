@@ -16,6 +16,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedWeaveRouteImport } from './routes/_authenticated/weave'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedBoardRouteImport } from './routes/_authenticated/board'
+import { Route as AuthenticatedSettingsImportsRouteImport } from './routes/_authenticated/settings_.imports'
 import { Route as AuthenticatedBooksBookIdRouteImport } from './routes/_authenticated/books.$bookId'
 
 const SignupRoute = SignupRouteImport.update({
@@ -52,6 +53,12 @@ const AuthenticatedBoardRoute = AuthenticatedBoardRouteImport.update({
   path: '/board',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedSettingsImportsRoute =
+  AuthenticatedSettingsImportsRouteImport.update({
+    id: '/settings_/imports',
+    path: '/settings/imports',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedBooksBookIdRoute =
   AuthenticatedBooksBookIdRouteImport.update({
     id: '/books/$bookId',
@@ -67,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/weave': typeof AuthenticatedWeaveRoute
   '/books/$bookId': typeof AuthenticatedBooksBookIdRoute
+  '/settings/imports': typeof AuthenticatedSettingsImportsRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -76,6 +84,7 @@ export interface FileRoutesByTo {
   '/weave': typeof AuthenticatedWeaveRoute
   '/': typeof AuthenticatedIndexRoute
   '/books/$bookId': typeof AuthenticatedBooksBookIdRoute
+  '/settings/imports': typeof AuthenticatedSettingsImportsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -87,6 +96,7 @@ export interface FileRoutesById {
   '/_authenticated/weave': typeof AuthenticatedWeaveRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/books/$bookId': typeof AuthenticatedBooksBookIdRoute
+  '/_authenticated/settings_/imports': typeof AuthenticatedSettingsImportsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/weave'
     | '/books/$bookId'
+    | '/settings/imports'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/weave'
     | '/'
     | '/books/$bookId'
+    | '/settings/imports'
   id:
     | '__root__'
     | '/_authenticated'
@@ -117,6 +129,7 @@ export interface FileRouteTypes {
     | '/_authenticated/weave'
     | '/_authenticated/'
     | '/_authenticated/books/$bookId'
+    | '/_authenticated/settings_/imports'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -176,6 +189,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBoardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/settings_/imports': {
+      id: '/_authenticated/settings_/imports'
+      path: '/settings/imports'
+      fullPath: '/settings/imports'
+      preLoaderRoute: typeof AuthenticatedSettingsImportsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/books/$bookId': {
       id: '/_authenticated/books/$bookId'
       path: '/books/$bookId'
@@ -192,6 +212,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedWeaveRoute: typeof AuthenticatedWeaveRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedBooksBookIdRoute: typeof AuthenticatedBooksBookIdRoute
+  AuthenticatedSettingsImportsRoute: typeof AuthenticatedSettingsImportsRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -200,6 +221,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedWeaveRoute: AuthenticatedWeaveRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedBooksBookIdRoute: AuthenticatedBooksBookIdRoute,
+  AuthenticatedSettingsImportsRoute: AuthenticatedSettingsImportsRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
