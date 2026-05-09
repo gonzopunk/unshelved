@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +13,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Upload, ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
@@ -29,9 +29,32 @@ function SettingsPage() {
 
       <div className="space-y-6">
         <ProfileCard />
+        <ImportsCard />
         <SampleLibraryCard />
       </div>
     </main>
+  );
+}
+
+function ImportsCard() {
+  return (
+    <Link
+      to="/settings/imports"
+      className="block rounded-2xl bg-card shadow-paper p-6 hover:bg-paper transition group"
+    >
+      <div className="flex items-start gap-3">
+        <div className="rounded-full bg-muted p-2 mt-0.5">
+          <Upload className="h-4 w-4 text-ink/70" />
+        </div>
+        <div className="flex-1">
+          <h2 className="font-display text-2xl mb-1">Imports</h2>
+          <p className="text-sm text-muted-foreground">
+            Bring in your Goodreads, StoryGraph, or any CSV. See past imports and undo any one of them.
+          </p>
+        </div>
+        <ChevronRight className="h-5 w-5 text-muted-foreground self-center group-hover:translate-x-1 transition-transform" />
+      </div>
+    </Link>
   );
 }
 
