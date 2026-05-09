@@ -1,133 +1,178 @@
+# Round 3 — Tagging that earns its keep, Margins that travel
 
-# Library Import — Detailed Spec
+Round 2 made it cheap to bring a library *in*. Round 3 makes the library *legible*: every book gets a rich, multi-axis identity, and every quote/note becomes searchable across the whole shelf — not trapped on a single book page. This is the substrate that powers Weave filters, future stats, and recs.
 
-Bring an existing reading life into Unshelved in one sitting. Four entry points, one unified review step, real previews, real undo.
+Pulled from `roadmap.md` items **3 (Deep, User-Definable Tagging)** and **4 (Margins, deepened)**, plus the connective tissue between them.
 
-## Entry points
-
-The Add Book button gains a split: **Add a book** / **Import library…**. The latter opens a full-screen import wizard.
-
-Sources offered, in priority order:
-
-1. **Goodreads CSV export** — the file most people already have.
-2. **StoryGraph CSV export** — second most common.
-3. **Generic CSV** — column mapping UI (covers LibraryThing, Bookwyrm, Notion exports, etc.).
-4. **Open Library / ISBN lookup** — paste a list of titles, ISBNs, or one per line. Each is resolved against Open Library.
-5. **EPUB upload** — drop one or more `.epub` files; we read embedded metadata + cover.
-6. **Paste from clipboard** — freeform text; we parse line-by-line as "Title — Author" or ISBNs.
-
-Each source funnels into the same **Review & Map → Preview → Commit** pipeline.
-
-## Wizard flow
-
-```text
- ┌──────────┐   ┌──────────────┐   ┌──────────┐   ┌────────┐   ┌────────┐
- │ 1 Source │ → │ 2 Field map  │ → │ 3 Enrich │ → │ 4 Review│ → │ 5 Done │
- └──────────┘   └──────────────┘   └──────────┘   └────────┘   └────────┘
-```
-
-### 1. Source
-Drop zone + tabs for the 6 sources. Shows a one-line "what to expect" hint per source, plus a link to step-by-step export instructions for Goodreads/StoryGraph.
-
-### 2. Field map
-- For known formats (Goodreads, StoryGraph), columns auto-map and the user just confirms.
-- For Generic CSV, show a two-column mapper: detected source columns ↔ Unshelved fields. Required: `title`. Optional: `author`, `isbn`, `format`, `status`, `rating`, `date_started`, `date_finished`, `current_page`, `total_pages`, `tags`, `notes`, `series`, `series_number`.
-- Status mapping is its own sub-panel: Goodreads `to-read → want`, `currently-reading → reading`, `read → liked` (default; user can switch the default for "read" rows to `loved` / `liked` / `meh` / `dnf`). Custom shelves become Unshelved tags.
-- Rating mapping: 5★ → `loved`, 4★ → `liked`, 3★ → `meh`, 1–2★ → `dnf`, 0 → keep as-is. User can edit thresholds.
-
-### 3. Enrich
-For each parsed row, in parallel batches of 10:
-- If row has ISBN → Open Library lookup by ISBN.
-- Else → Open Library search by title + author.
-- Pull: cover image URL, page count (only if missing), publisher, first-published year.
-- Generate cover palette via existing `extractCoverPalette` so books still get a swatch when no cover is found.
-- Cache results in `localStorage` keyed by `isbn||title|author` so re-runs are cheap.
-
-User can toggle: "Fetch covers", "Overwrite my page counts", "Fetch series info".
-
-### 4. Review
-Virtualized table, one row per book, with inline editing:
-
-```text
- ✓  Cover  Title / Author        Shelf       Rating  Tags          Match
- ✓  [img]  The Overstory         Reading     —       nature, ethics  OL ✓
- ✓  [img]  Piranesi              Liked       4★      —               OL ✓
- ⚠  [—]    Untitled Draft        Want        —       —               no match
- ✗  [img]  The Overstory         Reading     —       —               duplicate
-```
-
-- **Dedupe**: rows that match an existing book in the user's library (by ISBN, else by normalized title+author) are flagged `duplicate` and unchecked by default. Action toggle per row: `skip` / `merge` (update fields on existing) / `import as new`.
-- **Bulk actions**: select all / none / only matched / only unmatched; bulk shelf reassignment; bulk tag add.
-- **Filters**: by shelf, by match status, by has-cover.
-- **Inline edit**: click any cell to fix title, author, shelf, tags before commit.
-- Header bar shows live counters: `412 to import · 18 duplicates · 7 unmatched`.
-
-### 5. Commit
-- Writes are batched: `books` insert, then `user_books` insert, then `book_tags` insert, all chunked at 100 rows per request.
-- Progress bar with "Importing 240 / 412…", cancel button.
-- On finish: success screen with three counts and three CTAs: **View library**, **Undo this import**, **Import more**.
-
-## Undo
-
-Every import is recorded as an `import_batch` row (id, source, created_at, counts). Every inserted `book` and `user_book` carries `import_batch_id`. The Undo button on the success screen — and a full history under Settings → Imports — issues a single delete by batch id. Within 24h, undo is one click; after that, a confirm dialog appears.
-
-## Edge cases
-
-- **CSV variants**: handle BOM, CRLF, quoted commas, semicolon delimiters (LibraryThing EU exports).
-- **Duplicate detection across the import itself**: two rows for the same book in one CSV collapse to one.
-- **Long imports**: the wizard keeps a resumable cursor in `localStorage` so a refresh mid-enrich doesn't lose progress.
-- **Rate limits**: Open Library lookups capped at 100/min; on 429 we back off and surface a banner ("Slowing down to be polite to Open Library").
-- **Privacy**: CSV files stay client-side; only normalized title/author/ISBN strings are sent to Open Library.
-
-## Out of scope (round 3 candidates)
-
-- Direct Goodreads/StoryGraph OAuth (both lack stable public APIs).
-- Amazon / Kindle highlight import.
-- Auto-import on a schedule.
-- Importing reviews as `notes` (we'll pull them into a `notes` field but not into the rich-notes table — users can promote later).
+Broken into three passes you can ship and live with independently.
 
 ---
 
-## Technical sketch
+## Pass A — Tag Axes & the Tagging UX
 
-**Files**
-- `src/components/import/ImportWizard.tsx` — shell + step state machine (`useReducer`, no router changes).
-- `src/components/import/steps/{Source,FieldMap,Enrich,Review,Done}.tsx`.
-- `src/lib/import/parsers/{goodreads,storygraph,generic,openlibrary,epub,paste}.ts` — each exports `parse(input) → ImportRow[]`.
-- `src/lib/import/enrich.ts` — Open Library client + cache + palette hook.
-- `src/lib/import/dedupe.ts` — normalized key (`title.toLowerCase().replace(/\W/g,'') + '|' + author…`).
-- `src/lib/import/commit.ts` — batched inserts; wraps `supabase.from('books').insert([...])`.
-- `src/routes/_authenticated/settings.imports.tsx` — history + undo.
+The data model already has `tag_axes` and `book_axis_values` — they're under-used. Pass A turns them into a first-class system.
 
-**Dependencies**
-- `papaparse` — CSV parsing (handles all the variants above).
-- `epubjs` or just `jszip` + a tiny OPF reader for EPUB metadata (jszip is lighter, ~30kB).
-- No new server functions — all parsing is client-side; writes go through the existing Supabase RLS-protected tables.
+### What ships
 
-**Schema**
-One migration:
+- **Built-in axes**, seeded for every new user (and backfilled for existing):
+  - `pace` (scale 1–5)
+  - `spice` (scale 0–5)
+  - `mood` (multi-select: cozy, melancholy, propulsive, cerebral, hopeful, bleak, playful, dread, lush, dry)
+  - `pov` (single: 1st, close 3rd, omniscient, multi-POV, 2nd)
+  - `tropes` (free multi-select with autocomplete)
+  - `content_warnings` (multi-select from a curated list + free-form)
+  - `genre` (multi-select, autocomplete)
+- **Free-form tags** stay (existing `tags` + `book_tags`) — coexist, don't replace.
+- **Axis editor** under Settings → Tags & Axes: rename labels, hide built-ins, reorder, add custom axes (scale or multi-select), edit allowed values.
+- **Per-book Tag Sheet** (replaces the thin `QuickTagBar`): a single popover on the book page with all axes laid out — sliders for scales, chip pickers for multi-select, free tags at the bottom. One save, optimistic.
+- **Tag chips everywhere**: book cards on `/`, `/board`, and book detail show 2–3 most distinctive axis values (e.g. `pace 4 · cozy · 1st`).
+- **Onboarding nudge**: when a book has zero axis values, the detail page surfaces a soft "Tag this book" prompt above the fold.
 
-```sql
-create table public.import_batches (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null,
-  source text not null,            -- 'goodreads' | 'storygraph' | ...
-  row_count int not null default 0,
-  created_at timestamptz not null default now()
-);
-alter table public.import_batches enable row level security;
-create policy "own batches" on public.import_batches for all
-  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+### Technical sketch
 
-alter table public.books      add column import_batch_id uuid;
-alter table public.user_books add column import_batch_id uuid;
-create index on public.books      (import_batch_id);
-create index on public.user_books (import_batch_id);
+```text
+src/components/tags/
+  TagSheet.tsx        — full multi-axis editor popover
+  AxisField.tsx       — renders one axis (scale | multi | single)
+  AxisChip.tsx        — read-only chip used on cards
+  AutocompleteInput.tsx — shared chip input (used by free tags + tropes)
+
+src/routes/_authenticated/settings.tags.tsx — axis editor
+
+src/lib/tags.ts       — already exists; extend with:
+  - listAxes(), upsertAxisValue(), seedBuiltInAxes()
+  - distinctiveAxesFor(book) helper for card chips
 ```
 
-No FKs to `import_batches` so undoing a batch never blocks on cascade order — we just `delete from books where import_batch_id = $1` then the batch row.
+Schema work is small — the tables already exist. Migration adds:
 
-**Performance**
-- Open Library calls are `Promise.all` in chunks of 10 with `AbortController` so leaving the wizard cancels in-flight work.
-- Review table uses `@tanstack/react-virtual` (already in tree via shadcn) — comfortable up to ~5,000 rows.
-- Commit chunks of 100 keep us well below Supabase's payload + 1000-row read cap.
+```sql
+-- one trigger to seed built-in axes for new users (idempotent)
+create or replace function public.seed_builtin_axes_for_user(_uid uuid)
+  returns void language plpgsql security definer set search_path = public as $$ ... $$;
+
+-- one-shot RPC for backfill on first load:
+create or replace function public.ensure_builtin_axes()
+  returns void language plpgsql security definer set search_path = public as $$
+    select public.seed_builtin_axes_for_user(auth.uid());
+  $$;
+```
+
+No destructive changes; existing custom tags untouched.
+
+---
+
+## Pass B — Global Margins (`/margins`)
+
+Today notes and quotes only exist on the book detail page. Pass B promotes them to a top-level commonplace book.
+
+### What ships
+
+- **New route `/margins`** in the top nav, between Library and Weave.
+- **Unified feed** of every `note` and `highlight` you've written, newest first, grouped by month with sticky month headers.
+- **Filters**:
+  - kind: notes / quotes / both
+  - book (autocomplete chip)
+  - axis values (e.g. `mood: melancholy`) — pulls in Pass A's data
+  - free tag chips
+  - date range
+  - has-page-number, has-quote-text length > N
+- **Search** across `quote_text` and `content` with Postgres `websearch_to_tsquery` (cheap GIN index).
+- **Card design**:
+  - Quote card: large pull-quote in display serif, book + page below, swatch in the book's `cover_color`, "Weave" + "Copy" actions on hover.
+  - Note card: smaller, body type, same metadata footer.
+- **Detail drawer**: click any card → side drawer with full text, related connections (existing Weave query), edit / delete inline.
+- **Today's resurface**: top of `/margins` shows 1 quote and 1 note from "this week, last year" or random if no anniversary — single dismissable strip, not a modal.
+- **Export**: "Copy as Markdown" on any card; "Export filtered set" button (downloads `.md` + `.json`).
+
+### Technical sketch
+
+```text
+src/routes/_authenticated/margins.tsx
+src/components/margins/
+  MarginsFeed.tsx       — virtualized list with month dividers
+  MarginsFilters.tsx    — sticky left rail (collapses on mobile to a sheet)
+  QuoteCard.tsx
+  NoteCard.tsx
+  ResurfaceStrip.tsx
+  MarginDrawer.tsx
+src/lib/margins.ts      — combined query: highlights ∪ notes with shared shape
+```
+
+Schema: one migration, additive.
+
+```sql
+alter table public.highlights add column if not exists tags text[] default '{}';
+alter table public.notes      add column if not exists tags text[] default '{}';
+
+create index if not exists highlights_text_fts
+  on public.highlights using gin (to_tsvector('english', quote_text));
+create index if not exists notes_text_fts
+  on public.notes      using gin (to_tsvector('english', content));
+```
+
+No new RLS — existing per-user policies cover it.
+
+---
+
+## Pass C — Tag-aware Weave + Resurface email + polish
+
+Pass C is the connective tissue: it makes Pass A and B *feel* like one feature, not two.
+
+### What ships
+
+- **Weave filter expansion**: the `FilterChip` rail on `/weave` gains an "Axes" group. Pick `mood: cozy` and the graph + list constrain to connections whose endpoints share that value. Same UX on the per-book Weave tab.
+- **Distinctive-axis chips on Weave nodes**: web view labels show one axis value under the title for quicker scanning.
+- **Smart Margins clusters**: at the top of `/margins`, three auto-generated chip groups appear based on your data:
+  - "Most quoted books" (top 3)
+  - "Most-tagged moods this year"
+  - "Quotes you wove from" (highlights that anchor ≥1 connection)
+  Each clicks to a pre-filtered view.
+- **Weekly Resurface email** (opt-in toggle in Settings → Notifications):
+  - Edge function `weekly-resurface` runs Sunday 09:00 in user's stored timezone (default UTC).
+  - Picks 3 quotes + 1 note via a deterministic seed (so the same user/week always gets the same picks — replayable).
+  - Sent via Resend; template lives in `supabase/functions/weekly-resurface/template.ts`.
+  - One-click "unsubscribe" sets `profiles.resurface_email = false`.
+- **Command Palette additions**: "Open Margins", "Filter Margins by mood…", "Open Tag Sheet for current book", "Edit tag axes".
+- **Card chip everywhere**: `BookCard`, `BookSpine`, `/board` columns get the same 2–3 distinctive-axes chip strip from Pass A — closes the loop visually.
+
+### Technical sketch
+
+```text
+supabase/functions/weekly-resurface/
+  index.ts              — reads profiles where resurface_email = true
+  template.ts           — minimal HTML, system-font, single accent color
+  pick.ts               — seeded RNG + scoring
+
+src/routes/_authenticated/settings.notifications.tsx — toggle + preview
+```
+
+Schema additions:
+
+```sql
+alter table public.profiles
+  add column if not exists timezone text default 'UTC',
+  add column if not exists resurface_email boolean not null default false,
+  add column if not exists resurface_last_sent_at timestamptz;
+```
+
+Cron: pg_cron job calling the edge function hourly; the function self-filters by local-hour-of-week so we don't need a per-user scheduler.
+
+---
+
+## Out of scope for round 3 (deferred to round 4)
+
+- Open-Reader Sync (KOSync, Audiobookshelf) — roadmap item 5, separate moat work.
+- Editorial Stats Dashboard — needs Pass A's data to be dense first; revisit after a few weeks of real tagging.
+- Public/shared Margins or Weave links — social surface, not now.
+- AI-suggested connections from quote text — interesting but premature.
+
+---
+
+## Suggested shipping order
+
+1. **Pass A** first — every other pass and every future feature is better when axis data exists. ~1 build session.
+2. **Pass B** standalone — independently shippable; doesn't strictly need Pass A but is dramatically better with it.
+3. **Pass C** last — it's polish + the email loop; only worthwhile once A and B are real.
+
+Approve and I'll start with Pass A.
