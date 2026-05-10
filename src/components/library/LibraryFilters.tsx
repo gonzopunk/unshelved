@@ -103,10 +103,20 @@ export default function LibraryFilters({
         </PopoverTrigger>
         <PopoverContent className="w-auto rounded-2xl p-3">
           <div className="flex items-center gap-3">
-            <StarRating
-              value={filters.rating ?? 0}
-              onChange={(n) => onChange({ rating: n || null })}
-            />
+            <div className="inline-flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => onChange({ rating: filters.rating === n ? null : n })}
+                  className={`text-lg leading-none ${
+                    n <= (filters.rating ?? 0) ? "text-terra" : "text-mist"
+                  }`}
+                  aria-label={`${n} stars`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
             {filters.rating != null && (
               <button
                 onClick={() => onChange({ rating: null })}
