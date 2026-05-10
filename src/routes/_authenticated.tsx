@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, Link, useNavigate } from "@tanstack/react-rout
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
-import { LayoutGrid, Plus, LogOut, Network, Settings as SettingsIcon, Search, BookPlus, Upload, ChevronDown, NotebookPen, Library as LibraryIcon } from "lucide-react";
+import { LayoutGrid, Plus, LogOut, Network, Settings as SettingsIcon, Search, BookPlus, Upload, ChevronDown, NotebookPen, Library as LibraryIcon, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -71,6 +71,7 @@ function PillNav({ onAdd, onImport, onSearch, onLogout }: { onAdd: () => void; o
         <NavItem to="/board" icon={<LayoutGrid className="h-4 w-4" />} label="Board" />
         <NavItem to="/weave" icon={<Network className="h-4 w-4" />} label="Connections" />
         <NavItem to="/notations" icon={<NotebookPen className="h-4 w-4" />} label="Notations" />
+        <NavItem to="/visualizations" icon={<BarChart3 className="h-4 w-4" />} label="Visualizations" />
         <button
           onClick={onSearch}
           aria-label={`Search (${isMac ? "⌘K" : "Ctrl K"})`}
