@@ -5,7 +5,6 @@ import {
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import StarRating from "@/components/StarRating";
 import {
   STATUS_LABELS, FORMAT_LABELS,
   type LibraryFilters as F,
