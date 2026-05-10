@@ -2116,3 +2116,34 @@
   background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.4) 0 4px, transparent 4px 8px);
 }
 .bc-card.finished { background: linear-gradient(180deg, var(--paper), #EDE5D0); }
+
+/* ============= Notations print stylesheet ============= */
+@media print {
+  body { background: white !important; }
+  /* Hide everything outside the notations page */
+  body > *:not(:has([data-print-root])) { display: none !important; }
+  [data-print-root] [data-no-print],
+  [data-print-root] nav,
+  [data-print-root] header[data-no-print] { display: none !important; }
+  [data-print-root] {
+    max-width: 6in !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    color: #000 !important;
+  }
+  [data-print-root] article {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    box-shadow: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    padding: 0.4in 0 !important;
+    border-bottom: 1px solid #ddd;
+  }
+  [data-print-root] article.border-l-4 {
+    border-left: 4pt solid #d17648 !important;
+    padding-left: 0.25in !important;
+  }
+  [data-print-root] a { color: #000 !important; text-decoration: none !important; }
+  [data-print-root] a[href]::after { content: "" !important; }
+}
