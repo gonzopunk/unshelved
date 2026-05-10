@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, Link, useNavigate } from "@tanstack/react-rout
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
-import { Home, LayoutGrid, Plus, LogOut, Network, Settings as SettingsIcon, Search, BookPlus, Upload, ChevronDown, NotebookPen } from "lucide-react";
+import { LayoutGrid, Plus, LogOut, Network, Settings as SettingsIcon, Search, BookPlus, Upload, ChevronDown, NotebookPen, Library as LibraryIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -67,7 +67,7 @@ function PillNav({ onAdd, onImport, onSearch, onLogout }: { onAdd: () => void; o
       <nav className="flex items-center gap-1 rounded-full bg-paper/80 backdrop-blur-md shadow-lift px-2 py-2 border border-border">
         <Link to="/" className="font-display text-xl px-4 text-primary">Unshelved</Link>
         <span className="h-6 w-px bg-border mx-1" />
-        <NavItem to="/" icon={<Home className="h-4 w-4" />} label="Home" />
+        <NavItem to="/library" icon={<LibraryIcon className="h-4 w-4" />} label="Library" />
         <NavItem to="/board" icon={<LayoutGrid className="h-4 w-4" />} label="Board" />
         <NavItem to="/weave" icon={<Network className="h-4 w-4" />} label="Connections" />
         <NavItem to="/notations" icon={<NotebookPen className="h-4 w-4" />} label="Notations" />
