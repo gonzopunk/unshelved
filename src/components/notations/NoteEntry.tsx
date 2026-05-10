@@ -46,10 +46,10 @@ export function Meta({ entry }: { entry: NotationEntry }) {
         </Link>
         <button
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition px-2 py-1 rounded-full"
-          title="Weave (coming soon)"
-          onClick={() => toast("Weave action coming in a follow-up build")}
+          title="Connect (coming soon)"
+          onClick={() => toast("Connect action coming in a follow-up build")}
         >
-          <Network className="h-3 w-3" /> Weave
+          <Network className="h-3 w-3" /> Connect
         </button>
       </div>
     </div>
