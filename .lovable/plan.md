@@ -1,79 +1,73 @@
+## Pass B (Build 2): Notations — Export, Resurface, Keyboard, Print
 
-# Pass B (Build 1): Notations — Core + Scroll mode
+Build 2 layers four polish features onto the simplified Build 1 stream. No schema changes, no new routes, no new top-nav surface. Everything ships into the existing `/notations` page and entry components.
 
-Ship a new top-level `/notations` tab with three views (Notes / Quotes / Commonplace), shared filters, and a per-view Stream/Scroll display toggle. Card export, the resurfaced-entry hero, keyboard nav, and the print stylesheet are deferred to Build 2.
+### 1. Card export (Quote / Note share cards)
 
-## What's in this build
+A new "Export as card" hover action on every entry, alongside Copy / Book / Connect.
 
-### 1. Routes (TanStack file-based)
-- `src/routes/_authenticated/notations.tsx` — layout. Renders sub-nav (Notes / Quotes / Commonplace), the shared `<FilterBar>`, the `<DisplayToggle>`, the `<GroupingToolbar>`, then `<Outlet />`. Owns the URL search-params schema (`zodValidator` + `fallback`) so all three child views inherit filters cleanly. Uses `retainSearchParams` so switching views preserves filters.
-- `src/routes/_authenticated/notations.notes.tsx` — Notes only.
-- `src/routes/_authenticated/notations.quotes.tsx` — Quotes only.
-- `src/routes/_authenticated/notations.commonplace.tsx` — both, interleaved. Default display = Scroll, default grouping = By book.
-- `src/routes/_authenticated/notations.index.tsx` — redirects to `/notations/commonplace`.
+- New component `src/components/notations/ExportCard.tsx`
+  - Off-screen render at fixed dimensions, **two ratio options**:
+    - **Square** 1080×1080 (default — safe everywhere).
+    - **Portrait** 1080×1350 (4:5, IG-optimal).
+  - Renders a `<QuoteCard>` or `<NoteCard>` variant based on `entry.kind`, preserving the non-negotiable visual rules: Quotes get the terra left bar + `font-display italic` body in curly quotes; Notes get plain sans body, no bar.
+  - Layout: generous padding (~80px), book cover swatch (using `cover_color` / `cover_secondary_color`) as a small chip top-left, body centered with auto-shrinking type scale (3 tiers: 56 / 44 / 32px) based on character count, footer line in mono with title · author · page (quotes) or date (notes), tiny "unshelved" wordmark bottom-right.
+- Generation: `html-to-image` (`toPng`). Add the dep if not present. One util `exportEntryCard(entry, ratio)` that mounts the off-screen node into a portal, awaits fonts, snapshots, downloads as `unshelved-{kind}-{shortId}.png`, and unmounts.
+- Hover action: a `<Download>` icon button in `Meta` opens a tiny popover with two choices — **Square** / **Portrait (4:5)** — then triggers export. Toast "Card saved" on success.
 
-### 2. Shared search-params schema
-On the parent `notations.tsx` route:
-```
-display: 'stream' | 'scroll'      // per-view default applied in component
-grouping: 'newest' | 'oldest' | 'book' | 'author' | 'series' | 'axis' | 'month'
-axisKey?: string                  // when grouping='axis' or filtering by axis
-bookIds: string[]
-authorNames: string[]
-seriesValues: string[]            // values from the 'series' tag-axis
-tagIds: string[]
-axisFilter?: string               // e.g. 'mood:melancholy'
-dateFrom?: string                 // ISO date
-dateTo?: string
-kind: 'both' | 'notes' | 'quotes' // only meaningful on Commonplace
-q: string                         // search
-```
-All optional with sensible fallbacks. `stripSearchParams` on defaults so URLs stay clean.
+### 2. Resurfaced entry hero
 
-### 3. Data layer
-New file `src/lib/notations.ts` with one hook:
-- `useNotations()` — single React Query that loads all `notes` + `highlights` with their joined `books` (title, author, cover_color, cover_secondary_color), all `tags` + `book_tags`, all `tag_axes` + `book_axis_values`. Returns a normalized shape with computed `entries: NotationEntry[]` where each entry has `{ kind: 'note' | 'quote', id, bookId, body, pageNumber?, createdAt, book: {...}, tags: Tag[], axisValues: Record<string, string[]> }`. All filtering/grouping/sorting happens client-side off this single data set. Memoized derivations exposed as helpers: `applyFilters(entries, params)`, `groupEntries(entries, grouping)`, `searchEntries(entries, q)`.
+A small "Today's resurfaced notation" strip at the top of `/notations`, above the kind/sort segmented controls.
 
-### 4. Components (`src/components/notations/`)
-- `NoteEntry.tsx` — `rounded-2xl bg-card shadow-paper p-4`, sans body, mono meta line (date · book title · author · "open book" link). Hover actions: Weave, Copy, Open book. **No** left border.
-- `QuoteEntry.tsx` — same card frame **plus `border-l-4 border-terra`**, `font-display italic` body with curly quotes, mono meta line (page number if present · book title · author). Same hover actions. The terra bar persists in both display modes.
-- `EntryShell.tsx` — small wrapper that picks the right component by kind; used by Commonplace where they interleave.
-- `FilterBar.tsx` — chip-based multi-selects for Book, Author, Series (sourced from `axis:series` tag-axis values), Tag, Axis-value (`mood:cozy` style). Date range (two date inputs). Kind toggle (only renders on Commonplace). Search input (debounced 200ms). "Clear all" button. Active filters render as removable chips below.
-- `DisplayToggle.tsx` — segmented control (Stream / Scroll). Updates `?display=` via `useNavigate` with the function-form `search` updater so other params persist.
-- `GroupingToolbar.tsx` — segmented control for grouping options. Updates `?grouping=`.
-- `BookHeader.tsx` — group divider for "by book" grouping; shows cover swatch (cover_color), title, author, count of entries.
-- `Divider.tsx` — generic group divider (used for date / month / author / axis groupings).
-- `EmptyState.tsx` — small component for "no entries match these filters".
+- Deterministic daily pick: hash `YYYY-MM-DD + user.id` → index into the **full unfiltered** entries set (does not respect active filters — it's a serendipity surface).
+- Avoid back-to-back repeats: track last pick id in `localStorage`; if the day's pick matches yesterday's, advance index by 1.
+- Renders a compact `EntryShell` inside a `<section>` with a hairline top/bottom rule and a mono eyebrow "Today · resurfaced". Includes a small "Shuffle" button (rerolls in-memory only).
+- Hidden when entries.length === 0.
 
-### 5. Display modes
-- **Stream** (default for Notes & Quotes) — entries stack at full width with `space-y-3`, `max-w-3xl mx-auto`, body text size base. Quote-vs-Note distinction = terra bar + serif italic on quotes.
-- **Scroll** (default for Commonplace) — narrower column `max-w-2xl mx-auto`, increased vertical rhythm (`space-y-8`), Quote body bumps to `text-xl leading-relaxed font-display italic`, Note body stays sans but at `text-lg leading-relaxed`. The terra bar stays on quotes only. Group dividers use a hairline `<hr>` with serif label centered, italic.
+### 3. Keyboard navigation
 
-### 6. Top nav
-Add a fourth `NavItem` to the pill nav in `src/routes/_authenticated.tsx`:
-- `<NavItem to="/notations" icon={<NotebookPen />} label="Notations" />` placed between Connections and the search button. Uses `lucide-react`'s `NotebookPen` icon.
+Stream-only, scoped to `/notations`.
 
-### 7. Command palette
-Add three commands to `src/components/CommandPalette.tsx`:
-- "Open Notations" → `/notations/commonplace`
-- "Open Notes" → `/notations/notes`
-- "Open Quotes" → `/notations/quotes`
+- `j` / `k`: move selection down / up across the visible filtered list. Selected entry gets a subtle `ring-1 ring-terra/40` and scrolls into view (`block: "nearest"`).
+- `o`: open the selected entry's book (`/books/$bookId`).
+- `c`: copy the selected entry's body.
+- `e`: export selected entry as card (uses the default ratio = square).
+- `?`: toast a one-line cheatsheet.
+- Implementation: `useKeyboardNav(entries)` hook in `src/lib/notations-keyboard.ts` using a single `keydown` listener; ignored when focus is in `input`, `textarea`, or `[contenteditable]`. Cleans up on unmount.
 
-## What's NOT in this build (Build 2)
-- `<QuoteCard>` / `<NoteCard>` 1080×1080 export templates and the "Export as card" hover action.
-- "Today's resurfaced entry" hero strip on the Notations index.
-- Keyboard nav (`j`/`k`/`o`/`c`).
-- Print stylesheet for Commonplace.
-- `/notations/entry/$kind/$id` stable per-entry URLs.
+### 4. Print stylesheet
 
-## What's NOT in this round at all
-- Schema changes (none needed).
-- Editing entries inline (use book detail page).
-- First-class `series` column on books.
-- Full-text search ranking.
+A clean printable view of the **currently filtered + sorted** stream — this is the "print/export" home for what used to be Scroll mode.
 
-## Technical notes
-- TanStack search-params: use `zodValidator` + `fallback()` from `@tanstack/zod-adapter` (not `.catch()`). Function-form `search` updater on every `<Link>` and `navigate()` call so nothing clobbers other params.
-- Filter logic is pure functions in `src/lib/notations.ts` for testability; route components only orchestrate.
-- All colors via tokens (`bg-card`, `border-terra`, `text-muted-foreground`, `font-display`, `font-mono`). No raw hex in components.
-- Series filter pulls values from the user's `axis:series` tag-axis (if it exists). If the user hasn't created that axis, the Series multi-select renders disabled with a small "Create a 'series' tag-axis to enable" hint that links to `/settings`.
+- New "Print" button in the toolbar row (next to the segmented controls), icon `Printer`. Calls `window.print()`.
+- Scoped `@media print` block in `src/styles.css`, gated by a `data-print-root` attribute on the notations page wrapper to avoid leaking print rules to other routes:
+  - Hide nav, filter bar, segmented controls, hover actions, hero strip, footer.
+  - Show a print-only header: "Notations — {date} — {N} entries — {active filters summary}".
+  - Single column, `max-width: 6in`, increased leading; quotes keep `font-display italic`.
+  - `page-break-inside: avoid` on each `<article>`.
+  - Terra bar prints as a 4pt left border (color printers keep terra; mono printers degrade to black).
+  - URLs hidden; book title + author printed inline.
+
+### Out of scope (still deferred)
+- Stable per-entry URLs (`/notations/entry/$kind/$id`).
+- Multi-card batch export / PDF compilation.
+- Weekly resurfaced-quote email (roadmap item, not Notations build).
+- Editing entries inline.
+- "Connect" action wiring (still toasts coming-soon).
+
+### Files
+
+**New**
+- `src/components/notations/ExportCard.tsx` — off-screen card renderer + `exportEntryCard()` util + ratio popover.
+- `src/components/notations/ResurfacedHero.tsx` — daily pick strip.
+- `src/lib/notations-keyboard.ts` — `useKeyboardNav()` hook.
+
+**Modified**
+- `src/components/notations/NoteEntry.tsx` — add Export action to `Meta`; accept `selected` prop for keyboard ring.
+- `src/components/notations/QuoteEntry.tsx` — accept `selected` prop.
+- `src/components/notations/EntryShell.tsx` — pass through `selected`.
+- `src/routes/_authenticated/notations.tsx` — mount `ResurfacedHero`, wire `useKeyboardNav`, add Print button, manage `selectedIndex`, wrap page with `data-print-root`.
+- `src/styles.css` — `@media print` block scoped under `[data-print-root]`.
+
+### Dependencies
+- `html-to-image` (~12kB gz). Added if not already installed.
