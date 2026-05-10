@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import FilterBar from "@/components/notations/FilterBar";
 import EntryShell from "@/components/notations/EntryShell";
 import ResurfacedHero from "@/components/notations/ResurfacedHero";
+import ActiveFilters from "@/components/library/ActiveFilters";
 import { exportEntryCard } from "@/components/notations/ExportCard";
 import { useNotationsKeyboard } from "@/lib/notations-keyboard";
 import {
@@ -112,14 +113,48 @@ function NotationsPage() {
     !isLoading && entries.length > 0,
   );
 
-  const activeFilterSummary = [
-    filters.q && `“${filters.q}”`,
-    filters.bookIds.length && `${filters.bookIds.length} book(s)`,
-    filters.authorNames.length && `${filters.authorNames.length} author(s)`,
-    filters.seriesValues.length && `${filters.seriesValues.length} series`,
-    (filters.dateFrom || filters.dateTo) && `${filters.dateFrom ?? "…"}→${filters.dateTo ?? "…"}`,
-    kind !== "both" && kind,
-  ].filter(Boolean).join(" · ");
+  const patchSearch = (patch: Record<string, unknown>) =>
+    navigate({
+      to: ".",
+      search: (prev: Record<string, unknown>) => ({ ...prev, ...patch }),
+      replace: true,
+    } as never);
+
+  const chips = [
+    filters.q && {
+      key: "q", label: `“${filters.q}”`,
+      onRemove: () => patchSearch({ q: undefined }),
+    },
+    filters.bookIds.length > 0 && {
+      key: "books", label: `${filters.bookIds.length} book${filters.bookIds.length === 1 ? "" : "s"}`,
+      onRemove: () => patchSearch({ bookIds: undefined }),
+    },
+    filters.authorNames.length > 0 && {
+      key: "authors", label: `${filters.authorNames.length} author${filters.authorNames.length === 1 ? "" : "s"}`,
+      onRemove: () => patchSearch({ authorNames: undefined }),
+    },
+    filters.seriesValues.length > 0 && {
+      key: "series", label: `${filters.seriesValues.length} series`,
+      onRemove: () => patchSearch({ seriesValues: undefined }),
+    },
+    (filters.dateFrom || filters.dateTo) && {
+      key: "date", label: `${filters.dateFrom ?? "…"} → ${filters.dateTo ?? "…"}`,
+      onRemove: () => patchSearch({ dateFrom: undefined, dateTo: undefined }),
+    },
+    kind !== "both" && {
+      key: "kind", label: kind === "notes" ? "Notes only" : "Quotes only",
+      onRemove: () => patchSearch({ kind: undefined }),
+    },
+  ].filter(Boolean) as { key: string; label: string; onRemove: () => void }[];
+
+  const clearAllChips = () =>
+    patchSearch({
+      q: undefined, bookIds: undefined, authorNames: undefined,
+      seriesValues: undefined, dateFrom: undefined, dateTo: undefined,
+      kind: undefined,
+    });
+
+  const activeFilterSummary = chips.map((c) => c.label).join(" · ");
 
   return (
     <div data-print-root className="max-w-3xl mx-auto px-6">
@@ -171,6 +206,12 @@ function NotationsPage() {
       <div data-no-print>
         <FilterBar data={data} />
       </div>
+
+      {chips.length > 0 && (
+        <div className="mt-3" data-no-print>
+          <ActiveFilters chips={chips} onClearAll={clearAllChips} />
+        </div>
+      )}
 
       <div className="mt-6 pb-24">
         {isLoading ? (

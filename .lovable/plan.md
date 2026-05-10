@@ -1,9 +1,9 @@
 
-# Round 3 — Pass A.0: Library
+# Round 3 — Pass A: Visualizations
 
-A new top-level **Library** route — a flat, filterable, sortable, searchable view of every book a user owns. The home of long-tail library management for users with hundreds of books that don't all fit cleanly into Want / Reading / Finished. Designed so chart click-throughs from the upcoming Visualizations pass land in a meaningful filtered view.
+A new top-level **Visualizations** route — the "data is beautiful" surface for readers. Every chart is opinionated, click-throughable into `/library?…`, and themed in the existing palette (forest, paper, ink, plus per-cover accents).
 
-`/` (Home dashboard) and `/board` (kanban) are unchanged. Library is additive.
+`/visualizations` ships with two sub-views: **Charts** (default) and **Bookcloud**. URL-driven, sub-view persisted in search params.
 
 ---
 
@@ -11,171 +11,137 @@ A new top-level **Library** route — a flat, filterable, sortable, searchable v
 
 ```
 src/routes/_authenticated/
-  library.tsx                     # the Library page
-src/components/library/
-  LibraryFilters.tsx              # left rail / collapsible filter bar (chips + dropdowns)
-  LibraryGrid.tsx                 # responsive grid of book cards
-  LibraryList.tsx                 # dense list/table alternative
-  LibraryToolbar.tsx              # sort, view-mode toggle (grid/list), result count
-  ActiveFilters.tsx               # chip strip showing applied filters with × to remove
-                                  # SHARED — also used by Notations, Connections, Visualizations
+  visualizations.tsx              # tab shell (Charts | Bookcloud), validateSearch
+src/components/viz/
+  VizTabs.tsx                     # sub-view switcher
+  ChartsBoard.tsx                 # grid of chart cards
+  ChartCard.tsx                   # shared card frame (title, sublabel, hint, body)
+  charts/
+    StatusMix.tsx                 # donut: status distribution
+    FormatSplit.tsx               # stacked bar: print/ebook/audiobook
+    FinishedByMonth.tsx           # area chart: finished_at over last 12mo
+    RatingHistogram.tsx           # bar: rating 1–5
+    TopAuthors.tsx                # horizontal bar: top 10 authors by count
+    TagCloud.tsx                  # tag freq treemap (small)
+    AxisProfile.tsx               # radar: avg axis values across library
+    PaceHeatmap.tsx               # cal-heatmap of reading_sessions minutes
+  Bookcloud.tsx                   # force-directed cloud of all books
 src/lib/
-  library-filter.ts               # pure: filterLibrary(books, filters), sortLibrary(books, sort)
+  viz-data.ts                     # pure aggregators over useLibrary + sessions + tags + connections
+  viz-link.ts                     # helpers building /library?… and /weave?… deep-links
 ```
 
-`<ActiveFilters>` lives under `src/components/library/` for now since it's born here, but its API is generic — Notations and Connections will import it as-is.
+No new dependencies. Reuses `recharts` (already in shadcn `chart.tsx`) and `d3-force` via the existing `WebGraph.tsx` pattern. `react-virtual` not needed.
 
 ---
 
-## 2. URL search-param contract
-
-Drives all state. Single source of truth, shareable, click-through-friendly.
+## 2. URL contract
 
 ```ts
-// src/routes/_authenticated/library.tsx — validateSearch (zod + fallback)
-{
-  q:        string,                       // free-text title/author/notes search
-  status:   "want" | "reading" | "loved" | "liked" | "meh" | "dnf" | "paused",
-  format:   "print" | "ebook" | "audiobook",
-  author:   string,                       // exact match (chart click-through)
-  tag:      string,                       // tag NAME (case-insensitive)
-  axis:     string,                       // "mood:cozy" or "spice:3" — colon-separated key:value
-  rating:   1 | 2 | 3 | 4 | 5,
-  dateFrom: string,                       // ISO date — finished_at lower bound
-  dateTo:   string,                       // ISO date — finished_at upper bound
-  sort:     "added" | "title" | "author" | "rating" | "finished" | "progress",
-  dir:      "asc" | "desc",               // default "desc"
-  view:     "grid" | "list",              // persisted; default "grid"
-}
+// validateSearch
+{ tab: "charts" | "cloud" }   // default "charts", stripped from URL
 ```
 
-All fields optional, all use `fallback()` from `@tanstack/zod-adapter` so bad URLs degrade gracefully. Defaults stripped from URL via `stripSearchParams` middleware.
+That's it. Filtering happens *in* Library/Weave/Notations after a click-through. Visualizations itself shows the whole library — no filter UI here. (Keeps the surface uncluttered; the chart IS the filter.)
 
 ---
 
-## 3. UI
+## 3. Charts v1 — eight cards
 
-### Filter bar (top, sticky on scroll)
-- **Search** input (debounced 200ms, writes `q`).
-- **Status** dropdown (multi? — see open Q1).
-- **Format** dropdown.
-- **Tags** combobox — populated from `tags` table for this user, autocomplete.
-- **Tag-axis** combobox — populated from `tag_axes` + `book_axis_values`. Selecting an axis reveals its values (enum or scale).
-- **Author** combobox — populated from distinct `books.author` values.
-- **Rating** segmented control (1–5 stars).
-- **Finished date range** — two date inputs.
-- **Reset** button.
+Each card: title, one-line caption, body, small "drill in" hint. Every visible element click-routes to a filtered surface.
 
-### Active filters strip (between filter bar and results)
-- Renders one chip per applied filter: `Author: McCarthy ×`, `Tag: melancholy ×`, etc.
-- Click `×` removes that one filter (writes URL).
-- "Clear all" link if 2+ filters.
+| # | Chart | Type | Click-through |
+|---|---|---|---|
+| 1 | **Status mix** | Donut | slice → `/library?status=<s>` |
+| 2 | **Format split** | Stacked bar (by status) | segment → `/library?format=<f>&status=<s>` |
+| 3 | **Finished by month** | Area, last 12mo | bar → `/library?dateFrom=YYYY-MM-01&dateTo=…` |
+| 4 | **Rating histogram** | Bar 1–5 | bar → `/library?rating=<n>` |
+| 5 | **Top authors** | Horizontal bar (top 10) | bar → `/library?author=<name>` |
+| 6 | **Tag cloud (top 30)** | Treemap | tile → `/library?tags=<name>` |
+| 7 | **Axis profile** | Radar (per-axis avg) | spoke → `/library?axis=<key>:<value>` (mode value) |
+| 8 | **Pace heatmap** | Calendar heatmap (last 12mo of `reading_sessions.duration_minutes`) | cell → `/weave?month=YYYY-MM` (existing contract) |
 
-### Toolbar
-- Result count: `123 books`.
-- Sort dropdown (sort + dir combined: "Recently added", "Title A→Z", "Rating: high→low", "Finished: newest", etc.).
-- View toggle: **Grid** / **List**.
+All use forest/ink/paper tokens from `src/styles.css`. Cover-derived accent palettes (already extracted in `src/lib/palette.ts`) seed per-author / per-tag colors so the same author keeps the same hue across charts.
 
-### Grid view
-- Reuses `BookCard` (already exists). Responsive 2/3/4/5 columns.
-- Empty state: "No books match these filters. [Reset]" or "Your library is empty. [Add a book]".
+Empty-state per card: "Add more books / log more sessions / tag a few books to see this."
 
-### List view
-- Compact rows: cover thumb · title · author · status · rating · finished date · format icon. Sortable column headers when `view=list`.
-- Better for managing 200+ books at a glance.
-
-### Pagination / virtualization
-- v1: render all books client-side, no pagination. The `useLibrary` query already loads everything.
-- If a user reports lag at 500+ books, swap `LibraryGrid`/`LibraryList` to `react-virtual`. Out of scope for v1.
+Layout: responsive 1/2/3-column grid; cards size by importance (Status + Finished are wide, others square).
 
 ---
 
-## 4. Data
+## 4. Bookcloud sub-view
 
-No schema changes. All filtering is client-side over the `useLibrary()` result set. New shape:
+Force-directed cloud of every book in the library, rendered with the same d3-force engine as `WebGraph.tsx`.
 
-```ts
-// src/lib/library-filter.ts
-export type LibraryFilters = { /* mirror of validateSearch */ };
-export function filterLibrary(books: BookWithShelf[], f: LibraryFilters, ctx: {
-  bookTags: Record<string, string[]>;        // bookId → tag names
-  bookAxes: Record<string, BookAxisValue[]>; // bookId → axis values
-}): BookWithShelf[];
-export function sortLibrary(books: BookWithShelf[], sort, dir): BookWithShelf[];
-```
+- Each book is a node sized by total `reading_sessions.duration_minutes` (or 1 if none).
+- Color by **dominant cover palette** (`book_palettes.dominant`), falls back to forest.
+- Edges from `connections` table — light, low-opacity strokes; the cloud doubles as a connection map.
+- Hover: popover with title + author + status + connection count.
+- Click: routes to `/books/$bookId`.
+- Top-right toolbar: toggle edges on/off, "freeze layout" button.
+- Empty state: "Add a few books to see your cloud bloom."
 
-`bookTags` and `bookAxes` come from two new lightweight hooks in `src/lib/queries.ts`:
-- `useBookTagsMap()` — joins `book_tags` + `tags`, returns `Record<bookId, string[]>`.
-- `useBookAxisMap()` — joins `book_axis_values` + `tag_axes`, returns `Record<bookId, {key, value}[]>`.
-
-Both keyed by user_id, cached aggressively.
+Out of scope here: clustering, search-within-cloud, tag-coloring mode, time scrubber.
 
 ---
 
-## 5. Top-nav reorganization
+## 5. Filter passthrough — small Notations / Connections updates
 
-Confirmed scheme:
+Library already speaks the canonical search schema. To complete the contract:
+
+- **Notations** (`/notations`): extend `validateSearch` to accept `tag`, `axis`, `dateFrom`, `dateTo`, `bookId` (already there), and render `<ActiveFilters>` strip from `src/components/library/ActiveFilters.tsx`. Filter logic already exists in `src/lib/notations.ts` — wire the new params into it.
+- **Connections** (`/weave`): already accepts `month` and `tag`. Add `<ActiveFilters>` strip; no new params for v1 (deferred `bookId` per prior decision).
+
+Both reuse the same chip component — no duplication.
+
+---
+
+## 6. Top-nav
+
+Activate the **Visualizations** entry (currently omitted per Pass A.0 decision). Final order matches the project memory:
 
 ```
 Library  Board  Connections  Notations  Visualizations  ·  Add  Search  Settings  Exit
 ```
 
-Changes:
-- Remove "Home" link (Unshelved wordmark already routes to `/`).
-- Add **Library** at position 1.
-- Add **Visualizations** placeholder link (greyed/coming-soon, OR omit entirely until Pass A ships — see open Q2).
-- Reorder: Connections before Notations (per your spec).
-- Add a visual divider before utilities.
-
-`/` remains the dashboard. Wordmark → `/` works as Home.
+Add `Cmd-K` palette entries: "Go to Visualizations", "Visualizations: Charts", "Visualizations: Bookcloud".
 
 ---
 
-## 6. Command Palette additions
+## 7. Data hooks (additive, in `src/lib/queries.ts`)
 
-- "Go to Library"
-- "Library: filter by status…" (opens sub-prompt)
-- "Library: filter by tag…"
-- "Library: filter by author…"
-- "Library: clear filters"
-- Existing entries reordered to match new top-nav order.
+- `useFinishedByMonth()` — aggregates `user_books.finished_at` into `[{month, count}]` for last 12mo.
+- `useRatingHistogram()` — `[{rating: 1..5, count}]`.
+- `useTopAuthors(limit=10)` — `[{author, count}]`.
+- `useTagFrequency(limit=30)` — `[{tag, count}]`.
+- `useAxisAverages()` — `[{axisKey, avg}]` for numeric axes; mode for enum axes.
+- `usePaceHeatmap()` — `[{date, minutes}]` from `reading_sessions`, last 365 days.
 
----
-
-## 7. Out of scope for Pass A.0
-- Saved filter presets / "smart shelves".
-- Bulk edit (multi-select books to retag, change format, etc.).
-- Virtualization (defer until scale demands it).
-- Series filter (no first-class field).
-- Connections-count column (defer until charts demand it).
-- Visualizations route itself — that's Pass A, follows immediately after.
+All keyed by `user_id`, cached with React Query, share the same invalidation as `useLibrary`.
 
 ---
 
-## 8. How Pass A (Visualizations) builds on this
-
-Once Library ships, Pass A becomes much cleaner:
-- All chart click-throughs land at `/library?<filter>` via the same `validateSearch` schema.
-- `<ActiveFilters>` is already built; Notations and Connections also adopt it.
-- The "filter passthrough contract" is one schema, defined here, reused everywhere.
-- Pass A scope shrinks back to: charts + Bookcloud + minor `validateSearch` extensions on Notations/Connections to accept the shared filter shape.
-
----
-
-## Open questions
-
-1. **Multi-select on Status / Format / Tags?** Single-select is simpler and enough for chart click-throughs. Multi-select (e.g. "show me both 'reading' and 'paused'") is more powerful for human management. *Recommendation: multi-select for Status, Tags, and Tag-axis values; single-select for Format, Author, Rating.* URL encodes as comma-separated (`?status=reading,paused`).
-
-2. **Visualizations nav entry now or later?** (a) Show "Visualizations" in nav now as a disabled/coming-soon link so the IA is visible. (b) Add it only when Pass A lands. *Recommendation: (b) — avoid dead links.*
-
-3. **Default sort on first visit?** "Recently added" (current `useLibrary` order) or "Title A→Z" (more library-catalog-feeling)? *Recommendation: Recently added.*
+## 8. Out of scope for Pass A
+- Year-in-Review export / 9:16 image card (separate roadmap item).
+- Per-chart filter UI on the Visualizations page itself (clicking a chart IS the filter).
+- Time-range selector on charts (v1 hard-codes "last 12mo" or "all-time" per chart).
+- Bookcloud: clustering, search, tag-color mode, time scrubber.
+- Saved chart layouts.
 
 ---
 
-## Files summary
+## 9. Open questions
 
-**New (8):** `library.tsx`, `LibraryFilters.tsx`, `LibraryGrid.tsx`, `LibraryList.tsx`, `LibraryToolbar.tsx`, `ActiveFilters.tsx`, `library-filter.ts`. Plus two hook additions in `queries.ts` (`useBookTagsMap`, `useBookAxisMap`).
+1. **Bookcloud node-size metric.** (a) Total session minutes — rewards re-reads & long books. (b) Page count — looks more uniform. (c) `1` (uniform) — cleanest visually, least informative. *Recommendation: (a), with min/max clamped so the cloud stays readable.*
+2. **Empty axis profile.** Most users won't have axis values until they tag heavily. Hide the chart, show a "Add tag axes" CTA, or leave it empty? *Recommendation: hide the card entirely until ≥3 books have any axis values.*
+3. **Pace heatmap click target.** Currently routes to `/weave?month=…`. Alternative: `/library?dateFrom=…&dateTo=…` (sessions-by-finish-date), or open a day-detail popover with that day's sessions. *Recommendation: keep `/weave?month=…` — matches existing contract, and finished-date filtering is already covered by chart #3.*
 
-**Modified:** `_authenticated.tsx` (top-nav), `CommandPalette.tsx` (entries + reorder), `routeTree.gen.ts` (auto).
+---
 
-**Dependencies:** none new. (`@tanstack/zod-adapter` already installed.)
+## 10. Files summary
+
+**New (12):** `visualizations.tsx`, `VizTabs.tsx`, `ChartsBoard.tsx`, `ChartCard.tsx`, eight chart components under `charts/`, `Bookcloud.tsx`, `viz-data.ts`, `viz-link.ts`.
+
+**Modified:** `_authenticated.tsx` (add Visualizations to nav), `CommandPalette.tsx` (entries), `notations.tsx` + `weave.tsx` (ActiveFilters strip + extended `validateSearch`), `queries.ts` (new aggregator hooks), `routeTree.gen.ts` (auto).
+
+**Dependencies:** none new.
