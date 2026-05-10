@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import FilterBar from "@/components/notations/FilterBar";
 import EntryShell from "@/components/notations/EntryShell";
 import ResurfacedHero from "@/components/notations/ResurfacedHero";
+import ActiveFilters from "@/components/library/ActiveFilters";
 import { exportEntryCard } from "@/components/notations/ExportCard";
 import { useNotationsKeyboard } from "@/lib/notations-keyboard";
 import {
