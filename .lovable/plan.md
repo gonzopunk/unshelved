@@ -1,147 +1,45 @@
 
-# Round 3 — Pass A: Visualizations
+## Goal
 
-A new top-level **Visualizations** route — the "data is beautiful" surface for readers. Every chart is opinionated, click-throughable into `/library?…`, and themed in the existing palette (forest, paper, ink, plus per-cover accents).
+Create a single `PROJECT_CONTEXT.md` at the repo root: a concrete onboarding doc for future AI collaborators and human devs. No code changes, no schema changes — pure documentation drawn from the current codebase, `.lovable/plan.md`, `.lovable/roadmap.md`, project memory, and the Supabase schema.
 
-`/visualizations` ships with two sub-views: **Charts** (default) and **Bookcloud**. URL-driven, sub-view persisted in search params.
+## Source material I'll synthesize from
 
----
+- Project memory (`mem://index.md`) — current nav, terminology rules, Round 3 status.
+- `.lovable/roadmap.md` — shipped features + 10-item future roadmap.
+- `.lovable/plan.md` — Round 3 / Pass A spec just shipped.
+- `package.json` — actual dependency stack (TanStack Start v1, React 19, Tailwind v4, recharts, react-force-graph-2d, dnd-kit, @supabase/supabase-js, html-to-image, papaparse, zod, etc.).
+- `src/routes/_authenticated/*` + `src/router.tsx` — route map.
+- `src/lib/queries.ts`, `src/lib/library-filter.ts`, `src/lib/viz-data.ts`, `src/lib/notations.ts`, `src/lib/weave.ts`, `src/lib/palette.ts` — state + business logic patterns.
+- Supabase schema in context — tables, RLS, `handle_new_user` seeding.
+- `src/styles.css`, `src/components/library/ActiveFilters.tsx`, `ChartCard.tsx` — design tokens + reusable primitives.
 
-## 1. Routes & files
+## Structure of the document
 
-```
-src/routes/_authenticated/
-  visualizations.tsx              # tab shell (Charts | Bookcloud), validateSearch
-src/components/viz/
-  VizTabs.tsx                     # sub-view switcher
-  ChartsBoard.tsx                 # grid of chart cards
-  ChartCard.tsx                   # shared card frame (title, sublabel, hint, body)
-  charts/
-    StatusMix.tsx                 # donut: status distribution
-    FormatSplit.tsx               # stacked bar: print/ebook/audiobook
-    FinishedByMonth.tsx           # area chart: finished_at over last 12mo
-    RatingHistogram.tsx           # bar: rating 1–5
-    TopAuthors.tsx                # horizontal bar: top 10 authors by count
-    TagCloud.tsx                  # tag freq treemap (small)
-    AxisProfile.tsx               # radar: avg axis values across library
-    PaceHeatmap.tsx               # cal-heatmap of reading_sessions minutes
-  Bookcloud.tsx                   # force-directed cloud of all books
-src/lib/
-  viz-data.ts                     # pure aggregators over useLibrary + sessions + tags + connections
-  viz-link.ts                     # helpers building /library?… and /weave?… deep-links
-```
+Single Markdown file, ~600–900 lines, with these sections in order:
 
-No new dependencies. Reuses `recharts` (already in shadcn `chart.tsx`) and `d3-force` via the existing `WebGraph.tsx` pattern. `react-virtual` not needed.
+1. **Vision & philosophy** — "Unshelved": a reader's commonplace tool that treats books as a graph (Connections) and a body of marginalia (Notations), not a checklist. Anti-Goodreads/StoryGraph framing: opinionated, palette-driven, never social-by-default. Inclusive single-tier brand.
+2. **Target audience & use cases** — heavy readers, the "data is beautiful" crowd, commonplace-book keepers, escape-Bezos-land KOReader users. Concrete user journeys (log a session, capture a quote, link two books, browse a tag, share a Year-in-Review).
+3. **Current feature set** — grouped: Library/Board, Reading Sessions v2, Covers + palette extraction, Connections (formerly Weave), Notations (formerly Margins; Notes/Quotes/Commonplace sub-views), Visualizations (Charts + Bookcloud), Import wizard (Goodreads/StoryGraph CSV + ISBN), Tag axes, Command Palette.
+4. **Frontend architecture** — TanStack Start v1 + React 19 + Vite 7 on Cloudflare Workers. File-based routing under `src/routes/_authenticated/*` behind a single auth gate. Router in `src/router.tsx`; root in `__root.tsx`. Tailwind v4 via `src/styles.css` (no `tailwind.config.js`). shadcn/ui in `src/components/ui/`. Feature components grouped by domain (`library/`, `notations/`, `viz/`, `sessions/`, `import/`).
+5. **Backend architecture** — Lovable Cloud (Supabase) with RLS-everywhere. No edge functions yet. Browser client only (`@/integrations/supabase/client`); no server functions in use today. Seed data + tag-axis seeding via `handle_new_user` SQL function. Note future server-fn migration paths.
+6. **Database schema overview** — table-by-table summary (purpose, key columns, RLS = `auth.uid() = user_id`): `profiles`, `books`, `user_books`, `reading_sessions`, `notes`, `highlights`, `connections`, `reference_books`, `tags`, `book_tags`, `tag_axes`, `book_axis_values`, `import_batches`. Enums: `book_status` (want/reading/later/dnf/loved/liked/meh), `book_format` (print/ebook/audiobook), `connection_kind`. Sample-data flag (`is_sample`) on most tables.
+7. **Auth & user management** — Email + Google via Lovable Cloud auth. `useAuth()` hook in `src/lib/auth.ts`. Single `_authenticated` layout with client-side redirect to `/login`. Profile auto-created + sample library seeded on first signup.
+8. **State management** — React Query everywhere (`useLibrary`, `useProfile`, `useBookDetail`, `useAllSessions`, `useBookTagsMap`, `useBookAxisMap`). Mutation hooks colocated in `queries.ts`. URL-as-state for filters (canonical `LibrarySearch` contract in `library-filter.ts`, mirrored by Notations and Connections). No global store.
+9. **Key UI/UX principles** — paper-and-ink palette (forest, paper, ink, mist, terra) defined as design tokens in `src/styles.css` (oklch). Display vs sans typography distinction (Notations: italic display for Quotes, plain sans for Notes — terra bar on Quotes). Pill nav floating top-center. Round 2xl cards w/ `shadow-paper`/`shadow-lift`. Click-through-everything: every chart, chip, badge routes into a filtered surface. Cmd-K everywhere.
+10. **Third-party integrations** — Open Library + Google Books cover/metadata lookup (`AddBookModal`, `src/lib/import/enrich.ts`). Goodreads/StoryGraph CSV parsers (`src/lib/import/parsers.ts`). `html-to-image` for export cards. `react-force-graph-2d` for Connections web + Bookcloud. `recharts` for charts. No payment, email, or AI gateway integration today.
+11. **Known technical debt** — (a) Internal code still uses `weave` identifiers though user-facing copy says "Connect/Connections"; (b) `routes/_authenticated/weave.tsx` route still mounted at `/weave` for URL-stable deep-links; (c) all data fetching is browser-side via the Supabase JS client — no `createServerFn` usage; loaders are unused; (d) `Charts.tsx` consolidates 8 charts into one file (intentional for now, may split when chart count grows); (e) `routeTree.gen.ts` is regenerated and should never be edited by hand; (f) sample data lives in `handle_new_user` plpgsql — non-trivial to evolve.
+12. **Current bugs / pain points** — none tracked at the moment; document the empty list and how to add to it. Note: axis radar auto-hides until ≥3 books have axis values (intentional, not a bug). Pace heatmap → `/weave?month=…` is a chosen contract (also not a bug).
+13. **Coding conventions** — TypeScript strict; imports via `@/` alias; route files use flat dot-separated naming under `src/routes/`; never edit `client.ts`, `types.ts`, `.env`, `routeTree.gen.ts`, `supabase/config.toml` project-level keys; never use raw color classes in components (use design tokens); user-facing copy MUST say Connections/Notations not Weave/Margins.
+14. **Reusable components & helpers worth knowing** — `BookCard`, `BookSpine`, `GeneratedCover`, `ChartCard` + `ChartEmpty` + `DrillLink`, `ActiveFilters`, `LibraryFilters`/`LibraryToolbar`, `WebGraph`, `Bookcloud`, `CommandPalette`, `Kbd`, `EntryShell` (Notations), `ExportCard`, `SessionTimer`/`PaceStrip`/`RhythmStrip`, `QuickTagBar`. Helpers: `library-filter.ts`, `viz-data.ts`, `viz-link.ts`, `palette.ts`, `notations.ts`, `weave.ts`.
+15. **Deployment setup** — Cloudflare Workers via `wrangler.jsonc` (`compatibility_date 2025-09-24`, `nodejs_compat`). Vite build pipeline. Preview URL `id-preview--<lovable-id>.lovable.app`; published at `unshelved.lovable.app`. No custom domain.
+16. **Environment variables / services** — Auto-managed `.env`: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID`. Server secrets in Lovable Cloud: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_URL`, `LOVABLE_API_KEY`. Note none are read by code yet (no server fns).
+17. **Roadmap** — Pull from `.lovable/roadmap.md`: shipped (identity, Notations, Sessions v2, partial covers, Connections, Library, Visualizations) + next-up ordered list (Covers finished, Rich metadata import deepening, Tagging system, Notations deepened/global commonplace, KOSync, Editorial Year-in-Unshelved, Tier maker, Series & author intel, Smart recs, Buddy reads). Parked items (public Connections, AI suggestions, Audible/Kindle, mobile app).
+18. **Non-goals / avoided patterns** — No "Weave" / "Margins" in user copy. No social-first features in v1. No Supabase Edge Functions (use TanStack server fns when needed). No raw Tailwind color classes. No Next/Remix-style nested layout folders inside `src/routes/`. No client-side admin Supabase access. No filter UI inside Visualizations (the chart IS the filter). No `auth.users` foreign keys — use `profiles`. No client-stored role checks (none exist anyway).
+19. **Architectural concerns for future devs** — (a) RLS is the only authorization layer; if a future feature ever needs cross-user reads, plan for security-definer functions or admin server fns. (b) All filter contracts live in `library-filter.ts`; extending filters means updating Library + ActiveFilters + any chart that links in via `viz-link.ts`. (c) Sample data via plpgsql is brittle — consider moving to a dedicated seed function. (d) `Charts.tsx` as one file: split per-chart when adding interactivity. (e) Cover palette extraction is sync on add — may need a queue at scale. (f) Connections graph performance: `react-force-graph-2d` is fine to ~500 nodes; plan for clustering if libraries grow.
 
----
+## Deliverable
 
-## 2. URL contract
+One file: `PROJECT_CONTEXT.md` at the project root. Pure Markdown, no frontmatter, internal links to actual file paths so future tools can grep it.
 
-```ts
-// validateSearch
-{ tab: "charts" | "cloud" }   // default "charts", stripped from URL
-```
-
-That's it. Filtering happens *in* Library/Weave/Notations after a click-through. Visualizations itself shows the whole library — no filter UI here. (Keeps the surface uncluttered; the chart IS the filter.)
-
----
-
-## 3. Charts v1 — eight cards
-
-Each card: title, one-line caption, body, small "drill in" hint. Every visible element click-routes to a filtered surface.
-
-| # | Chart | Type | Click-through |
-|---|---|---|---|
-| 1 | **Status mix** | Donut | slice → `/library?status=<s>` |
-| 2 | **Format split** | Stacked bar (by status) | segment → `/library?format=<f>&status=<s>` |
-| 3 | **Finished by month** | Area, last 12mo | bar → `/library?dateFrom=YYYY-MM-01&dateTo=…` |
-| 4 | **Rating histogram** | Bar 1–5 | bar → `/library?rating=<n>` |
-| 5 | **Top authors** | Horizontal bar (top 10) | bar → `/library?author=<name>` |
-| 6 | **Tag cloud (top 30)** | Treemap | tile → `/library?tags=<name>` |
-| 7 | **Axis profile** | Radar (per-axis avg) | spoke → `/library?axis=<key>:<value>` (mode value) |
-| 8 | **Pace heatmap** | Calendar heatmap (last 12mo of `reading_sessions.duration_minutes`) | cell → `/weave?month=YYYY-MM` (existing contract) |
-
-All use forest/ink/paper tokens from `src/styles.css`. Cover-derived accent palettes (already extracted in `src/lib/palette.ts`) seed per-author / per-tag colors so the same author keeps the same hue across charts.
-
-Empty-state per card: "Add more books / log more sessions / tag a few books to see this."
-
-Layout: responsive 1/2/3-column grid; cards size by importance (Status + Finished are wide, others square).
-
----
-
-## 4. Bookcloud sub-view
-
-Force-directed cloud of every book in the library, rendered with the same d3-force engine as `WebGraph.tsx`.
-
-- Each book is a node sized by total `reading_sessions.duration_minutes` (or 1 if none).
-- Color by **dominant cover palette** (`book_palettes.dominant`), falls back to forest.
-- Edges from `connections` table — light, low-opacity strokes; the cloud doubles as a connection map.
-- Hover: popover with title + author + status + connection count.
-- Click: routes to `/books/$bookId`.
-- Top-right toolbar: toggle edges on/off, "freeze layout" button.
-- Empty state: "Add a few books to see your cloud bloom."
-
-Out of scope here: clustering, search-within-cloud, tag-coloring mode, time scrubber.
-
----
-
-## 5. Filter passthrough — small Notations / Connections updates
-
-Library already speaks the canonical search schema. To complete the contract:
-
-- **Notations** (`/notations`): extend `validateSearch` to accept `tag`, `axis`, `dateFrom`, `dateTo`, `bookId` (already there), and render `<ActiveFilters>` strip from `src/components/library/ActiveFilters.tsx`. Filter logic already exists in `src/lib/notations.ts` — wire the new params into it.
-- **Connections** (`/weave`): already accepts `month` and `tag`. Add `<ActiveFilters>` strip; no new params for v1 (deferred `bookId` per prior decision).
-
-Both reuse the same chip component — no duplication.
-
----
-
-## 6. Top-nav
-
-Activate the **Visualizations** entry (currently omitted per Pass A.0 decision). Final order matches the project memory:
-
-```
-Library  Board  Connections  Notations  Visualizations  ·  Add  Search  Settings  Exit
-```
-
-Add `Cmd-K` palette entries: "Go to Visualizations", "Visualizations: Charts", "Visualizations: Bookcloud".
-
----
-
-## 7. Data hooks (additive, in `src/lib/queries.ts`)
-
-- `useFinishedByMonth()` — aggregates `user_books.finished_at` into `[{month, count}]` for last 12mo.
-- `useRatingHistogram()` — `[{rating: 1..5, count}]`.
-- `useTopAuthors(limit=10)` — `[{author, count}]`.
-- `useTagFrequency(limit=30)` — `[{tag, count}]`.
-- `useAxisAverages()` — `[{axisKey, avg}]` for numeric axes; mode for enum axes.
-- `usePaceHeatmap()` — `[{date, minutes}]` from `reading_sessions`, last 365 days.
-
-All keyed by `user_id`, cached with React Query, share the same invalidation as `useLibrary`.
-
----
-
-## 8. Out of scope for Pass A
-- Year-in-Review export / 9:16 image card (separate roadmap item).
-- Per-chart filter UI on the Visualizations page itself (clicking a chart IS the filter).
-- Time-range selector on charts (v1 hard-codes "last 12mo" or "all-time" per chart).
-- Bookcloud: clustering, search, tag-color mode, time scrubber.
-- Saved chart layouts.
-
----
-
-## 9. Open questions
-
-1. **Bookcloud node-size metric.** (a) Total session minutes — rewards re-reads & long books. (b) Page count — looks more uniform. (c) `1` (uniform) — cleanest visually, least informative. *Recommendation: (a), with min/max clamped so the cloud stays readable.*
-2. **Empty axis profile.** Most users won't have axis values until they tag heavily. Hide the chart, show a "Add tag axes" CTA, or leave it empty? *Recommendation: hide the card entirely until ≥3 books have any axis values.*
-3. **Pace heatmap click target.** Currently routes to `/weave?month=…`. Alternative: `/library?dateFrom=…&dateTo=…` (sessions-by-finish-date), or open a day-detail popover with that day's sessions. *Recommendation: keep `/weave?month=…` — matches existing contract, and finished-date filtering is already covered by chart #3.*
-
----
-
-## 10. Files summary
-
-**New (12):** `visualizations.tsx`, `VizTabs.tsx`, `ChartsBoard.tsx`, `ChartCard.tsx`, eight chart components under `charts/`, `Bookcloud.tsx`, `viz-data.ts`, `viz-link.ts`.
-
-**Modified:** `_authenticated.tsx` (add Visualizations to nav), `CommandPalette.tsx` (entries), `notations.tsx` + `weave.tsx` (ActiveFilters strip + extended `validateSearch`), `queries.ts` (new aggregator hooks), `routeTree.gen.ts` (auto).
-
-**Dependencies:** none new.
+No code, no schema, no nav, no terminology changes — only documentation.
