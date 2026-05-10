@@ -75,9 +75,6 @@ export function StatusMix({ library }: { library: BookWithShelf[] }) {
             </Pie>
             <Tooltip
               contentStyle={{ borderRadius: 12, fontSize: 12, border: "1px solid var(--border)" }}
-              formatter={(v: number, _n: string, p: { payload: { label: string } }) =>
-                [`${v} books`, p.payload.label]
-              }
             />
           </PieChart>
         </ResponsiveContainer>
@@ -149,14 +146,12 @@ export function FinishedByMonth({ library }: { library: BookWithShelf[] }) {
               stroke={FOREST}
               strokeWidth={2}
               fill="url(#fmf)"
-              dot={{ r: 3, fill: FOREST, cursor: "pointer" }}
-              activeDot={{
-                r: 5,
-                cursor: "pointer",
-                onClick: (_: unknown, p: { payload?: { month: string } }) => {
-                  const m = p.payload?.month;
-                  if (m) navigate({ to: "/library", search: { dateFrom: `${m}-01`, dateTo: `${m}-31` } as never });
-                },
+              dot={{ r: 3, fill: FOREST }}
+              activeDot={{ r: 5, cursor: "pointer" }}
+              onClick={(d: unknown) => {
+                const m = (d as { activePayload?: { payload: { month: string } }[] })
+                  ?.activePayload?.[0]?.payload?.month;
+                if (m) navigate({ to: "/library", search: { dateFrom: `${m}-01`, dateTo: `${m}-31` } as never });
               }}
             />
           </AreaChart>
@@ -291,8 +286,8 @@ export function AxisProfile({
             stroke={FOREST}
             fill={FOREST}
             fillOpacity={0.35}
-            onClick={(d: { axis?: string }) => {
-              const k = d.axis;
+            onClick={(p: unknown) => {
+              const k = (p as { payload?: { axis: string } })?.payload?.axis;
               const top = data.find((x) => x.key === k);
               if (k && top)
                 navigate({ to: "/library", search: { axis: `${k}:${top.topValue}` } as never });
