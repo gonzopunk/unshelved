@@ -88,7 +88,7 @@ function LibraryPage() {
   const writeSearch = (patch: Record<string, unknown>) =>
     navigate({
       to: ".",
-      search: (prev) => {
+      search: (prev: Record<string, unknown>) => {
         const next = { ...prev, ...patch };
         // strip empty/falsy/default values
         for (const [k, v] of Object.entries(next)) {
