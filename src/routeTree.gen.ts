@@ -16,6 +16,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedWeaveRouteImport } from './routes/_authenticated/weave'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedNotationsRouteImport } from './routes/_authenticated/notations'
+import { Route as AuthenticatedLibraryRouteImport } from './routes/_authenticated/library'
 import { Route as AuthenticatedBoardRouteImport } from './routes/_authenticated/board'
 import { Route as AuthenticatedSettingsImportsRouteImport } from './routes/_authenticated/settings_.imports'
 import { Route as AuthenticatedBooksBookIdRouteImport } from './routes/_authenticated/books.$bookId'
@@ -54,6 +55,11 @@ const AuthenticatedNotationsRoute = AuthenticatedNotationsRouteImport.update({
   path: '/notations',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedLibraryRoute = AuthenticatedLibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedBoardRoute = AuthenticatedBoardRouteImport.update({
   id: '/board',
   path: '/board',
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/board': typeof AuthenticatedBoardRoute
+  '/library': typeof AuthenticatedLibraryRoute
   '/notations': typeof AuthenticatedNotationsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/weave': typeof AuthenticatedWeaveRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/board': typeof AuthenticatedBoardRoute
+  '/library': typeof AuthenticatedLibraryRoute
   '/notations': typeof AuthenticatedNotationsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/weave': typeof AuthenticatedWeaveRoute
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/_authenticated/board': typeof AuthenticatedBoardRoute
+  '/_authenticated/library': typeof AuthenticatedLibraryRoute
   '/_authenticated/notations': typeof AuthenticatedNotationsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/weave': typeof AuthenticatedWeaveRoute
@@ -114,6 +123,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/board'
+    | '/library'
     | '/notations'
     | '/settings'
     | '/weave'
@@ -124,6 +134,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/board'
+    | '/library'
     | '/notations'
     | '/settings'
     | '/weave'
@@ -136,6 +147,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/_authenticated/board'
+    | '/_authenticated/library'
     | '/_authenticated/notations'
     | '/_authenticated/settings'
     | '/_authenticated/weave'
@@ -201,6 +213,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNotationsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/library': {
+      id: '/_authenticated/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof AuthenticatedLibraryRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/board': {
       id: '/_authenticated/board'
       path: '/board'
@@ -227,6 +246,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedBoardRoute: typeof AuthenticatedBoardRoute
+  AuthenticatedLibraryRoute: typeof AuthenticatedLibraryRoute
   AuthenticatedNotationsRoute: typeof AuthenticatedNotationsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWeaveRoute: typeof AuthenticatedWeaveRoute
@@ -237,6 +257,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedBoardRoute: AuthenticatedBoardRoute,
+  AuthenticatedLibraryRoute: AuthenticatedLibraryRoute,
   AuthenticatedNotationsRoute: AuthenticatedNotationsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWeaveRoute: AuthenticatedWeaveRoute,

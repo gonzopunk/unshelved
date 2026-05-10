@@ -149,6 +149,63 @@ export function useReorderBoard() {
   });
 }
 
+/** bookId -> array of tag names (lowercased), for the current user. */
+export function useBookTagsMap() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["book-tags-map", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("book_tags")
+        .select("book_id, tags(name)");
+      if (error) throw error;
+      const map: Record<string, string[]> = {};
+      for (const row of data ?? []) {
+        const name = (row as { tags: { name: string } | null }).tags?.name;
+        if (!name) continue;
+        const id = (row as { book_id: string }).book_id;
+        (map[id] ??= []).push(name.toLowerCase());
+      }
+      return map;
+    },
+  });
+}
+
+/** bookId -> array of {key, value} from book_axis_values + tag_axes. */
+export function useBookAxisMap() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["book-axis-map", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("book_axis_values")
+        .select("book_id, scale_value, values, tag_axes(key, kind)");
+      if (error) throw error;
+      const map: Record<string, { axis_id: string; key: string; value: string }[]> = {};
+      for (const row of data ?? []) {
+        const r = row as {
+          book_id: string;
+          scale_value: number | null;
+          values: string[] | null;
+          tag_axes: { key: string; kind: string } | null;
+        };
+        const key = r.tag_axes?.key;
+        if (!key) continue;
+        const list = (map[r.book_id] ??= []);
+        if (r.scale_value != null) {
+          list.push({ axis_id: key, key, value: String(r.scale_value) });
+        }
+        for (const v of r.values ?? []) {
+          list.push({ axis_id: key, key, value: v });
+        }
+      }
+      return map;
+    },
+  });
+}
+
 /** Distinct dominant colors from the user's library, in library order.
  * Useful for chart palettes — pass a desired count to cap. */
 export function useLibraryPalette(count = 8): string[] {
