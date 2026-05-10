@@ -1,6 +1,12 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
+import { Printer } from "lucide-react";
+import { toast } from "sonner";
 import FilterBar from "@/components/notations/FilterBar";
 import EntryShell from "@/components/notations/EntryShell";
+import ResurfacedHero from "@/components/notations/ResurfacedHero";
+import { exportEntryCard } from "@/components/notations/ExportCard";
+import { useNotationsKeyboard } from "@/lib/notations-keyboard";
 import {
   useNotations,
   useFilteredSorted,
@@ -49,16 +55,92 @@ function NotationsPage() {
 
   const { entries, total } = useFilteredSorted(filters, sort, data);
 
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  useEffect(() => {
+    if (selectedIdx >= entries.length) setSelectedIdx(0);
+  }, [entries.length, selectedIdx]);
+
+  const scrollSelected = (idx: number) => {
+    const e = entries[idx];
+    if (!e) return;
+    const el = document.querySelector(`[data-entry-id="${e.id}"]`);
+    el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  };
+
+  const onDown = useCallback(() => {
+    setSelectedIdx((i) => {
+      const n = Math.min(i + 1, entries.length - 1);
+      scrollSelected(n);
+      return n;
+    });
+  }, [entries]);
+  const onUp = useCallback(() => {
+    setSelectedIdx((i) => {
+      const n = Math.max(i - 1, 0);
+      scrollSelected(n);
+      return n;
+    });
+  }, [entries]);
+  const onOpen = useCallback(() => {
+    const e = entries[selectedIdx];
+    if (e) navigate({ to: "/books/$bookId", params: { bookId: e.bookId } } as never);
+  }, [entries, selectedIdx, navigate]);
+  const onCopy = useCallback(() => {
+    const e = entries[selectedIdx];
+    if (e) {
+      navigator.clipboard.writeText(e.body);
+      toast.success("Copied");
+    }
+  }, [entries, selectedIdx]);
+  const onExport = useCallback(async () => {
+    const e = entries[selectedIdx];
+    if (!e) return;
+    try {
+      await exportEntryCard(e, "square");
+      toast.success("Card saved");
+    } catch (err) {
+      toast.error("Export failed");
+      console.error(err);
+    }
+  }, [entries, selectedIdx]);
+  const onHelp = useCallback(() => {
+    toast("j/k move · o open book · c copy · e export · ? help");
+  }, []);
+
+  useNotationsKeyboard(
+    { onDown, onUp, onOpen, onCopy, onExport, onHelp },
+    !isLoading && entries.length > 0,
+  );
+
+  const activeFilterSummary = [
+    filters.q && `“${filters.q}”`,
+    filters.bookIds.length && `${filters.bookIds.length} book(s)`,
+    filters.authorNames.length && `${filters.authorNames.length} author(s)`,
+    filters.seriesValues.length && `${filters.seriesValues.length} series`,
+    (filters.dateFrom || filters.dateTo) && `${filters.dateFrom ?? "…"}→${filters.dateTo ?? "…"}`,
+    kind !== "both" && kind,
+  ].filter(Boolean).join(" · ");
+
   return (
-    <div className="max-w-3xl mx-auto px-6">
-      <header className="mb-6">
+    <div data-print-root className="max-w-3xl mx-auto px-6">
+      <header className="mb-6" data-no-print>
         <h1 className="font-display text-4xl">Notations</h1>
         <p className="text-sm text-muted-foreground mt-1 max-w-prose">
           Every mark you’ve left on a book — notes and quotes, side by side.
         </p>
       </header>
 
-      <div className="flex flex-wrap items-center gap-3 mb-5">
+      <div className="hidden print:block mb-6">
+        <h1 className="font-display text-3xl">Notations</h1>
+        <div className="font-mono text-xs text-muted-foreground mt-1">
+          {new Date().toLocaleDateString()} · {total} {total === 1 ? "entry" : "entries"}
+          {activeFilterSummary && <> · {activeFilterSummary}</>}
+        </div>
+      </div>
+
+      {data && <ResurfacedHero entries={data.entries} />}
+
+      <div className="flex flex-wrap items-center gap-3 mb-5" data-no-print>
         <Segmented
           value={kind}
           onChange={(v) => setKind(v as NotationFilters["kind"])}
@@ -77,9 +159,18 @@ function NotationsPage() {
             { value: "oldest", label: "Oldest" },
           ]}
         />
+        <button
+          onClick={() => window.print()}
+          className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs hover:bg-muted transition"
+          title="Print"
+        >
+          <Printer className="h-3 w-3" /> Print
+        </button>
       </div>
 
-      <FilterBar data={data} />
+      <div data-no-print>
+        <FilterBar data={data} />
+      </div>
 
       <div className="mt-6 pb-24">
         {isLoading ? (
@@ -90,12 +181,13 @@ function NotationsPage() {
           </div>
         ) : (
           <>
-            <div className="font-mono text-xs text-muted-foreground mb-4">
+            <div className="font-mono text-xs text-muted-foreground mb-4" data-no-print>
               {total} {total === 1 ? "entry" : "entries"}
+              <span className="ml-3 opacity-70">press ? for shortcuts</span>
             </div>
-            <div className="space-y-3">
-              {entries.map((e) => (
-                <EntryShell key={`${e.kind}-${e.id}`} entry={e} />
+            <div className="space-y-3 print:space-y-4">
+              {entries.map((e, i) => (
+                <EntryShell key={`${e.kind}-${e.id}`} entry={e} selected={i === selectedIdx} />
               ))}
             </div>
           </>
