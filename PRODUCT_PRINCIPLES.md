@@ -1,122 +1,253 @@
 # Unshelved — Product Principles
 
-A short, directive companion to `PROJECT_CONTEXT.md`. When the two disagree about *what to build*, this file wins. When they disagree about *how the code works today*, `PROJECT_CONTEXT.md` wins.
+A short companion to `PROJECT_CONTEXT.md`.
+
+- Use this file to decide **what belongs in Unshelved**.
+
+- Use `PROJECT_CONTEXT.md` to understand **how the app currently works**.
+
+- Use `AI_CHANGE_CHECKLIST.md` before making code changes.
 
 ---
 
 ## Thesis
 
-**Unshelved is a private, opinionated commonplace tool for serious readers — a library you can think with, not a feed you perform on.**
+**Unshelved is a private commonplace tool for serious readers: a library you can think with, not a feed you perform on.**
 
 ---
 
-## Core design principles
+## Core principles
 
-1. **Books are a graph and a body of marginalia, not a checklist.** Every feature should make the Connections graph or the Notations corpus richer, more navigable, or more beautiful.
-2. **Click-through everything.** Any number, chip, slice, edge, or badge must route into a filtered Library / Notations / Connections view. Never render a stat that isn't a link.
-3. **One filter contract.** All filtering flows through `LibrarySearch` (`src/lib/library-filter.ts`). New filters extend it; surfaces don't fork their own shape.
-4. **Palette-driven, paper-feel.** Cover-derived colors drive accents. Forest-on-paper, generous radii, no neon, no generic chart palettes. Use design tokens — never raw color classes.
-5. **Quiet typography with one strict distinction.** Notes are plain sans. Quotes are display italic with a left terra accent bar. Enforce this everywhere a Note or Quote renders, including exports.
-6. **URL is the source of truth for views.** Filters, sort, sub-views — all live in the URL so every state is shareable, bookmarkable, and back-button-safe.
-7. **Privacy by construction.** RLS on every table; `auth.uid() = user_id`. No cross-user reads in the app today. Don't introduce them lightly.
-8. **Single-tier, inclusive brand.** No "premium reader" framing, no power-user vs casual split. One product, one tone.
-9. **Empty states are first-class.** Every chart and view ships with a one-line empty message that points to the unblocking action.
-10. **Keyboard-first where it matters.** Cmd-K is the jump surface. Add an entry for every new top-level surface or sub-view.
+1. **Books are not the endpoint.**  
+
+   The real value is the trace they leave: notes, quotes, sessions, tags, axes, and connections.
+
+2. **The library is a graph.**  
+
+   Connections between books, quotes, reference texts, and ideas are first-class — not a side feature.
+
+3. **Notations are central.**  
+
+   Notes and quotes should feel like a searchable cross-book commonplace, not scattered comments.
+
+4. **Every stat should open a door.**  
+
+   Charts, chips, counts, badges, slices, and edges should click through to a filtered Library, Notations, or Connections view.
+
+5. **One filter language.**  
+
+   All filtering flows through `LibrarySearch`. Do not create separate filter systems per page.
+
+6. **Quiet, paper-feel interface.**  
+
+   Forest-on-paper, generous spacing, cover-derived accents, no neon, no generic SaaS dashboard feel.
+
+7. **Private by default.**  
+
+   No social feed, no public activity, no cross-user visibility unless explicitly designed later.
+
+8. **User-owned taste.**  
+
+   The user’s reading data is for their own reflection, not publisher promotion, engagement optimization, or opaque recommendation systems.
+
+9. **Heavy-reader first.**  
+
+   Design for users with hundreds or thousands of books, not only a tidy demo library.
+
+10. **Reflective, not addictive.**  
+
+    Stats may describe reading life; they should not nag, shame, reward, or manipulate.
 
 ---
 
-## What Unshelved is *not*
+## What Unshelved is not
 
-- **Not Goodreads.** Not a social feed. Not a place to perform reading.
-- **Not StoryGraph.** Not a recommender's product; the user's taste is private signal, not a training set.
-- **Not Kindle / Audible.** Not a store. Not a DRM ecosystem.
-- **Not a habit tracker.** Streaks exist as a quiet stat, not as a guilt mechanic.
-- **Not a checklist.** Finishing a book is not the unit of value; the trace it leaves (sessions, notes, quotes, connections) is.
-- **Not "AI-first".** AI may eventually assist (suggesting connections, surfacing forgotten quotes), never lead.
+Unshelved is not:
 
----
+- a Goodreads clone
 
-## How to evaluate a new feature
+- a social feed
 
-Ask, in order:
+- a reading-performance app
 
-1. **Does it deepen the graph or the marginalia?** (Connections, Notations, sessions, tags, axes, covers/palette.) If yes, default to building.
-2. **Does it make existing data more navigable?** (New click-through, new filter, new sort, new chart that drills in.) If yes, build.
-3. **Does it require server-side capability we don't have?** (Webhooks, third-party API with secrets, KOSync, AI gateway.) Then plan a TanStack `createServerFn` path *before* the feature, not bolted on after.
-4. **Does it introduce a social, recommendation, notification, or gamification surface?** Apply the rules below before scoping.
-5. **Could it be a chart click instead of a new screen?** Prefer the chart click.
-6. **Would a heavy reader (100+ books/year, multi-format) actually use this weekly?** If no, defer.
+- a bookstore
 
-If a feature doesn't clear (1) or (2), it's probably a distraction.
+- a streak machine
+
+- an AI-first recommender
+
+- a public identity platform
+
+- a generic habit tracker
+
+Finishing books is not the main unit of value. Building a meaningful private record of reading is.
 
 ---
 
-## Rules: social, recommendations, notifications, gamification
+## Feature test
+
+Before building a feature, ask:
+
+1. **Does it deepen the graph or the marginalia?**  
+
+   Connections, Notations, tags, axes, sessions, quotes, references.
+
+2. **Does it make existing data more navigable?**  
+
+   Better filters, better sorting, better search, better click-through, better visualization.
+
+3. **Would a serious reader use it repeatedly?**  
+
+   Not “is it cool?” but “would it matter after importing 500 books?”
+
+4. **Can it be expressed through an existing surface?**  
+
+   Prefer improving Library, Notations, Connections, or Visualizations over adding a new screen.
+
+5. **Does it require server-side capability?**  
+
+   Secrets, webhooks, sync, email, AI, cross-user logic, or background jobs require server planning first.
+
+If a feature does not pass #1 or #2, it is probably a distraction.
+
+---
+
+## Social, recommendations, notifications, gamification
 
 ### Social
-- **Default off, default private.** Nothing the user creates is public unless they explicitly export or share.
-- **Sharing is artifacts, not feeds.** A shareable Year-in-Unshelved card, a tier list image, a public link to a single shelf — yes. A timeline of friends' activity — no.
-- **No follow graph in v1.** "Buddy reads" is the only sanctioned soft-social surface, and only after Library, Notations, and Connections are dense.
-- **No engagement metrics surfaced to users** (likes, view counts, follower counts). They corrupt the product.
+
+- Default private.
+
+- Sharing should be artifact-based: exports, image cards, optional links.
+
+- No activity feed.
+
+- No follower counts, likes, view counts, or public popularity metrics.
+
+- Buddy reads may come later, but only as a soft opt-in feature.
 
 ### Recommendations
-- **From the user's own data first.** Series next-up, author backlist, tag/axis-similar, Connections-adjacent — these are fair game.
-- **No third-party "you might like" feeds.** No publisher promotions. No paid placement. Ever.
-- **Explainable.** Any recommendation must show *why* (which tags, which connections, which axis). No black-box scores.
-- **Opt-in, never autoplaying.** Recs live on a surface the user navigates to, not in their face on load.
+
+- Recommendations should come from the user’s own library first.
+
+- They must be explainable: tags, axes, authors, series, or connections.
+
+- No publisher promotions.
+
+- No paid placement.
+
+- No black-box “readers like you” feed.
 
 ### Notifications
-- **No push notifications in v1.** No browser notifications, no mobile push.
-- **Email is rare and editorial.** Resurfaced-quote weekly digest, Year-in-Unshelved spread — yes. "You haven't read in 3 days" — never.
-- **In-app surfacing is quiet.** Resurfaced quotes appear on the Notations hero, not as a badge on the nav.
+
+- No push notifications in v1.
+
+- Email should be rare, opt-in, and editorial.
+
+- Good: weekly resurfaced quote digest.
+
+- Bad: “You haven’t read in 3 days.”
 
 ### Gamification
-- **Streaks and stats are descriptive, not prescriptive.** Show pace, ETA, streak — never nag, never punish a broken streak.
-- **No badges, no levels, no XP, no leaderboards.** Ever.
-- **Yearly goal is a soft target.** A line on a chart, not a progress-bar guilt machine.
+
+- No badges, XP, levels, leaderboards, or streak pressure.
+
+- Streaks and goals may exist as quiet descriptive stats.
+
+- Never use guilt as a retention strategy.
 
 ---
 
 ## Tone
 
-- **Quiet, literate, slightly bookish.** Closer to a Penguin Classics colophon than a SaaS dashboard.
-- **Direct over cute.** "Connect this quote to another book" beats "✨ Weave some magic ✨".
-- **Specific over generic.** "47 quotes from 12 books, mostly Le Guin and Calvino" beats "You have a lot of quotes!".
-- **Never gamified copy.** No "Great job!", no "🔥 5-day streak!", no exclamation points on stats.
-- **Names matter.** Always **Connections / Connect** and **Notations / Notes / Quotes** in user-facing copy. Never "Weave" or "Margins" — those are internal code names only.
+Unshelved should sound:
+
+- quiet
+
+- literate
+
+- direct
+
+- specific
+
+- bookish without being cute
+
+Good:
+
+> “47 quotes from 12 books, mostly Le Guin and Calvino.”
+
+Bad:
+
+> “🔥 Amazing! You’re on a 5-day reading streak!”
+
+Use:
+
+- **Connections / Connect**
+
+- **Notations / Notes / Quotes**
+
+- **Visualizations**
+
+Never use user-facing:
+
+- “Weave”
+
+- “Margins”
+
+- “Unweave”
 
 ---
 
-## Examples of *good* Unshelved features
+## Good Unshelved features
 
-- A tag-axis radar that hides itself until 3 books have values, then becomes a click-through filter.
-- "Connect" affordance on a quote that opens a target picker prefiltered by shared tags.
-- Pace heatmap whose cells route to `/weave?month=YYYY-MM` so the user sees what they were reading *and* what they were connecting.
-- Cover palette extraction at add time that quietly themes every chart and chip for that book.
-- Goodreads/StoryGraph CSV import with dedupe and Open Library/Google Books enrichment in one flow.
-- Cmd-K entry for every sub-view, including Notations sub-tabs.
-- A Year-in-Unshelved editorial export that looks like a magazine spread, not a stat block.
-- KOSync-compatible endpoint for KOReader users (when server fns land).
+Good features include:
 
----
+- a quote-to-book Connect action
 
-## Examples of features to *avoid or delay*
+- a chart slice that opens the matching Library filter
 
-- **An activity feed of friends' reading.** Wrong product.
-- **Push notifications for streaks, goals, or "your book is waiting".** Never.
-- **Third-party algorithmic recommendations** ("readers like you also liked…"). Wrong incentives.
-- **Public profile pages with follower counts.** Defer indefinitely.
-- **Badges, levels, XP, reading challenges with prizes.** Never.
-- **AI-suggested connections shipped as the primary Connections UX.** Connections must remain user-authored; AI is at most a quiet "suggested" tray, opt-in, explainable, and clearly secondary. Park until the manual graph is dense.
-- **Public/shared Connections graphs.** Park until private graphs are mature and we've thought through privacy.
-- **A mobile app.** Defer until desktop is fully solid.
-- **In-app book purchasing / affiliate links.** Wrong product.
-- **A "feed" home page.** The home page is a dashboard of the user's own library, not a stream.
-- **Forking the filter contract per surface.** Architectural debt; extend `LibrarySearch` instead.
-- **New raw color classes or one-off palettes per chart.** Add a token in `src/styles.css` or use the cover palette.
+- a resurfaced quote from an older book
+
+- a Year-in-Unshelved export that feels editorial, not gamified
+
+- better Goodreads / StoryGraph import cleanup
+
+- cover-derived visual accents
+
+- searchable Notations across all books
+
+- KOReader sync, once server-side foundations are ready
 
 ---
 
-## When in doubt
+## Avoid or delay
 
-Build the version that a heavy, private reader would quietly love and never show anyone — then make it shareable as an artifact only if asked.
+Avoid or delay:
+
+- activity feeds
+
+- public profile pages
+
+- follower counts
+
+- streak nags
+
+- push notifications
+
+- affiliate links
+
+- in-app book purchasing
+
+- third-party recommendation feeds
+
+- AI-generated connections as the primary graph experience
+
+- mobile app before the desktop/web app is solid
+
+- new surfaces when an existing surface can do the job
+
+---
+
+## Final rule
+
+Build the version a serious private reader would quietly love, even if they never showed it to anyone.
