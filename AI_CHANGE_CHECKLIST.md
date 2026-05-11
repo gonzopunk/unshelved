@@ -1,101 +1,308 @@
-# AI Change Checklist — Unshelved
+# Unshelved — AI Change Checklist
 
-Run through this list before opening any code change. If a box can't be ticked, fix the change or call out the deviation explicitly. Pair this with `PROJECT_CONTEXT.md` (how things work) and `PRODUCT_PRINCIPLES.md` (what to build).
+Use this before asking Lovable or Codex to make or review code changes.
+
+This file answers: **what must this change preserve?**
+
+For product direction, use `PRODUCT_PRINCIPLES.md`.  
+
+For current architecture, use `PROJECT_CONTEXT.md`.
 
 ---
 
 ## 1. Product fit
 
-- [ ] The change deepens the **Connections graph** or **Notations corpus**, OR makes existing data more navigable (filter, sort, click-through, chart).
-- [ ] It does **not** introduce a social feed, third-party recommendations, push notifications, or gamification (badges/levels/XP/streak nags).
-- [ ] If it adds a stat, the stat is a **link** into a filtered Library / Notations / Connections view — not a dead number.
-- [ ] A heavy reader (100+ books/year) would plausibly use it weekly. If not, defer.
+Before coding, confirm:
 
-## 2. URL / filter contract
+- [ ] The change deepens Connections, Notations, sessions, tags, axes, imports, or library navigation.
 
-- [ ] Any new filter, sort, or sub-view extends `LibrarySearch` in `src/lib/library-filter.ts` — no per-surface forks.
-- [ ] State that affects what the user sees lives in the **URL**, not local component state (so it's shareable, bookmarkable, back-button-safe).
-- [ ] New click-throughs build their target URL via the canonical helpers (`filtersToSearch`, `src/lib/viz-link.ts`), not hand-rolled query strings.
-- [ ] `ActiveFilters` chip strip still reflects every active filter on the surface.
+- [ ] The change does not add a feed, follower system, push notification, badge, XP, leaderboard, or streak nag.
 
-## 3. RLS and `user_id` requirements
+- [ ] Any new stat, chart, chip, count, or badge links to a meaningful filtered view.
 
-- [ ] Every new table has **RLS enabled** with policies scoped to `auth.uid() = user_id` (select, insert, update, delete).
-- [ ] Every new row written from the app sets `user_id` explicitly — never trust a default.
-- [ ] No cross-user reads or writes are introduced. If they're truly needed, they're called out as a privacy decision, not slipped in.
-- [ ] Roles, if any, live in a **separate `user_roles` table** with a `SECURITY DEFINER` `has_role()` function — never on `profiles`, never in client storage.
-- [ ] Foreign keys point to `public.profiles(id)` or domain tables — **never** `auth.users` directly.
+- [ ] A heavy reader with 500+ books would plausibly benefit.
 
-## 4. Server-side vs browser-side logic
-
-- [ ] Anything requiring a secret, third-party API key, webhook signature verification, or cross-user aggregation goes through a **TanStack `createServerFn`** (in a `*.functions.ts` file under `src/lib/`), not the browser.
-- [ ] Auth-protected server fns are called via `useServerFn` in components — not from a public route's `loader` (prerender will 401).
-- [ ] No new browser code reads `process.env.*` or imports anything under `src/integrations/supabase/client.server.ts`.
-- [ ] Pure data fetches against the user's own RLS-scoped tables stay in React Query hooks in `src/lib/queries.ts`.
-
-## 5. Styling and design tokens
-
-- [ ] No raw Tailwind color classes (`text-white`, `bg-black`, hex literals). Use semantic tokens from `src/styles.css` (`bg-paper`, `text-ink`, `bg-mist`, `text-terra`, etc.).
-- [ ] New colors are added as `oklch` tokens in `src/styles.css`, not inlined.
-- [ ] Charts and chips reuse the cover-derived palette (`useLibraryPalette`, per-book `cover_color`) — no one-off chart palettes.
-- [ ] Spacing, radii, and shadows match existing surfaces (rounded-2xl cards, generous padding, paper feel).
-- [ ] Both light and dark token paths still have adequate contrast.
-
-## 6. User-facing terminology
-
-- [ ] **Connections / Connect** in all user copy. Never "Weave" or "Unweave" — even though `weave` survives in code paths and the `/weave` route.
-- [ ] **Notations / Notes / Quotes** in all user copy. Never "Margins."
-- [ ] **Visualizations** for the data tab (not "Charts," not "Stats").
-- [ ] Notes render plain sans; **Quotes** render display italic with the terra left-bar — including in exports.
-- [ ] No gamified copy: no "Great job!", no "🔥 streak!", no exclamation points on stats.
-
-## 7. React Query cache invalidation
-
-- [ ] Every mutation invalidates the query keys it affects (`["library"]`, `["book", id]`, `["book-tags-map"]`, `["book-axis-map"]`, `["profile"]`, sessions, notes, highlights, connections).
-- [ ] New query hooks are added to `src/lib/queries.ts` (or a sibling) and gated on `!!user` via `useAuth()`.
-- [ ] Optimistic updates roll back on error (`onMutate` snapshot + `onError` restore), as in `useReorderBoard`.
-- [ ] No duplicate queries for the same data — reuse existing hooks (`useLibrary`, `useBookTagsMap`, `useBookAxisMap`, `useAllSessions`).
-
-## 8. Generated files that must not be edited
-
-- [ ] **Do not edit** `src/integrations/supabase/client.ts`.
-- [ ] **Do not edit** `src/integrations/supabase/types.ts`.
-- [ ] **Do not edit** `src/routeTree.gen.ts` (regenerated by the TanStack Router Vite plugin).
-- [ ] **Do not edit** `.env`.
-- [ ] **Do not edit** project-level keys in `supabase/config.toml` (function-specific blocks are OK when needed).
-
-## 9. Sample data / migration implications
-
-- [ ] Schema changes go through `supabase--migration` — never ad-hoc `ALTER` from the app, never `ALTER DATABASE postgres`.
-- [ ] If a new table/column should appear for new users, the `handle_new_user` plpgsql function is updated **and** the change is safe for existing users (nullable or with a sensible default).
-- [ ] New columns have explicit defaults / nullability so existing rows don't break.
-- [ ] Validation that depends on `now()` or other non-immutable expressions uses a **trigger**, not a `CHECK` constraint.
-- [ ] Sample-data flag (`is_sample`) is preserved on seeded rows so users can purge sample data later.
-- [ ] No triggers or writes against `auth`, `storage`, `realtime`, `supabase_functions`, or `vault` schemas.
-
-## 10. Performance with large libraries
-
-- [ ] Queries that could return >1000 rows are paginated or scoped — Supabase's default limit is 1000 and silently truncates.
-- [ ] Heavy aggregations live in `src/lib/viz-data.ts` as **pure functions** over already-cached query results, not as new round-trips.
-- [ ] Charts and graphs degrade gracefully past ~500 books / ~5000 notes (virtualization, clustering, or top-N capping where relevant).
-- [ ] No N+1 fetches in loops — batch with `.in(...)` or join via the existing select shapes.
-- [ ] Cover palette extraction stays off the critical render path; if a queue is needed at scale, note it in `PROJECT_CONTEXT.md` debt list.
-
-## 11. Tests / manual verification
-
-Before claiming done, verify the change against the signal that matters:
-
-- [ ] Build is green (the harness runs it — don't run `tsc`/`build` manually, but read its output).
-- [ ] Console has no new errors or warnings tied to the change (`read_console_logs`).
-- [ ] Network tab shows no failed Supabase requests, no 401s on protected fns (`read_network_requests`).
-- [ ] Visual check in the preview: empty state, populated state, and at least one filtered state.
-- [ ] Click-through from any new stat/chip lands on the correct filtered URL with `ActiveFilters` reflecting the filter.
-- [ ] Cmd-K has an entry for any new top-level surface or sub-view.
-- [ ] If RLS or migrations changed: confirmed a fresh user can sign up, gets seeded, and can read/write only their own rows.
-- [ ] If terminology was touched: grep confirms no "Weave" / "Margins" leaked into user-visible strings.
+If not, narrow the feature or defer it.
 
 ---
 
-## When in doubt
+## 2. URL and filter contract
 
-Re-read `PRODUCT_PRINCIPLES.md` §"How to evaluate a new feature" and `PROJECT_CONTEXT.md` for current architecture. If the change still feels right, ship it. If not, narrow the scope or surface the question to the user before writing code.
+- [ ] New filters extend `LibrarySearch` in `src/lib/library-filter.ts`.
+
+- [ ] Do not create a separate filter shape for one surface.
+
+- [ ] Visible view state belongs in the URL when it affects what the user is seeing.
+
+- [ ] New click-throughs use canonical helpers such as `viz-link.ts`; do not hand-roll query strings.
+
+- [ ] `ActiveFilters` reflects the active filters.
+
+This is load-bearing. Treat `LibrarySearch` as the app’s shared filter grammar.
+
+---
+
+## 3. Privacy, RLS, and user ownership
+
+For database changes:
+
+- [ ] Every new user-owned table has `user_id`.
+
+- [ ] RLS is enabled immediately.
+
+- [ ] Policies are scoped to `auth.uid() = user_id`.
+
+- [ ] App writes set `user_id` explicitly.
+
+- [ ] No cross-user reads or writes are introduced casually.
+
+- [ ] No foreign keys directly to `auth.users`; use `profiles` or domain tables.
+
+- [ ] Roles, if ever needed, use a separate `user_roles` table plus a security-definer helper.
+
+Privacy is not a later polish step.
+
+---
+
+## 4. Browser vs server-side boundary
+
+Keep in browser:
+
+- ordinary user reads/writes against RLS-protected tables
+
+- local UI state
+
+- pure visualizations over already-fetched user data
+
+Move server-side before building:
+
+- secrets
+
+- third-party API keys
+
+- webhooks
+
+- email
+
+- AI gateway calls
+
+- sync endpoints
+
+- background jobs
+
+- cross-user aggregation
+
+- service-role Supabase access
+
+Rules:
+
+- [ ] Use TanStack `createServerFn` when server-side capability is needed.
+
+- [ ] Do not import `client.server.ts` into browser code.
+
+- [ ] Do not read `process.env.*` in browser/shared modules.
+
+- [ ] Do not bolt server architecture on after the feature is already built.
+
+---
+
+## 5. Styling and terminology
+
+Styling:
+
+- [ ] Use semantic tokens from `src/styles.css`.
+
+- [ ] No raw Tailwind colors like `text-white`, `bg-black`, or hex classes.
+
+- [ ] New colors become `oklch` design tokens.
+
+- [ ] Cards, shadows, spacing, and radii match the quiet paper-feel UI.
+
+- [ ] Charts and chips respect cover-derived palette logic where relevant.
+
+Terminology:
+
+- [ ] User-facing copy says **Connections / Connect**, never “Weave.”
+
+- [ ] User-facing copy says **Notations / Notes / Quotes**, never “Margins.”
+
+- [ ] The data tab is **Visualizations**, not generic “Stats.”
+
+- [ ] Notes render as plain sans.
+
+- [ ] Quotes render as display italic with terra left bar.
+
+- [ ] No gamified copy.
+
+---
+
+## 6. React Query and data flow
+
+- [ ] Reads use existing hooks where possible.
+
+- [ ] New user data hooks belong in `src/lib/queries.ts` or a clearly justified sibling.
+
+- [ ] Query keys include the user identity where appropriate.
+
+- [ ] Mutations invalidate affected reads.
+
+- [ ] Do not duplicate existing query logic.
+
+- [ ] Do not add polling/refetch intervals as a substitute for proper invalidation.
+
+- [ ] Optimistic updates include rollback on error when user-visible state changes immediately.
+
+Common affected keys include:
+
+- `["library"]`
+
+- `["book", id]`
+
+- `["book-tags-map"]`
+
+- `["book-axis-map"]`
+
+- `["profile"]`
+
+- sessions
+
+- notes
+
+- highlights
+
+- connections
+
+---
+
+## 7. Migrations and sample data
+
+For schema changes:
+
+- [ ] Use proper Supabase migrations.
+
+- [ ] Existing rows remain valid through defaults or nullable columns.
+
+- [ ] New-user sample seeding still works.
+
+- [ ] `handle_new_user` is updated when seeded columns/tables change.
+
+- [ ] Seeded rows preserve `is_sample` where relevant.
+
+- [ ] Do not write against `auth`, `storage`, `realtime`, `vault`, or Supabase internal schemas.
+
+- [ ] Time-dependent validation uses triggers, not invalid `CHECK` constraints.
+
+If a schema change affects onboarding, say so explicitly.
+
+---
+
+## 8. Performance and scale
+
+Check whether the change still works with:
+
+- 100 books
+
+- 500 books
+
+- 1,000+ books
+
+- thousands of notes or highlights
+
+Guardrails:
+
+- [ ] Avoid N+1 fetches.
+
+- [ ] Batch with `.in(...)` or existing joined select shapes.
+
+- [ ] Beware Supabase’s default 1,000-row limit.
+
+- [ ] Heavy visualization aggregation should be pure functions over cached data when possible.
+
+- [ ] Graphs and charts need graceful degradation: top-N, clustering, pagination, virtualization, or scoped views.
+
+- [ ] Cover palette extraction should not block large imports.
+
+---
+
+## 9. Files not to edit manually
+
+Do not edit:
+
+- `src/integrations/supabase/client.ts`
+
+- `src/integrations/supabase/types.ts`
+
+- `src/routeTree.gen.ts`
+
+- `.env`
+
+- project-level keys in `supabase/config.toml`
+
+If a tool modifies one of these, stop and review why.
+
+---
+
+## 10. Manual verification
+
+Before calling a change done:
+
+- [ ] Build/harness output is clean.
+
+- [ ] Browser console has no new relevant errors.
+
+- [ ] Network tab shows no new failed Supabase requests or unexpected 401s.
+
+- [ ] Empty, populated, and filtered states were checked.
+
+- [ ] New click-throughs land on the correct URL.
+
+- [ ] `ActiveFilters` shows the expected filters.
+
+- [ ] Cmd-K includes new top-level surfaces or sub-views.
+
+- [ ] If auth/RLS/schema changed, test a fresh user signup.
+
+- [ ] If terminology changed, grep for user-visible “Weave” or “Margins.”
+
+---
+
+## Codex review prompt
+
+Use this after Lovable proposes or implements a meaningful change:
+
+```text
+
+Review this Unshelved change against PROJECT_CONTEXT.md, PRODUCT_PRINCIPLES.md, and AI_CHANGE_CHECKLIST.md.
+
+Do not rewrite the feature.
+
+Flag only actionable issues:
+
+1. Product-principle violations
+
+2. URL/filter contract problems
+
+3. RLS/privacy/security issues
+
+4. Browser/server boundary mistakes
+
+5. Styling/token violations
+
+6. Terminology leaks
+
+7. React Query invalidation problems
+
+8. Migration/sample-data risks
+
+9. Performance risks for large libraries
+
+10. Simpler alternatives
+
+End with one recommendation:
+
+- approve
+
+- approve with changes
+
+- reject and redesign
+```
