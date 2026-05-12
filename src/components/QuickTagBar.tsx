@@ -116,7 +116,7 @@ function ScaleAxis({ axis, bookId, value }: { axis: TagAxis; bookId: string; val
                   : set.mutate({ book_id: bookId, axis_id: axis.id, scale_value: d })
               }
               className={`h-5 w-5 rounded-full text-xs leading-none transition ${
-                isSpice ? "text-red-600" : ""
+                isSpice ? "text-terra" : ""
               } ${active ? "" : "opacity-25 hover:opacity-60"}`}
               aria-label={`${axis.label} ${d}${isPace ? ` (${paceLabels[d]})` : isSpice ? ` (${spiceLabels[d]})` : ""}`}
             >

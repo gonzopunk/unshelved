@@ -57,7 +57,7 @@ export default function ConnectionCard({
             </Button>
           )}
           <Button variant="ghost" size="sm" className="rounded-full text-muted-foreground hover:text-destructive" onClick={() => {
-            if (confirm("Unweave this connection?")) del.mutate(connection.id);
+            if (confirm("Remove this connection?")) del.mutate(connection.id);
           }} aria-label="Delete connection">
             <Trash2 className="h-3.5 w-3.5" />
           </Button>

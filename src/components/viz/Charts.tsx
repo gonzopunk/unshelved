@@ -21,13 +21,13 @@ type Session = Database["public"]["Tables"]["reading_sessions"]["Row"];
 const FOREST = "var(--forest)";
 const TERRA = "var(--terra)";
 const SAGE = "var(--sage)";
-const SKY = "#5DA8D5";
-const SAND = "#C5A572";
+const HONEY = "var(--honey)";
+const DUST = "var(--dust)";
 const MIST = "var(--mist)";
 
 // Cycle through tokens + cover-derived accents.
 function palette(seedColors: string[], n: number): string[] {
-  const base = [FOREST, TERRA, SAGE, SKY, SAND, "#8B7355"];
+  const base = [FOREST, TERRA, SAGE, HONEY, DUST, "var(--ink)"];
   const all = [...seedColors.filter(Boolean), ...base];
   const out: string[] = [];
   for (let i = 0; i < n; i++) out.push(all[i % all.length]);
@@ -36,12 +36,12 @@ function palette(seedColors: string[], n: number): string[] {
 
 const STATUS_COLORS: Record<BookStatus, string> = {
   reading: TERRA,
-  want: SKY,
-  later: SAND,
-  loved: "#B65A2E",
+  want: HONEY,
+  later: DUST,
+  loved: "var(--ink)",
   liked: SAGE,
   meh: MIST,
-  dnf: "#9CA3AF",
+  dnf: "var(--muted-foreground)",
 };
 
 /* ---------------- 1. Status mix (donut) ---------------- */
