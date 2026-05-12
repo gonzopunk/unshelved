@@ -154,6 +154,7 @@ function NotationsPage() {
       kind: undefined,
     });
 
+  const contentFilterCount = chips.filter((c) => c.key !== "kind").length;
   const activeFilterSummary = chips.map((c) => c.label).join(" · ");
 
   return (
