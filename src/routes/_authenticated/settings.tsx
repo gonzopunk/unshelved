@@ -181,7 +181,7 @@ function SampleLibraryCard() {
         <div className="flex-1">
           <h2 className="font-display text-2xl mb-1">Sample library</h2>
           <p className="text-sm text-muted-foreground">
-            Your account was started with a small set of books, quotes, and example connections so the app feels alive on day one. Clear them whenever you're ready — your real books, notes, sessions, and tags stay.
+            Your account was started with a small set of books, quotes, and example connections so the app feels alive on day one. Clear them whenever you're ready — your real books, notes, sessions, and tags will remain safe.
           </p>
 
           {counts && (

@@ -154,6 +154,7 @@ function NotationsPage() {
       kind: undefined,
     });
 
+  const contentFilterCount = chips.filter((c) => c.key !== "kind").length;
   const activeFilterSummary = chips.map((c) => c.label).join(" · ");
 
   return (
@@ -218,7 +219,15 @@ function NotationsPage() {
           <div className="text-sm text-muted-foreground">Loading…</div>
         ) : total === 0 ? (
           <div className="rounded-2xl bg-card shadow-paper p-8 text-center text-muted-foreground">
-            Nothing matches these filters yet.
+            {contentFilterCount > 0 ? (
+              "Nothing matches these filters."
+            ) : kind === "quotes" ? (
+              "No quotes yet. Add a quote to a book to start building your commonplace."
+            ) : kind === "notes" ? (
+              "No notes yet. Leave a note on a book to start building your commonplace."
+            ) : (
+              "No notations yet. Notes and quotes you add to books will gather here as your commonplace."
+            )}
           </div>
         ) : (
           <>

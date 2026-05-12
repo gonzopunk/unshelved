@@ -273,7 +273,15 @@ export function AxisProfile({
   const data = useMemo(() => axisAggregates(bookAxes), [bookAxes]);
   // hide if too sparse
   const totalBooksWithAxes = Object.keys(bookAxes).length;
-  if (totalBooksWithAxes < 3 || data.length < 3) return null;
+  if (totalBooksWithAxes < 3 || data.length < 3) {
+    return (
+      <ChartCard title="Axis profile" caption="The shape of your taste, by axis">
+        <ChartEmpty>
+          Assign axis values (like "Pace" or "Spice") to at least three books to see your taste shape here.
+        </ChartEmpty>
+      </ChartCard>
+    );
+  }
   return (
     <ChartCard title="Axis profile" caption="The shape of your taste, by axis" hint="click an axis to filter Library">
       <ResponsiveContainer width="100%" height={240}>
