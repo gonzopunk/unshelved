@@ -338,7 +338,7 @@ function WeavePage() {
         <div className="text-center py-20 text-muted-foreground">Loading…</div>
       ) : connections.length === 0 ? (
         <div className="rounded-2xl bg-card shadow-paper p-10 text-center text-muted-foreground italic">
-          No connections yet. Connect a book, note, or quote to start your web.
+          No connections yet. Go to any book's page and click "Connect" to start your web.
         </div>
       ) : view === "list" ? (
         <div className="space-y-3">
