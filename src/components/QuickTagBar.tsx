@@ -33,9 +33,15 @@ export default function QuickTagBar({ bookId }: Props) {
   }, [values]);
 
   const visible = axes.filter((a) => !a.hidden);
+  const hasAxisValues = values.length > 0;
 
   return (
     <div className="mt-6 rounded-2xl bg-card shadow-paper px-4 py-3">
+      {!hasAxisValues && visible.length > 0 && (
+        <p className="text-xs text-muted-foreground mb-3 italic">
+          Use axes to rate books on scales like pace or spice. Ordinary tags are for free-form grouping.
+        </p>
+      )}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         {visible.map((axis) => (
           <AxisControl key={axis.id} axis={axis} bookId={bookId} value={valueByAxis.get(axis.id)} />
