@@ -6,11 +6,12 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { extractCoverPalette } from "@/lib/palette";
-import { queryClient } from "@/lib/query-client";
+import type { QueryClient } from "@tanstack/react-query";
 
 type Options = {
   signal?: AbortSignal;
   onProgress?: (done: number, total: number) => void;
+  queryClient?: QueryClient;
 };
 
 const chunk = <T,>(arr: T[], n: number): T[][] => {
