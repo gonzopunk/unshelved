@@ -335,3 +335,49 @@ If either distinction is missing, do not approve the build.
 - Grep user-facing strings for "Weave" (capital W as a noun), "Unweave",
   and "Margins". None should appear in button labels, headings, tooltips,
   or nav items.
+
+## 12. WP4 Import/palette checks
+
+### Automated
+- [ ] bun run test passes with no failures.
+- [ ] bun run lint passes with no new errors.
+
+### Manual — small import (under 20 books)
+- [ ] Upload a trimmed Goodreads CSV (under 20 rows).
+- [ ] Enrichment phase completes; Cancel button is visible 
+      and functional during enrichment.
+- [ ] Commit completes; all books appear in Library with 
+      default palette colors immediately.
+- [ ] Palette pass progress bar appears; cover accent colors 
+      update live in Library as the pass runs.
+- [ ] After pass completes, all books show extracted palette 
+      colors (not the default teal #1F5266).
+- [ ] Settings → Imports shows the batch with correct count.
+- [ ] Undo Import removes all books from Library and 
+      import_batches. No books remain regardless of whether 
+      the palette pass had completed before undo.
+
+### Manual — large import (100+ books)
+- [ ] Upload a full Goodreads export (100+ rows).
+- [ ] During enrichment: page remains responsive. 
+      Scrolling and filtering work without freezing.
+- [ ] Cancel during enrichment stops within ~1 second.
+- [ ] Commit completes without UI freeze.
+- [ ] Palette pass runs after commit; navigating to Library 
+      mid-pass shows books populating with colors live.
+- [ ] Navigating away from the wizard mid-pass does not 
+      freeze the app and does not cancel the pass.
+- [ ] Undo Import after a completed palette pass removes 
+      all N books cleanly.
+
+### Cover safety checks
+- [ ] Books with no cover_url show GeneratedCover 
+      (typographic fallback) at all times, before and 
+      after the palette pass.
+- [ ] Books with a cover_url but a failed palette 
+      extraction show the photo cover with default 
+      accent colors (not a broken state).
+- [ ] cover_secondary_color is null for books where 
+      palette extraction failed or was skipped; confirm 
+      no chart or card component crashes on null 
+      secondary color.
