@@ -146,6 +146,48 @@ function Stepper({ step }: { step: Step }) {
 }
 
 // ────────────────────────────────────────────────────────────
+// Palette pass tracker — module-level so the pass survives the wizard
+// being unmounted (closing the dialog, navigating away).
+
+type PaletteState = {
+  batchId: string | null;
+  done: number;
+  total: number;
+  running: boolean;
+  controller: AbortController | null;
+};
+
+let paletteState: PaletteState = { batchId: null, done: 0, total: 0, running: false, controller: null };
+const paletteListeners = new Set<() => void>();
+
+function setPaletteState(next: PaletteState) {
+  paletteState = next;
+  for (const l of paletteListeners) l();
+}
+
+function subscribePalette(fn: () => void) {
+  paletteListeners.add(fn);
+  return () => { paletteListeners.delete(fn); };
+}
+
+function startPalettePass(batchId: string, queryClient: QueryClient) {
+  // If a pass is already running for this batch, do not start a duplicate.
+  if (paletteState.running && paletteState.batchId === batchId) return;
+  paletteState.controller?.abort();
+  const controller = new AbortController();
+  setPaletteState({ batchId, done: 0, total: 0, running: true, controller });
+  void runPalettePass(batchId, {
+    signal: controller.signal,
+    queryClient,
+    onProgress: (done, total) => {
+      setPaletteState({ ...paletteState, batchId, done, total, running: true, controller });
+    },
+  })
+    .catch(() => { /* surface nothing — library already usable */ })
+    .finally(() => {
+      setPaletteState({ ...paletteState, running: false });
+    });
+}
 // Step 1 — Source
 
 function SourceStep({ dispatch }: { dispatch: React.Dispatch<Action> }) {
