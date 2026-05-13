@@ -1,4 +1,4 @@
-import { useMemo, useReducer, useRef, useState } from "react";
+import { useMemo, useReducer, useRef, useState, useSyncExternalStore } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,8 @@ import {
 import { annotateDuplicates, buildDedupeMaps } from "@/lib/import/dedupe";
 import { enrichRows } from "@/lib/import/enrich";
 import { commitImport, undoImport } from "@/lib/import/commit";
+import { runPalettePass } from "@/lib/palette-pass";
+import type { QueryClient } from "@tanstack/react-query";
 import {
   FIELD_LABELS,
   type ColumnMap,
@@ -144,6 +146,48 @@ function Stepper({ step }: { step: Step }) {
 }
 
 // ────────────────────────────────────────────────────────────
+// Palette pass tracker — module-level so the pass survives the wizard
+// being unmounted (closing the dialog, navigating away).
+
+type PaletteState = {
+  batchId: string | null;
+  done: number;
+  total: number;
+  running: boolean;
+  controller: AbortController | null;
+};
+
+let paletteState: PaletteState = { batchId: null, done: 0, total: 0, running: false, controller: null };
+const paletteListeners = new Set<() => void>();
+
+function setPaletteState(next: PaletteState) {
+  paletteState = next;
+  for (const l of paletteListeners) l();
+}
+
+function subscribePalette(fn: () => void) {
+  paletteListeners.add(fn);
+  return () => { paletteListeners.delete(fn); };
+}
+
+function startPalettePass(batchId: string, queryClient: QueryClient) {
+  // If a pass is already running for this batch, do not start a duplicate.
+  if (paletteState.running && paletteState.batchId === batchId) return;
+  paletteState.controller?.abort();
+  const controller = new AbortController();
+  setPaletteState({ batchId, done: 0, total: 0, running: true, controller });
+  void runPalettePass(batchId, {
+    signal: controller.signal,
+    queryClient,
+    onProgress: (done, total) => {
+      setPaletteState({ ...paletteState, batchId, done, total, running: true, controller });
+    },
+  })
+    .catch(() => { /* surface nothing — library already usable */ })
+    .finally(() => {
+      setPaletteState({ ...paletteState, running: false });
+    });
+}
 // Step 1 — Source
 
 function SourceStep({ dispatch }: { dispatch: React.Dispatch<Action> }) {
@@ -385,6 +429,9 @@ function ReviewStep({ state, dispatch, onClose }: { state: State; dispatch: Reac
       );
       qc.invalidateQueries({ queryKey: ["library"] });
       dispatch({ type: "commitDone", batchId: result.batchId, inserted: result.inserted, skipped: result.skipped });
+      // Kick off palette extraction in the background. Tracker is module-level
+      // so the pass keeps running even if the wizard unmounts.
+      startPalettePass(result.batchId, qc);
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Import failed");
       setCommitting(false);
@@ -426,6 +473,16 @@ function ReviewStep({ state, dispatch, onClose }: { state: State; dispatch: Reac
         >
           {enriching ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> {enrichDone}/{enrichTotal}</> : "Run lookup"}
         </Button>
+        {enriching && enrichDone < enrichTotal && (
+          <Button
+            onClick={() => abortRef.current?.abort()}
+            variant="ghost"
+            size="sm"
+            className="rounded-full"
+          >
+            Cancel
+          </Button>
+        )}
       </div>
 
       <div className="rounded-2xl border border-border overflow-hidden">
@@ -577,6 +634,10 @@ function DoneStep({ state, onClose, dispatch }: { state: State; onClose: () => v
       setUndoing(false);
     }
   };
+  const palette = useSyncExternalStore(subscribePalette, () => paletteState, () => paletteState);
+  const showPalette = palette.batchId === state.batchId && (palette.running || palette.done > 0) && palette.total > 0;
+  const palettePct = palette.total > 0 ? Math.round((palette.done / palette.total) * 100) : 0;
+
   return (
     <div className="text-center py-8 space-y-6">
       <div className="inline-flex h-14 w-14 rounded-full bg-forest/10 items-center justify-center mx-auto">
@@ -588,6 +649,27 @@ function DoneStep({ state, onClose, dispatch }: { state: State; onClose: () => v
           {state.commitInserted} added · {state.commitSkipped} skipped as duplicates
         </p>
       </div>
+      {showPalette && (
+        <div className="max-w-md mx-auto space-y-2 text-left">
+          <div className="flex items-center justify-between text-xs font-mono uppercase tracking-widest text-muted-foreground">
+            <span>Extracting cover colors</span>
+            <span>{palette.done}/{palette.total}</span>
+          </div>
+          <Progress value={palettePct} className="h-1.5" />
+          {palette.running && (
+            <div className="flex justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => palette.controller?.abort()}
+                className="rounded-full text-xs h-7"
+              >
+                Skip
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
       <div className="flex justify-center gap-2">
         <Button variant="outline" onClick={() => dispatch({ type: "reset" })} className="rounded-full">Import more</Button>
         <Button variant="ghost" onClick={undo} disabled={undoing} className="rounded-full">

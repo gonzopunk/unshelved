@@ -1,4 +1,3 @@
-import { extractCoverPalette } from "@/lib/palette";
 import type { ImportRow } from "./types";
 
 const CACHE_KEY = "unshelved.import.olcache.v1";
@@ -75,16 +74,6 @@ export async function enrichRows(rows: ImportRow[], opts: EnrichOptions): Promis
         const next = { ...out[idx], enrichTried: true };
         if (opts.fetchCovers && hit.coverUrl && !next.coverUrl) {
           next.coverUrl = hit.coverUrl;
-          // Try palette extraction; non-blocking failure is fine.
-          try {
-            const pal = await extractCoverPalette(hit.coverUrl);
-            if (pal) {
-              next.coverColor = pal.dominant;
-              next.coverSecondaryColor = pal.secondary;
-              next.coverTextColor = pal.text;
-              next.bookmarkColor = pal.bookmark;
-            }
-          } catch { /* ignore */ }
         }
         if (hit.totalPages && (opts.overwritePages || !next.totalPages)) {
           next.totalPages = hit.totalPages;
