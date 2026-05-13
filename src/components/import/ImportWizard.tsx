@@ -634,6 +634,10 @@ function DoneStep({ state, onClose, dispatch }: { state: State; onClose: () => v
       setUndoing(false);
     }
   };
+  const palette = useSyncExternalStore(subscribePalette, () => paletteState, () => paletteState);
+  const showPalette = palette.batchId === state.batchId && (palette.running || palette.done > 0) && palette.total > 0;
+  const palettePct = palette.total > 0 ? Math.round((palette.done / palette.total) * 100) : 0;
+
   return (
     <div className="text-center py-8 space-y-6">
       <div className="inline-flex h-14 w-14 rounded-full bg-forest/10 items-center justify-center mx-auto">
@@ -645,6 +649,27 @@ function DoneStep({ state, onClose, dispatch }: { state: State; onClose: () => v
           {state.commitInserted} added · {state.commitSkipped} skipped as duplicates
         </p>
       </div>
+      {showPalette && (
+        <div className="max-w-md mx-auto space-y-2 text-left">
+          <div className="flex items-center justify-between text-xs font-mono uppercase tracking-widest text-muted-foreground">
+            <span>Extracting cover colors</span>
+            <span>{palette.done}/{palette.total}</span>
+          </div>
+          <Progress value={palettePct} className="h-1.5" />
+          {palette.running && (
+            <div className="flex justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => palette.controller?.abort()}
+                className="rounded-full text-xs h-7"
+              >
+                Skip
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
       <div className="flex justify-center gap-2">
         <Button variant="outline" onClick={() => dispatch({ type: "reset" })} className="rounded-full">Import more</Button>
         <Button variant="ghost" onClick={undo} disabled={undoing} className="rounded-full">
