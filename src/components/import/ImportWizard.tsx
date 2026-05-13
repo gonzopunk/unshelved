@@ -22,6 +22,8 @@ import {
 import { annotateDuplicates, buildDedupeMaps } from "@/lib/import/dedupe";
 import { enrichRows } from "@/lib/import/enrich";
 import { commitImport, undoImport } from "@/lib/import/commit";
+import { runPalettePass } from "@/lib/palette-pass";
+import type { QueryClient } from "@tanstack/react-query";
 import {
   FIELD_LABELS,
   type ColumnMap,
