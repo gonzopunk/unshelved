@@ -1,4 +1,3 @@
-import { extractCoverPalette } from "@/lib/palette";
 import type { ImportRow } from "./types";
 
 const CACHE_KEY = "unshelved.import.olcache.v1";
