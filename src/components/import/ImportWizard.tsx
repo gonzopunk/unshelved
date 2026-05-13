@@ -429,6 +429,9 @@ function ReviewStep({ state, dispatch, onClose }: { state: State; dispatch: Reac
       );
       qc.invalidateQueries({ queryKey: ["library"] });
       dispatch({ type: "commitDone", batchId: result.batchId, inserted: result.inserted, skipped: result.skipped });
+      // Kick off palette extraction in the background. Tracker is module-level
+      // so the pass keeps running even if the wizard unmounts.
+      startPalettePass(result.batchId, qc);
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Import failed");
       setCommitting(false);
