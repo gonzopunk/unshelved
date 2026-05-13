@@ -306,3 +306,32 @@ End with one recommendation:
 
 - reject and redesign
 ```
+
+## 11. WP3 Regression checks
+
+### Automated (run before marking any change done)
+
+- [ ] `bun run test` passes with no failures.
+
+- [ ] `bun run lint` passes with no new errors.
+
+### Manual visual check — Notations rendering distinction
+
+Open the Notations page and the Book detail page and confirm:
+
+- Quotes render in display italic with a left terra-colored accent bar.
+  Expected classes include font-display (or equivalent display token)
+  and italic and a left border using text-terra or border-terra.
+
+- Notes render in plain sans-serif with no accent bar.
+
+If either distinction is missing, do not approve the build.
+
+### Terminology spot-check
+
+- Temporarily type the word "Margins" into a JSX component and confirm
+  ESLint flags it. Then revert.
+
+- Grep user-facing strings for "Weave" (capital W as a noun), "Unweave",
+  and "Margins". None should appear in button labels, headings, tooltips,
+  or nav items.
