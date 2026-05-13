@@ -21,7 +21,7 @@ const chunk = <T,>(arr: T[], n: number): T[][] => {
 };
 
 export async function runPalettePass(batchId: string, options: Options = {}): Promise<void> {
-  const { signal, onProgress } = options;
+  const { signal, onProgress, queryClient } = options;
 
   const { data: books, error } = await supabase
     .from("books")
