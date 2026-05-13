@@ -426,6 +426,16 @@ function ReviewStep({ state, dispatch, onClose }: { state: State; dispatch: Reac
         >
           {enriching ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> {enrichDone}/{enrichTotal}</> : "Run lookup"}
         </Button>
+        {enriching && enrichDone < enrichTotal && (
+          <Button
+            onClick={() => abortRef.current?.abort()}
+            variant="ghost"
+            size="sm"
+            className="rounded-full"
+          >
+            Cancel
+          </Button>
+        )}
       </div>
 
       <div className="rounded-2xl border border-border overflow-hidden">
