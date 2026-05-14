@@ -118,11 +118,11 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="rounded-3xl max-w-lg w-[calc(100vw-2rem)] bg-card max-h-[90vh] overflow-y-auto">
+      <DialogContent className="rounded-3xl max-w-lg w-[calc(100vw-2rem)] bg-card max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">{isEditing ? "Edit connection" : "Add a connection"}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-0">
           <div className="rounded-xl bg-mist p-3">
             <div className="font-mono text-[0.65rem] uppercase tracking-widest text-muted-foreground">From</div>
             <div className="font-display text-base mt-0.5 truncate">{source.label}</div>
@@ -131,10 +131,10 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
           <div>
             <Label>To</Label>
             {target ? (
-              <div className="mt-1 flex items-center justify-between rounded-xl bg-paper border border-border p-3">
-                <div>
-                  <div className="font-display text-base">{target.title}</div>
-                  {target.author && <div className="text-xs text-muted-foreground italic">{target.author}{target.isReference ? " · reference" : ""}</div>}
+              <div className="mt-1 flex items-center justify-between gap-2 rounded-xl bg-paper border border-border p-3">
+                <div className="min-w-0 flex-1">
+                  <div className="font-display text-base truncate">{target.title}</div>
+                  {target.author && <div className="text-xs text-muted-foreground italic truncate">{target.author}{target.isReference ? " · reference" : ""}</div>}
                 </div>
                 <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setTarget(null)}>Change</Button>
               </div>
