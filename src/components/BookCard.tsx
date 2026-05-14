@@ -105,7 +105,7 @@ export default function BookCard({ book, userBook, tilt = 0 }: Props) {
 
       <div className="bc-body">
         <div className="bc-titlerow">
-          <div className="bc-title-text">{book.title}</div>
+          <div className="bc-title-text line-clamp-2">{book.title}</div>
           <div className={"bc-fmt-pill " + book.format}>
             <FmtIcon format={book.format} /> {FMT_LABEL[book.format]}
           </div>
