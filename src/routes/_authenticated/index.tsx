@@ -238,7 +238,10 @@ function Home() {
         ) : (
           <div
             className="reading-grid"
-            style={{ gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${readingSize}px), 1fr))` }}
+            style={{
+              ["--card-size" as string]: `${readingSize}px`,
+              gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${readingSize}px), 1fr))`,
+            }}
           >
             {reading.map((b, i) => (
               <BookCard key={b.id} book={b} userBook={b.user_books[0]} tilt={[-0.6, 0.4][i] ?? 0} />
