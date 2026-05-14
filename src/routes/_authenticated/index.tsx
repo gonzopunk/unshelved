@@ -639,9 +639,9 @@ function HomepageStyles() {
         overflow: hidden;
       }
       .upnext-add {
-        flex: 0 0 calc((100% - 36px - 56px) / 5);
-        min-width: 64px;
-        aspect-ratio: 2 / 3;
+        flex: 0 0 84px;
+        width: 84px;
+        height: 126px;
         align-self: flex-start;
         scroll-snap-align: start;
         border-radius: 4px;
