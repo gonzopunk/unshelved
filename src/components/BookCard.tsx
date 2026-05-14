@@ -84,9 +84,6 @@ export default function BookCard({ book, userBook, tilt = 0 }: Props) {
               loading="lazy"
             />
           )}
-          {!book.cover_url && (
-            <div className="cv-fmt"><FmtIcon format={book.format} /> {FMT_LABEL[book.format]}</div>
-          )}
           {isEbook && (
             <div className="ebook-track">
               <div className="ebook-dot" style={{ top: `${Math.max(5, Math.min(95, pct))}%` }} />
