@@ -1,38 +1,48 @@
-## Changes
+## Fix
 
-### 1. `src/components/GeneratedCover.tsx`
+In `src/routes/_authenticated/index.tsx`, replace the flex-basis CSS-var sizing on `.upnext-item`, `.upnext-cover`, and `.upnext-add` with fixed pixel dimensions. The previous `flex: 0 0 calc(...)` and `aspect-ratio` combo let the flex container's height stretch the covers.
 
-Remove the "Unshelved" label div from the no-cover branch. Currently:
+### Style changes only
 
-```tsx
-<div className="text-[0.65rem] uppercase tracking-[0.2em] opacity-70">Unshelved</div>
-<div>
-  <div className="text-sm leading-tight font-semibold line-clamp-3">{book.title}</div>
-  ...
-</div>
+```css
+.upnext-item {
+  flex: 0 0 84px;
+  width: 84px;
+  scroll-snap-align: start;
+  text-decoration: none;
+  color: inherit;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.upnext-cover {
+  width: 84px;
+  height: 126px;
+  flex: 0 0 126px;     /* prevent flex-column stretching */
+  border-radius: 4px;
+  box-shadow: 0 6px 14px -8px rgba(31,38,48,0.35);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.upnext-add {
+  flex: 0 0 84px;
+  width: 84px;
+  height: 126px;
+  align-self: flex-start;
+  scroll-snap-align: start;
+  border-radius: 4px;
+  border: 1.5px dashed rgba(31,38,48,0.18);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; color: rgba(31,38,48,0.45);
+  background: transparent; cursor: pointer; padding: 0;
+  transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
 ```
 
-After removal, the title block is the sole content; the `flex flex-col justify-between` will collapse to flex-start, which is the desired layout (title near the top, author beneath).
+Drop `min-width: 64px` and the `aspect-ratio` rules. Keep `.upnext-row` (with its `align-items` left as default — items size themselves explicitly so stretch is moot), `.upnext-wrap`, `.upnext-nav`, `.upnext-title`, hover, and arrow logic exactly as they are.
 
-Adjust: change container from `justify-between` to `justify-end` so title+author sit at the bottom of the cover (current intent — title was at the bottom, "Unshelved" eyebrow at the top). Or simpler: keep `justify-between` and wrap the title block in a fragment so it stays at the bottom by being the only child… that's still top-aligned. Use `justify-end` to keep the existing visual weight.
+At 84px + 14px gap, the row's content box (~520px in the right-hand `1.3fr`/`1fr` `two-col` column on a 1389px viewport) fits ~5 items, with horizontal scroll handling the rest — matching the requirement.
 
-### 2. `src/components/BookCard.tsx`
+### Scope
 
-Remove the on-cover format watermark — line 87–89:
-
-```tsx
-{!book.cover_url && (
-  <div className="cv-fmt"><FmtIcon format={book.format} /> {FMT_LABEL[book.format]}</div>
-)}
-```
-
-Delete this block entirely. The `bc-fmt-pill` chip on line 109 (rendered below the cover, beside the title) stays.
-
-### 3. Audit — already done
-
-- `src/styles.css` `.cv-fmt` rules become dead CSS but are harmless; leave them (not part of the user request, and removing CSS in unrelated files risks unintended side effects).
-- `src/routes/_authenticated/board.tsx` `mc-fmt` is a meta-row chip beside the title, **not** an on-cover overlay — leave untouched.
-- No other components render format text inside cover bounds.
+- Only the three CSS rule blocks above. No JSX, no arrow behavior, no other files.
 
 ## Verify
 
