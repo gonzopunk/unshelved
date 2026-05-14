@@ -65,7 +65,7 @@ function Home() {
     .reduce((sum, s) => sum + (s.minutes ?? 0), 0);
 
   const reading = library.filter((b) => b.user_books[0]?.status === "reading").slice(0, 2);
-  const upNext = library.filter((b) => b.user_books[0]?.status === "want").slice(0, 5);
+  const upNext = library.filter((b) => b.user_books[0]?.status === "want").slice(0, 20);
   const finished = library
     .filter((b) => ["loved", "liked", "meh"].includes(b.user_books[0]?.status ?? ""))
     .sort((a, b) => (b.user_books[0]?.finished_at ?? "").localeCompare(a.user_books[0]?.finished_at ?? ""))
