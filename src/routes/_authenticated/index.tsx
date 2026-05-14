@@ -220,7 +220,7 @@ function Home() {
               type="range"
               min={MIN_COL}
               max={MAX_COL}
-              step={4}
+              step={1}
               value={readingSize}
               onChange={(e) => changeSize(Number(e.target.value))}
               aria-label="Card size"

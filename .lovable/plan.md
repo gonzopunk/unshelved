@@ -1,48 +1,77 @@
-## Fix
+## Goal
 
-In `src/routes/_authenticated/index.tsx`, replace the flex-basis CSS-var sizing on `.upnext-item`, `.upnext-cover`, and `.upnext-add` with fixed pixel dimensions. The previous `flex: 0 0 calc(...)` and `aspect-ratio` combo let the flex container's height stretch the covers.
+Make the home-page size slider feel continuous and fluid — both the slider input itself (no `step={4}`) and the visible scaling of book cards (typography + cover proportions scale with the slider value, not just the grid column count).
 
-### Style changes only
+## Scope
+
+Only `src/routes/_authenticated/index.tsx`. No changes to `BookCard.tsx` or `src/styles.css`. Style overrides scoped to `.reading-grid` go in the existing `<HomepageStyles />` block.
+
+## Changes
+
+### 1. Slider input — true continuous
+
+Line 223 of `src/routes/_authenticated/index.tsx`:
+
+```tsx
+step={1}
+```
+
+(was `step={4}`). Min/max stay at `MIN_COL` (180) and `MAX_COL` (520).
+
+### 2. Drive a CSS custom property on the grid container
+
+Line 239–242 — set `--card-size` inline alongside the existing `gridTemplateColumns`:
+
+```tsx
+<div
+  className="reading-grid"
+  style={{
+    ["--card-size" as string]: `${readingSize}px`,
+    gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${readingSize}px), 1fr))`,
+  }}
+>
+```
+
+### 3. Scale BookCard internals fluidly via scoped overrides
+
+Append to the existing `<HomepageStyles />` template a `.reading-grid`-scoped block that ties cover padding, title sizes, and gaps to `--card-size`. This way, even when `auto-fill` snaps column count, each card's interior scales smoothly with the slider:
 
 ```css
-.upnext-item {
-  flex: 0 0 84px;
-  width: 84px;
-  scroll-snap-align: start;
-  text-decoration: none;
-  color: inherit;
-  display: flex; flex-direction: column; gap: 8px;
+.reading-grid {
+  --card-size: 220px;
+  transition: none;
 }
-.upnext-cover {
-  width: 84px;
-  height: 126px;
-  flex: 0 0 126px;     /* prevent flex-column stretching */
-  border-radius: 4px;
-  box-shadow: 0 6px 14px -8px rgba(31,38,48,0.35);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+.reading-grid .bc-card {
+  padding: clamp(14px, calc(var(--card-size) * 0.09), 28px);
+  border-radius: clamp(14px, calc(var(--card-size) * 0.09), 26px);
 }
-.upnext-add {
-  flex: 0 0 84px;
-  width: 84px;
-  height: 126px;
-  align-self: flex-start;
-  scroll-snap-align: start;
-  border-radius: 4px;
-  border: 1.5px dashed rgba(31,38,48,0.18);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 6px; color: rgba(31,38,48,0.45);
-  background: transparent; cursor: pointer; padding: 0;
-  transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+.reading-grid .bc-cover {
+  padding: clamp(10px, calc(var(--card-size) * 0.07), 22px);
+}
+.reading-grid .bc-cover .cv-title {
+  font-size: clamp(14px, calc(var(--card-size) * 0.108), 34px);
+}
+.reading-grid .bc-cover .cv-author {
+  font-size: clamp(8px, calc(var(--card-size) * 0.042), 13px);
+}
+.reading-grid .bc-title-text {
+  font-size: clamp(14px, calc(var(--card-size) * 0.092), 28px);
+}
+.reading-grid .bc-author {
+  font-size: clamp(11px, calc(var(--card-size) * 0.052), 16px);
+}
+.reading-grid .bc-cover-wrap {
+  margin-bottom: clamp(10px, calc(var(--card-size) * 0.07), 22px);
 }
 ```
 
-Drop `min-width: 64px` and the `aspect-ratio` rules. Keep `.upnext-row` (with its `align-items` left as default — items size themselves explicitly so stretch is moot), `.upnext-wrap`, `.upnext-nav`, `.upnext-title`, hover, and arrow logic exactly as they are.
+`clamp(min, fluid, max)` keeps everything within sensible bounds while making the middle term respond linearly to the slider. Drag = smooth scale.
 
-At 84px + 14px gap, the row's content box (~520px in the right-hand `1.3fr`/`1fr` `two-col` column on a 1389px viewport) fits ~5 items, with horizontal scroll handling the rest — matching the requirement.
+### Notes
 
-### Scope
-
-- Only the three CSS rule blocks above. No JSX, no arrow behavior, no other files.
+- No transition timing on the cards — the value changes per drag tick, which already produces smooth perceived motion.
+- `BookCard.tsx` and global `.bc-*` rules in `src/styles.css` stay untouched; the scoped `.reading-grid .bc-*` selectors win because of specificity (`.reading-grid` adds one class).
+- Other places that render `BookCard` (e.g. Library) are unaffected.
 
 ## Verify
 
