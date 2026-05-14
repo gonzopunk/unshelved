@@ -613,15 +613,17 @@ function HomepageStyles() {
         box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 18px 40px -28px rgba(31,38,48,0.22);
       }
       .upnext-item {
-        flex: 0 0 calc((100% - 36px - 56px) / 5);
-        min-width: 64px;
+        flex: 0 0 84px;
+        width: 84px;
         scroll-snap-align: start;
         text-decoration: none;
         color: inherit;
         display: flex; flex-direction: column; gap: 8px;
       }
       .upnext-cover {
-        width: 100%; aspect-ratio: 2 / 3;
+        width: 84px;
+        height: 126px;
+        flex: 0 0 126px;
         border-radius: 4px;
         box-shadow: 0 6px 14px -8px rgba(31,38,48,0.35);
         transition: transform 0.18s ease, box-shadow 0.18s ease;
