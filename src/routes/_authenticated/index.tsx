@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import BookCard from "@/components/BookCard";
+import GeneratedCover from "@/components/GeneratedCover";
 import AddBookModal from "@/components/AddBookModal";
 import { useAllSessions, computeStreak, fmtMinutes } from "@/lib/sessions";
 
@@ -230,32 +231,24 @@ function Home() {
             <span className="section-rule" />
             <Link to="/board" className="section-link">Reorder →</Link>
           </div>
-          <div className="shelf-row">
-            {upNext.map((b, i) => (
+          <div className="upnext-row">
+            {upNext.map((b) => (
               <Link
                 key={b.id}
                 to="/books/$bookId"
                 params={{ bookId: b.id }}
-                className="shelf-book"
-                style={{
-                  background: b.cover_color,
-                  color: b.cover_text_color,
-                  transform: `translateY(${[0, 4, 2, 6, 3][i] ?? 0}px) rotate(${[-1.2, 0.4, -0.2, 0.8, -0.6][i] ?? 0}deg)`,
-                }}
+                className="upnext-item"
+                title={`${b.title} — ${b.author}`}
               >
-                <div className="sb-spine">
-                  <div className="sb-author">{b.author}</div>
-                  <div className="sb-title">{b.title}</div>
-                </div>
-                <div className="sb-mark" />
+                <GeneratedCover book={b} className="upnext-cover" />
+                <div className="upnext-title">{b.title}</div>
               </Link>
             ))}
-            <button type="button" onClick={() => setAddOpen(true)} className="shelf-add" aria-label="Add a book">
+            <button type="button" onClick={() => setAddOpen(true)} className="upnext-add" aria-label="Add a book">
               <div className="add-plus">+</div>
               <div className="add-lbl">add</div>
             </button>
           </div>
-          <div className="shelf-floor" />
         </section>
 
         <section className="section">
@@ -564,47 +557,50 @@ function HomepageStyles() {
       .two-col { display: grid; grid-template-columns: 1.3fr 1fr; gap: 32px; margin-bottom: 48px; }
       @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
 
-      .shelf-row {
-        display: flex; align-items: flex-end; gap: 14px;
-        padding: 28px 24px 0;
+      .upnext-row {
+        display: flex; gap: 14px;
+        padding: 18px;
         background: var(--paper);
-        border-radius: 24px 24px 0 0;
-        height: 220px;
-        box-shadow: inset 0 1px 0 rgba(31,38,48,0.04);
+        border-radius: 24px;
+        overflow-x: auto;
+        scrollbar-width: thin;
+        box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 18px 40px -28px rgba(31,38,48,0.22);
       }
-      .shelf-book {
-        width: 44px; height: 168px;
-        border-radius: 4px 4px 2px 2px;
-        padding: 14px 6px;
-        font-family: 'Newsreader', serif;
-        box-shadow: inset -3px 0 0 rgba(0,0,0,0.12), 0 6px 12px -6px rgba(31,38,48,0.3);
-        display: flex; flex-direction: column;
-        position: relative;
-        transition: transform 0.2s ease;
+      .upnext-item {
+        flex: 0 0 auto;
+        width: 84px;
         text-decoration: none;
+        color: inherit;
+        display: flex; flex-direction: column; gap: 8px;
       }
-      .shelf-book:hover { transform: translateY(-12px) rotate(0deg) !important; }
-      .sb-spine { writing-mode: vertical-rl; transform: rotate(180deg); margin: 0 auto; display: flex; gap: 14px; align-items: center; }
-      .sb-author { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.85; }
-      .sb-title { font-size: 14px; font-weight: 500; letter-spacing: 0.02em; }
-      .sb-mark { position: absolute; left: 8px; right: 8px; bottom: 16px; height: 1px; background: currentColor; opacity: 0.3; }
-      .shelf-add {
-        width: 44px; height: 168px; border-radius: 4px;
+      .upnext-cover {
+        width: 84px; height: 126px;
+        border-radius: 4px;
+        box-shadow: 0 6px 14px -8px rgba(31,38,48,0.35);
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+      }
+      .upnext-item:hover .upnext-cover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 22px -10px rgba(31,38,48,0.4);
+      }
+      .upnext-title {
+        font-size: 11.5px; line-height: 1.3;
+        color: rgba(31,38,48,0.75);
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .upnext-add {
+        flex: 0 0 auto;
+        width: 84px; height: 126px; border-radius: 4px;
         border: 1.5px dashed rgba(31,38,48,0.18);
         display: flex; flex-direction: column; align-items: center; justify-content: center;
-        gap: 8px; color: rgba(31,38,48,0.45); margin-left: auto;
+        gap: 6px; color: rgba(31,38,48,0.45);
         background: transparent; cursor: pointer; padding: 0;
         transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
       }
-      .shelf-add:hover { border-color: var(--forest); color: var(--forest); transform: translateY(-2px); }
+      .upnext-add:hover { border-color: var(--forest); color: var(--forest); transform: translateY(-2px); }
       .add-plus { font-size: 22px; font-family: 'Newsreader', serif; }
       .add-lbl { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
-      .shelf-floor {
-        height: 14px;
-        background: linear-gradient(180deg, #b89e7a, #9a7e58 60%, #7e6442);
-        border-radius: 0 0 24px 24px;
-        box-shadow: 0 18px 32px -22px rgba(31,38,48,0.4);
-      }
 
       .finished-list {
         display: flex; flex-direction: column; gap: 4px;
