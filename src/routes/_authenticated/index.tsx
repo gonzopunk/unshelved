@@ -231,32 +231,24 @@ function Home() {
             <span className="section-rule" />
             <Link to="/board" className="section-link">Reorder →</Link>
           </div>
-          <div className="shelf-row">
-            {upNext.map((b, i) => (
+          <div className="upnext-row">
+            {upNext.map((b) => (
               <Link
                 key={b.id}
                 to="/books/$bookId"
                 params={{ bookId: b.id }}
-                className="shelf-book"
-                style={{
-                  background: b.cover_color,
-                  color: b.cover_text_color,
-                  transform: `translateY(${[0, 4, 2, 6, 3][i] ?? 0}px) rotate(${[-1.2, 0.4, -0.2, 0.8, -0.6][i] ?? 0}deg)`,
-                }}
+                className="upnext-item"
+                title={`${b.title} — ${b.author}`}
               >
-                <div className="sb-spine">
-                  <div className="sb-author">{b.author}</div>
-                  <div className="sb-title">{b.title}</div>
-                </div>
-                <div className="sb-mark" />
+                <GeneratedCover book={b} className="upnext-cover" />
+                <div className="upnext-title">{b.title}</div>
               </Link>
             ))}
-            <button type="button" onClick={() => setAddOpen(true)} className="shelf-add" aria-label="Add a book">
+            <button type="button" onClick={() => setAddOpen(true)} className="upnext-add" aria-label="Add a book">
               <div className="add-plus">+</div>
               <div className="add-lbl">add</div>
             </button>
           </div>
-          <div className="shelf-floor" />
         </section>
 
         <section className="section">
