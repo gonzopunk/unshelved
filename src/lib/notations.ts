@@ -105,8 +105,8 @@ export function useNotations() {
         authors,
         seriesValues: Array.from(seriesSet).sort((a, b) => a.localeCompare(b)),
         books: Array.from(new Set(entries.map((e) => e.bookId)))
-          .map((id) => bookById.get(id)!)
-          .filter(Boolean)
+          .map((id) => bookById.get(id))
+          .filter((b): b is NotationBook => b !== undefined)
           .sort((a, b) => a.title.localeCompare(b.title)),
       };
     },
