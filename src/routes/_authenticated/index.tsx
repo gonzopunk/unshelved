@@ -254,22 +254,42 @@ function Home() {
             <span className="section-rule" />
             <Link to="/board" className="section-link">Reorder →</Link>
           </div>
-          <div className="upnext-row">
-            {upNext.map((b) => (
-              <Link
-                key={b.id}
-                to="/books/$bookId"
-                params={{ bookId: b.id }}
-                className="upnext-item"
-                title={`${b.title} — ${b.author}`}
-              >
-                <GeneratedCover book={b} className="upnext-cover" />
-                <div className="upnext-title">{b.title}</div>
-              </Link>
-            ))}
-            <button type="button" onClick={() => setAddOpen(true)} className="upnext-add" aria-label="Add a book">
-              <div className="add-plus">+</div>
-              <div className="add-lbl">add</div>
+          <div className="upnext-wrap">
+            <button
+              type="button"
+              className="upnext-nav left"
+              onClick={() => scrollByPage(-1)}
+              disabled={!canL}
+              aria-label="Scroll left"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <div className="upnext-row" ref={upnextRef}>
+              {upNext.map((b) => (
+                <Link
+                  key={b.id}
+                  to="/books/$bookId"
+                  params={{ bookId: b.id }}
+                  className="upnext-item"
+                  title={`${b.title} — ${b.author}`}
+                >
+                  <GeneratedCover book={b} className="upnext-cover" />
+                  <div className="upnext-title">{b.title}</div>
+                </Link>
+              ))}
+              <button type="button" onClick={() => setAddOpen(true)} className="upnext-add" aria-label="Add a book">
+                <div className="add-plus">+</div>
+                <div className="add-lbl">add</div>
+              </button>
+            </div>
+            <button
+              type="button"
+              className="upnext-nav right"
+              onClick={() => scrollByPage(1)}
+              disabled={!canR}
+              aria-label="Scroll right"
+            >
+              <ChevronRight size={18} />
             </button>
           </div>
         </section>
