@@ -67,6 +67,28 @@ function Home() {
 
   const reading = library.filter((b) => b.user_books[0]?.status === "reading").slice(0, 2);
   const upNext = library.filter((b) => b.user_books[0]?.status === "want").slice(0, 20);
+
+  const upnextRef = useRef<HTMLDivElement>(null);
+  const [canL, setCanL] = useState(false);
+  const [canR, setCanR] = useState(false);
+  useEffect(() => {
+    const el = upnextRef.current;
+    if (!el) return;
+    const update = () => {
+      setCanL(el.scrollLeft > 4);
+      setCanR(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    };
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => { el.removeEventListener("scroll", update); ro.disconnect(); };
+  }, [upNext.length]);
+  const scrollByPage = (dir: 1 | -1) => {
+    const el = upnextRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth, behavior: "smooth" });
+  };
   const finished = library
     .filter((b) => ["loved", "liked", "meh"].includes(b.user_books[0]?.status ?? ""))
     .sort((a, b) => (b.user_books[0]?.finished_at ?? "").localeCompare(a.user_books[0]?.finished_at ?? ""))
