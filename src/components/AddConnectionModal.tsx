@@ -118,14 +118,14 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="rounded-3xl max-w-lg bg-card max-h-[90vh] overflow-y-auto">
+      <DialogContent className="rounded-3xl max-w-lg w-[calc(100vw-2rem)] bg-card max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">{isEditing ? "Edit connection" : "Add a connection"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="rounded-xl bg-mist p-3">
             <div className="font-mono text-[0.65rem] uppercase tracking-widest text-muted-foreground">From</div>
-            <div className="font-display text-base mt-0.5">{source.label}</div>
+            <div className="font-display text-base mt-0.5 truncate">{source.label}</div>
           </div>
 
           <div>
