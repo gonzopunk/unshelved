@@ -490,7 +490,29 @@ function HomepageStyles() {
         box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 18px 40px -28px rgba(31,38,48,0.22);
       }
 
-      .reading-grid { display: grid; gap: 20px; }
+      .reading-grid { display: grid; gap: 20px; --card-size: 220px; }
+      .reading-grid .bc-card {
+        padding: clamp(14px, calc(var(--card-size) * 0.09), 28px);
+        border-radius: clamp(14px, calc(var(--card-size) * 0.09), 26px);
+      }
+      .reading-grid .bc-cover {
+        padding: clamp(10px, calc(var(--card-size) * 0.07), 22px);
+      }
+      .reading-grid .bc-cover .cv-title {
+        font-size: clamp(14px, calc(var(--card-size) * 0.108), 34px);
+      }
+      .reading-grid .bc-cover .cv-author {
+        font-size: clamp(8px, calc(var(--card-size) * 0.042), 13px);
+      }
+      .reading-grid .bc-title-text {
+        font-size: clamp(14px, calc(var(--card-size) * 0.092), 28px);
+      }
+      .reading-grid .bc-author {
+        font-size: clamp(11px, calc(var(--card-size) * 0.052), 16px);
+      }
+      .reading-grid .bc-cover-wrap {
+        margin-bottom: clamp(10px, calc(var(--card-size) * 0.07), 22px);
+      }
       .size-slider {
         display: inline-flex; align-items: center; gap: 8px;
         background: var(--paper); border-radius: 999px; padding: 4px 12px;
