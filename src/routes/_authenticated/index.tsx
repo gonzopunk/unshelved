@@ -4,7 +4,8 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import BookCard from "@/components/BookCard";
 import GeneratedCover from "@/components/GeneratedCover";
 import AddBookModal from "@/components/AddBookModal";
@@ -66,6 +67,28 @@ function Home() {
 
   const reading = library.filter((b) => b.user_books[0]?.status === "reading").slice(0, 2);
   const upNext = library.filter((b) => b.user_books[0]?.status === "want").slice(0, 20);
+
+  const upnextRef = useRef<HTMLDivElement>(null);
+  const [canL, setCanL] = useState(false);
+  const [canR, setCanR] = useState(false);
+  useEffect(() => {
+    const el = upnextRef.current;
+    if (!el) return;
+    const update = () => {
+      setCanL(el.scrollLeft > 4);
+      setCanR(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    };
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => { el.removeEventListener("scroll", update); ro.disconnect(); };
+  }, [upNext.length]);
+  const scrollByPage = (dir: 1 | -1) => {
+    const el = upnextRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth, behavior: "smooth" });
+  };
   const finished = library
     .filter((b) => ["loved", "liked", "meh"].includes(b.user_books[0]?.status ?? ""))
     .sort((a, b) => (b.user_books[0]?.finished_at ?? "").localeCompare(a.user_books[0]?.finished_at ?? ""))
@@ -231,22 +254,42 @@ function Home() {
             <span className="section-rule" />
             <Link to="/board" className="section-link">Reorder →</Link>
           </div>
-          <div className="upnext-row">
-            {upNext.map((b) => (
-              <Link
-                key={b.id}
-                to="/books/$bookId"
-                params={{ bookId: b.id }}
-                className="upnext-item"
-                title={`${b.title} — ${b.author}`}
-              >
-                <GeneratedCover book={b} className="upnext-cover" />
-                <div className="upnext-title">{b.title}</div>
-              </Link>
-            ))}
-            <button type="button" onClick={() => setAddOpen(true)} className="upnext-add" aria-label="Add a book">
-              <div className="add-plus">+</div>
-              <div className="add-lbl">add</div>
+          <div className="upnext-wrap">
+            <button
+              type="button"
+              className="upnext-nav left"
+              onClick={() => scrollByPage(-1)}
+              disabled={!canL}
+              aria-label="Scroll left"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <div className="upnext-row" ref={upnextRef}>
+              {upNext.map((b) => (
+                <Link
+                  key={b.id}
+                  to="/books/$bookId"
+                  params={{ bookId: b.id }}
+                  className="upnext-item"
+                  title={`${b.title} — ${b.author}`}
+                >
+                  <GeneratedCover book={b} className="upnext-cover" />
+                  <div className="upnext-title">{b.title}</div>
+                </Link>
+              ))}
+              <button type="button" onClick={() => setAddOpen(true)} className="upnext-add" aria-label="Add a book">
+                <div className="add-plus">+</div>
+                <div className="add-lbl">add</div>
+              </button>
+            </div>
+            <button
+              type="button"
+              className="upnext-nav right"
+              onClick={() => scrollByPage(1)}
+              disabled={!canR}
+              aria-label="Scroll right"
+            >
+              <ChevronRight size={18} />
             </button>
           </div>
         </section>
@@ -557,6 +600,7 @@ function HomepageStyles() {
       .two-col { display: grid; grid-template-columns: 1.3fr 1fr; gap: 32px; margin-bottom: 48px; }
       @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
 
+      .upnext-wrap { position: relative; }
       .upnext-row {
         display: flex; gap: 14px;
         padding: 18px;
@@ -564,17 +608,20 @@ function HomepageStyles() {
         border-radius: 24px;
         overflow-x: auto;
         scrollbar-width: thin;
+        scroll-behavior: smooth;
+        scroll-snap-type: x mandatory;
         box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 18px 40px -28px rgba(31,38,48,0.22);
       }
       .upnext-item {
-        flex: 0 0 auto;
-        width: 84px;
+        flex: 0 0 calc((100% - 36px - 56px) / 5);
+        min-width: 64px;
+        scroll-snap-align: start;
         text-decoration: none;
         color: inherit;
         display: flex; flex-direction: column; gap: 8px;
       }
       .upnext-cover {
-        width: 84px; height: 126px;
+        width: 100%; aspect-ratio: 2 / 3;
         border-radius: 4px;
         box-shadow: 0 6px 14px -8px rgba(31,38,48,0.35);
         transition: transform 0.18s ease, box-shadow 0.18s ease;
@@ -590,8 +637,12 @@ function HomepageStyles() {
         overflow: hidden;
       }
       .upnext-add {
-        flex: 0 0 auto;
-        width: 84px; height: 126px; border-radius: 4px;
+        flex: 0 0 calc((100% - 36px - 56px) / 5);
+        min-width: 64px;
+        aspect-ratio: 2 / 3;
+        align-self: flex-start;
+        scroll-snap-align: start;
+        border-radius: 4px;
         border: 1.5px dashed rgba(31,38,48,0.18);
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 6px; color: rgba(31,38,48,0.45);
@@ -599,6 +650,25 @@ function HomepageStyles() {
         transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
       }
       .upnext-add:hover { border-color: var(--forest); color: var(--forest); transform: translateY(-2px); }
+      .upnext-nav {
+        position: absolute;
+        top: calc(50% - 12px);
+        transform: translateY(-50%);
+        width: 32px; height: 32px;
+        border-radius: 999px;
+        background: var(--paper);
+        border: 1px solid rgba(31,38,48,0.12);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--ink);
+        cursor: pointer;
+        box-shadow: 0 4px 10px -4px rgba(31,38,48,0.25);
+        transition: opacity 0.15s ease, background 0.15s ease;
+        z-index: 2;
+      }
+      .upnext-nav.left { left: -12px; }
+      .upnext-nav.right { right: -12px; }
+      .upnext-nav:hover:not(:disabled) { background: var(--cream); }
+      .upnext-nav:disabled { opacity: 0; pointer-events: none; }
       .add-plus { font-size: 22px; font-family: 'Newsreader', serif; }
       .add-lbl { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
 
