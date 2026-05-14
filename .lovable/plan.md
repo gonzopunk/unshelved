@@ -1,25 +1,100 @@
-## Problem
+## Goal
 
-The Add a connection modal scrolls horizontally when a candidate book has a very long title (e.g. "Garden Guide - A [...] Guide to Great Gardens [...] for Beginners and [...] Advanced"). The modal itself appears to grow past `max-w-lg`, and a horizontal scrollbar shows at the bottom of the dialog.
+Replace the vertical-spine "Up next" shelf on the home page with a horizontally-scrolling row of small portrait book covers, using the existing `GeneratedCover` component so they match the rest of the app. Keep the "Reorder →" link and the "+ ADD" slot.
 
-## Root cause
+## Scope
 
-`DialogContent` is a CSS `grid` container. Grid items default to `min-width: auto`, which lets them expand to their content's intrinsic width. The form wrapper (`<div className="space-y-4">`) is a grid item; the candidate list buttons inside it have very long single-line titles, and although the title `<div>` has `truncate`, the grid item ancestor never gets a `min-width: 0` constraint, so the whole column expands and the dialog overflows. `overflow-y-auto` on `DialogContent` then implies `overflow-x: auto`, producing the scrollbar.
+Only `src/routes/_authenticated/index.tsx`. No other files change. No data/query changes.
 
-The selected-target row (`<div className="mt-1 flex items-center justify-between …">`) has the same latent bug: its title `<div>` has no `truncate` and the flex child has no `min-w-0`, so picking a long-titled target would also overflow.
+## Markup change (lines ~233–258)
 
-## Fix
+Replace the current `.shelf-row` block:
 
-In `src/components/AddConnectionModal.tsx` only — three minimal changes:
+```tsx
+<div className="upnext-row">
+  {upNext.map((b) => (
+    <Link
+      key={b.id}
+      to="/books/$bookId"
+      params={{ bookId: b.id }}
+      className="upnext-item"
+      title={`${b.title} — ${b.author}`}
+    >
+      <GeneratedCover book={b} className="upnext-cover" />
+      <div className="upnext-title">{b.title}</div>
+    </Link>
+  ))}
+  <button
+    type="button"
+    onClick={() => setAddOpen(true)}
+    className="upnext-add"
+    aria-label="Add a book"
+  >
+    <div className="add-plus">+</div>
+    <div className="add-lbl">add</div>
+  </button>
+</div>
+```
 
-1. **Form wrapper (line 125):** add `min-w-0` so the grid item can shrink below its content's intrinsic width.
-   - From: `<div className="space-y-4">`
-   - To: `<div className="space-y-4 min-w-0">`
+Add `import GeneratedCover from "@/components/GeneratedCover";` at the top. Remove the old `.shelf-floor` div (no longer needed — no bookshelf metaphor).
 
-2. **DialogContent (line 121):** add `overflow-x-hidden` as a defensive belt to guarantee the modal never shows a horizontal scrollbar.
-   - Append `overflow-x-hidden` to the existing className.
+## Style change (lines ~567–607)
 
-3. **Selected-target row (lines 134–138):** add `min-w-0` to the text column and `truncate` to the title and author so a long-titled selected target also stays inside the modal.
-   - Wrap the inner text `<div>` with `min-w-0 flex-1` and add `truncate` to both the title and author lines.
+Replace `.shelf-row / .shelf-book / .sb-* / .shelf-add / .shelf-floor` rules with:
 
-No other files touched. After the change, run `bun run test` to confirm all 18 tests still pass.
+```css
+.upnext-row {
+  display: flex; gap: 14px;
+  padding: 18px;
+  background: var(--paper);
+  border-radius: 24px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 18px 40px -28px rgba(31,38,48,0.22);
+}
+.upnext-item {
+  flex: 0 0 auto;
+  width: 84px;
+  text-decoration: none;
+  color: inherit;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.upnext-cover {
+  width: 84px; height: 126px;          /* 2:3 portrait */
+  border-radius: 4px;
+  box-shadow: 0 6px 14px -8px rgba(31,38,48,0.35);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.upnext-item:hover .upnext-cover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 22px -10px rgba(31,38,48,0.4);
+}
+.upnext-title {
+  font-size: 11.5px; line-height: 1.3;
+  color: rgba(31,38,48,0.75);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.upnext-add {
+  flex: 0 0 auto;
+  width: 84px; height: 126px; border-radius: 4px;
+  border: 1.5px dashed rgba(31,38,48,0.18);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; color: rgba(31,38,48,0.45);
+  background: transparent; cursor: pointer; padding: 0;
+  transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+.upnext-add:hover { border-color: var(--forest); color: var(--forest); transform: translateY(-2px); }
+```
+
+Keep `.add-plus` and `.add-lbl` rules as-is (still used by the add slot).
+
+## Behavior notes
+
+- Row scrolls horizontally on overflow (`overflow-x: auto`); the existing 5-item cap stays in `upNext`.
+- `GeneratedCover` already renders `cover_url` when present, otherwise the title-on-color fallback — so covers look consistent with `BookCard` / Library.
+- "Reorder →" link is untouched in `.section-head`.
+
+## Verification
+
+Run `bun run test` and confirm all 18 tests pass.

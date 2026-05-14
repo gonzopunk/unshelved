@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import BookCard from "@/components/BookCard";
+import GeneratedCover from "@/components/GeneratedCover";
 import AddBookModal from "@/components/AddBookModal";
 import { useAllSessions, computeStreak, fmtMinutes } from "@/lib/sessions";
 
