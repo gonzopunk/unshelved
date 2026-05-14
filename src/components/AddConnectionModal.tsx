@@ -35,6 +35,11 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
 
   const isEditing = !!editing;
 
+  const libraryRef = useRef(library);
+  libraryRef.current = library;
+  const refBooksRef = useRef(refBooks);
+  refBooksRef.current = refBooks;
+
   useEffect(() => {
     if (!open) return;
     setSearch("");
@@ -42,8 +47,8 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
       setWhy(editing.why ?? "");
       setTagsInput(editing.tags.join(", "));
       // Resolve current target from library/refBooks
-      const fromLib = library.find(b => b.id === editing.target_id);
-      const fromRef = refBooks.find(r => r.id === editing.target_id);
+      const fromLib = libraryRef.current.find(b => b.id === editing.target_id);
+      const fromRef = refBooksRef.current.find(r => r.id === editing.target_id);
       if (fromLib) {
         setTarget({ kind: "book", id: fromLib.id, title: fromLib.title, author: fromLib.author, isReference: false });
       } else if (fromRef) {
@@ -57,7 +62,7 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
       setWhy("");
       setTagsInput("");
     }
-  }, [open, initialTarget, editing, library, refBooks]);
+  }, [open, editing?.id, initialTarget?.id]);
 
   const candidates: Candidate[] = useMemo(() => {
     const fromLib: Candidate[] = library
