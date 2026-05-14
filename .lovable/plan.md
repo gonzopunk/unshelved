@@ -1,136 +1,39 @@
-## Goal
+## Changes
 
-Add left/right arrow buttons to the "Up next" horizontal row, and size items so 5 covers fit at once. Arrows scroll the row by one page (5 items) and disable at the ends.
+### 1. `src/components/GeneratedCover.tsx`
 
-## Scope
-
-Only `src/routes/_authenticated/index.tsx`. No data changes; the cap stays at 20 from the previous turn.
-
-## Implementation
-
-### 1. Wrapper + scroll logic
-
-Wrap `.upnext-row` with a relative container `.upnext-wrap`, and attach a ref + scroll handler. Add `ChevronLeft` / `ChevronRight` from `lucide-react` (already used elsewhere).
+Remove the "Unshelved" label div from the no-cover branch. Currently:
 
 ```tsx
-import { ChevronLeft, ChevronRight } from "lucide-react";
-
-// inside Home():
-const upnextRef = useRef<HTMLDivElement>(null);
-const [canL, setCanL] = useState(false);
-const [canR, setCanR] = useState(false);
-
-const updateArrows = () => {
-  const el = upnextRef.current;
-  if (!el) return;
-  setCanL(el.scrollLeft > 4);
-  setCanR(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-};
-
-useEffect(() => {
-  updateArrows();
-  const el = upnextRef.current;
-  if (!el) return;
-  el.addEventListener("scroll", updateArrows, { passive: true });
-  const ro = new ResizeObserver(updateArrows);
-  ro.observe(el);
-  return () => { el.removeEventListener("scroll", updateArrows); ro.disconnect(); };
-}, [upNext.length]);
-
-const scrollByPage = (dir: 1 | -1) => {
-  const el = upnextRef.current;
-  if (!el) return;
-  el.scrollBy({ left: dir * el.clientWidth, behavior: "smooth" });
-};
-```
-
-### 2. Markup
-
-```tsx
-<div className="upnext-wrap">
-  <button
-    type="button"
-    className="upnext-nav left"
-    onClick={() => scrollByPage(-1)}
-    disabled={!canL}
-    aria-label="Scroll left"
-  >
-    <ChevronLeft size={18} />
-  </button>
-  <div className="upnext-row" ref={upnextRef}>
-    {/* existing items + add button unchanged */}
-  </div>
-  <button
-    type="button"
-    className="upnext-nav right"
-    onClick={() => scrollByPage(1)}
-    disabled={!canR}
-    aria-label="Scroll right"
-  >
-    <ChevronRight size={18} />
-  </button>
+<div className="text-[0.65rem] uppercase tracking-[0.2em] opacity-70">Unshelved</div>
+<div>
+  <div className="text-sm leading-tight font-semibold line-clamp-3">{book.title}</div>
+  ...
 </div>
 ```
 
-### 3. Sizing — 5 covers at once
+After removal, the title block is the sole content; the `flex flex-col justify-between` will collapse to flex-start, which is the desired layout (title near the top, author beneath).
 
-Replace fixed `width: 84px` on `.upnext-item / .upnext-cover / .upnext-add` with a CSS-var-driven width so 5 fit in the row's content box, accounting for the 14px gaps and 18px padding.
+Adjust: change container from `justify-between` to `justify-end` so title+author sit at the bottom of the cover (current intent — title was at the bottom, "Unshelved" eyebrow at the top). Or simpler: keep `justify-between` and wrap the title block in a fragment so it stays at the bottom by being the only child… that's still top-aligned. Use `justify-end` to keep the existing visual weight.
 
-```css
-.upnext-wrap { position: relative; }
-.upnext-row {
-  --upnext-gap: 14px;
-  --upnext-pad: 18px;
-  --upnext-item-w: calc((100% - 2 * var(--upnext-pad) - 4 * var(--upnext-gap)) / 5);
-  scroll-behavior: smooth;
-  scroll-snap-type: x mandatory;
-  /* existing: display:flex; gap:14px; padding:18px; bg; radius; overflow-x:auto; shadow */
-}
-.upnext-item, .upnext-add {
-  width: var(--upnext-item-w);
-  min-width: 64px;
-  scroll-snap-align: start;
-}
-.upnext-cover {
-  width: 100%;
-  aspect-ratio: 2 / 3;     /* replaces fixed 84×126 */
-  height: auto;
-}
-.upnext-add { aspect-ratio: 2 / 3; height: auto; }
+### 2. `src/components/BookCard.tsx`
+
+Remove the on-cover format watermark — line 87–89:
+
+```tsx
+{!book.cover_url && (
+  <div className="cv-fmt"><FmtIcon format={book.format} /> {FMT_LABEL[book.format]}</div>
+)}
 ```
 
-### 4. Arrow button styling
+Delete this block entirely. The `bc-fmt-pill` chip on line 109 (rendered below the cover, beside the title) stays.
 
-```css
-.upnext-nav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 32px; height: 32px;
-  border-radius: 999px;
-  background: var(--paper);
-  border: 1px solid rgba(31,38,48,0.12);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--ink);
-  cursor: pointer;
-  box-shadow: 0 4px 10px -4px rgba(31,38,48,0.25);
-  transition: opacity 0.15s ease, transform 0.15s ease, background 0.15s ease;
-  z-index: 2;
-}
-.upnext-nav.left { left: -12px; }
-.upnext-nav.right { right: -12px; }
-.upnext-nav:hover:not(:disabled) { background: var(--cream); }
-.upnext-nav:disabled { opacity: 0; pointer-events: none; }
-```
+### 3. Audit — already done
 
-Arrows fade out when there's nothing to scroll in that direction (clean look on small libraries that already fit). They live outside `.upnext-row` so they don't get clipped by `overflow-x: auto`.
-
-## Notes
-
-- Page scroll = `clientWidth` (i.e. roughly 5 items). Simple, no per-item math.
-- Mobile keeps native swipe; arrows are an additive aid.
-- "Reorder →" link and "+ ADD" slot unchanged.
+- `src/styles.css` `.cv-fmt` rules become dead CSS but are harmless; leave them (not part of the user request, and removing CSS in unrelated files risks unintended side effects).
+- `src/routes/_authenticated/board.tsx` `mc-fmt` is a meta-row chip beside the title, **not** an on-cover overlay — leave untouched.
+- No other components render format text inside cover bounds.
 
 ## Verify
 
-`bun run test` — expect all 18 tests to still pass.
+`bun run test` — expect all 18 tests to pass.

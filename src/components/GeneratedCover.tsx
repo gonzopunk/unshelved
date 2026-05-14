@@ -17,10 +17,9 @@ export default function GeneratedCover({ book, className = "", style }: { book: 
   }
   return (
     <div
-      className={`relative flex flex-col justify-between p-3 font-display overflow-hidden ${className}`}
+      className={`relative flex flex-col justify-end p-3 font-display overflow-hidden ${className}`}
       style={{ background: bg, color: book.cover_text_color, ...style }}
     >
-      <div className="text-[0.65rem] uppercase tracking-[0.2em] opacity-70">Unshelved</div>
       <div>
         <div className="text-sm leading-tight font-semibold line-clamp-3">{book.title}</div>
         {book.author && <div className="mt-1 text-[0.7rem] opacity-80 italic">{book.author}</div>}
