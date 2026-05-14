@@ -57,6 +57,9 @@ function BookDetail() {
     return <div className="text-center py-20 text-muted-foreground">Loading…</div>;
   }
   const { book, userBook, sessions, notes, highlights } = data;
+  if (!book) {
+    return <div className="text-center py-20 text-muted-foreground">Loading…</div>;
+  }
   if (!userBook) {
     return <div className="text-center py-20 text-muted-foreground">No shelf info for this book.</div>;
   }
