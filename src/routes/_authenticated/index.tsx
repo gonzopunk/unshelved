@@ -108,21 +108,29 @@ function Home() {
 
   const firstName = (profile?.display_name ?? "reader").split(" ")[0];
   const initials = firstName.slice(0, 2).toUpperCase();
+  const dayName = format(new Date(), "EEEE");
   const hour = new Date().getHours();
-  const tod = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-  const greeting =
+  const partOfDay = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
+  const weekMin = weekMinutes;
+  const weekFormatted = weekMin < 60
+    ? `${weekMin} min`
+    : `${Math.floor(weekMin / 60)} hr ${weekMin % 60 > 0 ? (weekMin % 60) + " min" : ""}`.trim();
+  const contextualLine =
     focus && focusPct > 5
-      ? `${tod}, ${firstName}. You're ${focusPct}% through ${focus.title}.`
-      : `${tod}, ${firstName}. Your library is waiting.`;
+      ? `You're ${focusPct}% through ${focus.title}.`
+      : `Your library is waiting.`;
 
   return (
     <div className="hp">
       <section className="hero">
         <div className="hero-text">
           <div className="hero-eyebrow">
-            <span className="dot" /> {fmtMinutes(weekMinutes)} this week · {inFlight} in progress
+            <span className="dot" /> {dayName} {partOfDay} · {weekFormatted} this week · {inFlight} in progress
           </div>
-          <h1 className="hero-title">{greeting}</h1>
+          <h1 className="hero-title">
+            Welcome back, {firstName}.<br />
+            <em>{contextualLine}</em>
+          </h1>
           <div className="hero-cta">
             <button type="button" className="btn btn-primary" onClick={() => {}}>
               Log a session
