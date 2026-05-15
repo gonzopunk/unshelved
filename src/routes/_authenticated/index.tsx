@@ -8,7 +8,7 @@ import { useMemo, useState } from "react";
 import BookCard from "@/components/BookCard";
 import GeneratedCover from "@/components/GeneratedCover";
 import AddBookModal from "@/components/AddBookModal";
-import { useAllSessions, fmtMinutes } from "@/lib/sessions";
+import { useAllSessions } from "@/lib/sessions";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({ meta: [{ title: "Unshelved — Library" }] }),
