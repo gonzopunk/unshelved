@@ -360,6 +360,7 @@ function HomepageStyles() {
         text-wrap: balance;
       }
       @media (max-width: 900px) { .hero-title { font-size: 44px; } }
+      .hero-title em { font-style: italic; color: var(--terra); font-weight: 300; }
       .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
       .btn {
         display: inline-flex; align-items: center; gap: 10px;
