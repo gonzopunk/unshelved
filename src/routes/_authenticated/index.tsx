@@ -4,47 +4,23 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useMemo, useState } from "react";
 import BookCard from "@/components/BookCard";
 import GeneratedCover from "@/components/GeneratedCover";
 import AddBookModal from "@/components/AddBookModal";
-import { useAllSessions, computeStreak, fmtMinutes } from "@/lib/sessions";
-
-const SIZE_KEY = "unshelved.readingSize";
-const MIN_COL = 180;
-const MAX_COL = 520;
+import { useAllSessions, fmtMinutes } from "@/lib/sessions";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({ meta: [{ title: "Unshelved — Library" }] }),
   component: Home,
 });
 
-
-
 function Home() {
   const { data: library = [] } = useLibrary();
   const { data: profile } = useProfile();
   const { user } = useAuth();
-  const [readingSize, setReadingSize] = useState<number>(220);
   const [addOpen, setAddOpen] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const saved = localStorage.getItem(SIZE_KEY);
-    if (!saved) return;
-    // Accept legacy "sm" | "md" | "lg" as well as numeric values.
-    if (saved === "sm") setReadingSize(200);
-    else if (saved === "md") setReadingSize(320);
-    else if (saved === "lg") setReadingSize(480);
-    else {
-      const n = Number(saved);
-      if (Number.isFinite(n) && n >= MIN_COL && n <= MAX_COL) setReadingSize(n);
-    }
-  }, []);
-  const changeSize = (n: number) => {
-    setReadingSize(n);
-    try { localStorage.setItem(SIZE_KEY, String(n)); } catch {}
-  };
+  const [showAllUpNext, setShowAllUpNext] = useState(false);
 
   const { data: highlights = [] } = useQuery({
     queryKey: ["highlights-all", user?.id],
@@ -60,35 +36,13 @@ function Home() {
   });
 
   const { data: recentSessions = [] } = useAllSessions(30);
-  const streak = computeStreak(recentSessions);
   const weekMinutes = recentSessions
     .filter((s) => new Date(s.started_at).getTime() >= Date.now() - 7 * 86_400_000)
     .reduce((sum, s) => sum + (s.minutes ?? 0), 0);
 
-  const reading = library.filter((b) => b.user_books[0]?.status === "reading").slice(0, 2);
+  const readingAll = library.filter((b) => b.user_books[0]?.status === "reading");
+  const inFlight = readingAll.length;
   const upNext = library.filter((b) => b.user_books[0]?.status === "want").slice(0, 20);
-
-  const upnextRef = useRef<HTMLDivElement>(null);
-  const [canL, setCanL] = useState(false);
-  const [canR, setCanR] = useState(false);
-  useEffect(() => {
-    const el = upnextRef.current;
-    if (!el) return;
-    const update = () => {
-      setCanL(el.scrollLeft > 4);
-      setCanR(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-    };
-    update();
-    el.addEventListener("scroll", update, { passive: true });
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => { el.removeEventListener("scroll", update); ro.disconnect(); };
-  }, [upNext.length]);
-  const scrollByPage = (dir: 1 | -1) => {
-    const el = upnextRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * el.clientWidth, behavior: "smooth" });
-  };
   const finished = library
     .filter((b) => ["loved", "liked", "meh"].includes(b.user_books[0]?.status ?? ""))
     .sort((a, b) => (b.user_books[0]?.finished_at ?? "").localeCompare(a.user_books[0]?.finished_at ?? ""))
@@ -99,12 +53,22 @@ function Home() {
   const goal = profile?.yearly_goal ?? 24;
   const goalPct = Math.min(100, Math.round((finishedThisYear / goal) * 100));
 
-  const inFlight = library.filter((b) => b.user_books[0]?.status === "reading").length;
-  const focus = reading[0];
+  // Pick focus book by most-recent session; fall back to first reading book.
+  const lastSessionByBook = new Map<string, string>();
+  for (const s of recentSessions) {
+    const prev = lastSessionByBook.get(s.book_id);
+    if (!prev || s.started_at > prev) lastSessionByBook.set(s.book_id, s.started_at);
+  }
+  const focus =
+    [...readingAll].sort(
+      (a, b) => (lastSessionByBook.get(b.id) ?? "").localeCompare(lastSessionByBook.get(a.id) ?? "")
+    )[0] ?? readingAll[0];
   const focusUb = focus?.user_books[0];
   const focusPct = focusUb?.total_pages
     ? Math.round(((focusUb.current_page ?? 0) / focusUb.total_pages) * 100)
     : Math.round(Number(focusUb?.progress_pct ?? 0));
+  const focusHasSession = focus ? lastSessionByBook.has(focus.id) : false;
+  const showFocusCard = !!focus && (focusPct > 0 || focusHasSession);
 
   const quote = highlights[0] as
     | { id: string; book_id: string; quote_text: string; page_number: number | null; books?: { title: string; author: string } | null }
@@ -138,43 +102,27 @@ function Home() {
     return out.slice(0, 3);
   }, [quoteConnections, quote?.id, library]);
 
-  const dayName = format(new Date(), "EEEE");
-  const partOfDay = (() => {
-    const h = new Date().getHours();
-    if (h < 12) return "morning";
-    if (h < 18) return "afternoon";
-    return "evening";
-  })();
   const firstName = (profile?.display_name ?? "reader").split(" ")[0];
   const initials = firstName.slice(0, 2).toUpperCase();
+  const hour = new Date().getHours();
+  const tod = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const greeting =
+    focus && focusPct > 5
+      ? `${tod}, ${firstName}. You're ${focusPct}% through ${focus.title}.`
+      : `${tod}, ${firstName}. Your library is waiting.`;
 
   return (
     <div className="hp">
       <section className="hero">
         <div className="hero-text">
           <div className="hero-eyebrow">
-            <span className="dot" /> {dayName} {partOfDay} · {inFlight} {inFlight === 1 ? "book" : "books"} in flight
-            {streak > 0 && <span> · 🔥 {streak}-day streak</span>}
-            {weekMinutes > 0 && <span> · {fmtMinutes(weekMinutes)} this week</span>}
+            <span className="dot" /> {fmtMinutes(weekMinutes)} this week · {inFlight} in progress
           </div>
-          <h1 className="hero-title">
-            Welcome back, {firstName}. <em>Pick up where you drifted off.</em>
-          </h1>
-          <p className="hero-sub">
-            {focus
-              ? `You're ${focusPct}% through ${focus.title}. A few more pages and you'll close the chapter.`
-              : "Your shelf is quiet. Pick something to start a new chapter."}
-          </p>
+          <h1 className="hero-title">{greeting}</h1>
           <div className="hero-cta">
-            {focus ? (
-              <Link to="/books/$bookId" params={{ bookId: focus.id }} className="btn btn-primary">
-                Resume {focus.title}
-                {focusUb?.current_page ? <> · p.&nbsp;{focusUb.current_page}</> : null}
-              </Link>
-            ) : (
-              <Link to="/board" className="btn btn-primary">Open the board</Link>
-            )}
-            <button className="btn btn-ghost">Log a session</button>
+            <button type="button" className="btn btn-primary" onClick={() => {}}>
+              Log a session
+            </button>
           </div>
         </div>
 
@@ -187,24 +135,23 @@ function Home() {
             </div>
             <div className="stat-foot">goal {goal} · {goalPct}% there</div>
           </Link>
-          {focus ? (
-            <Link to="/books/$bookId" params={{ bookId: focus.id }} className="stat alt stat-link">
+          {showFocusCard ? (
+            <Link to="/books/$bookId" params={{ bookId: focus!.id }} className="stat alt stat-link">
               <div className="stat-num">
                 {focusUb?.current_page ?? 0}
                 <span className="stat-num-sm">/{focusUb?.total_pages ?? "?"}</span>
               </div>
-              <div className="stat-lbl">{focus.title}</div>
+              <div className="stat-lbl">{focus!.title}</div>
               <div className="stat-bar light">
                 <div className="stat-fill terra" style={{ width: `${focusPct}%` }} />
               </div>
               <div className="stat-foot">{focusPct}% complete</div>
             </Link>
           ) : (
-            <Link to="/board" className="stat alt stat-link">
-              <div className="stat-num">0<span className="stat-num-sm">/?</span></div>
-              <div className="stat-lbl">Nothing in progress</div>
-              <div className="stat-bar light"><div className="stat-fill terra" style={{ width: `0%` }} /></div>
-              <div className="stat-foot">pick something to read →</div>
+            <Link to="/library" className="stat alt stat-link">
+              <div className="stat-num">{library.length}</div>
+              <div className="stat-lbl">books in your library</div>
+              <div className="stat-foot">start reading to track progress →</div>
             </Link>
           )}
         </div>
@@ -214,37 +161,14 @@ function Home() {
         <div className="section-head">
           <h2>Currently reading</h2>
           <span className="section-rule" />
-          <label className="size-slider">
-            <span className="size-slider-lbl" aria-hidden="true">S</span>
-            <input
-              type="range"
-              min={MIN_COL}
-              max={MAX_COL}
-              step={1}
-              value={readingSize}
-              onChange={(e) => changeSize(Number(e.target.value))}
-              aria-label="Card size"
-              aria-valuemin={MIN_COL}
-              aria-valuemax={MAX_COL}
-              aria-valuenow={readingSize}
-              aria-valuetext={`${readingSize} pixels wide`}
-            />
-            <span className="size-slider-lbl" aria-hidden="true">L</span>
-          </label>
           <Link to="/board" className="section-link">All shelves →</Link>
         </div>
-        {reading.length === 0 ? (
+        {readingAll.length === 0 ? (
           <Empty>Nothing in progress. Pick something from your shelf.</Empty>
         ) : (
-          <div
-            className="reading-grid"
-            style={{
-              ["--card-size" as string]: `${readingSize}px`,
-              gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${readingSize}px), 1fr))`,
-            }}
-          >
-            {reading.map((b, i) => (
-              <BookCard key={b.id} book={b} userBook={b.user_books[0]} tilt={[-0.6, 0.4][i] ?? 0} />
+          <div className="reading-grid">
+            {readingAll.map((b) => (
+              <BookCard key={b.id} book={b} userBook={b.user_books[0]} />
             ))}
           </div>
         )}
@@ -257,17 +181,35 @@ function Home() {
             <span className="section-rule" />
             <Link to="/board" className="section-link">Reorder →</Link>
           </div>
-          <div className="upnext-wrap">
+          <div className="upnext-row">
+            {upNext.slice(0, 5).map((b) => (
+              <Link
+                key={b.id}
+                to="/books/$bookId"
+                params={{ bookId: b.id }}
+                className="upnext-item"
+                title={`${b.title} — ${b.author}`}
+              >
+                <GeneratedCover book={b} className="upnext-cover" />
+                <div className="upnext-title">{b.title}</div>
+              </Link>
+            ))}
+            <button type="button" onClick={() => setAddOpen(true)} className="upnext-add" aria-label="Add a book">
+              <div className="add-plus">+</div>
+              <div className="add-lbl">add</div>
+            </button>
+          </div>
+          {upNext.length > 5 && (
             <button
               type="button"
-              className="upnext-nav left"
-              onClick={() => scrollByPage(-1)}
-              disabled={!canL}
-              aria-label="Scroll left"
+              className="upnext-showall"
+              onClick={() => setShowAllUpNext((v) => !v)}
             >
-              <ChevronLeft size={18} />
+              {showAllUpNext ? "Show less" : `Show all (${upNext.length})`}
             </button>
-            <div className="upnext-row" ref={upnextRef}>
+          )}
+          {showAllUpNext && upNext.length > 5 && (
+            <div className="upnext-grid">
               {upNext.map((b) => (
                 <Link
                   key={b.id}
@@ -280,21 +222,8 @@ function Home() {
                   <div className="upnext-title">{b.title}</div>
                 </Link>
               ))}
-              <button type="button" onClick={() => setAddOpen(true)} className="upnext-add" aria-label="Add a book">
-                <div className="add-plus">+</div>
-                <div className="add-lbl">add</div>
-              </button>
             </div>
-            <button
-              type="button"
-              className="upnext-nav right"
-              onClick={() => scrollByPage(1)}
-              disabled={!canR}
-              aria-label="Scroll right"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
+          )}
         </section>
 
         <section className="section">
@@ -310,13 +239,14 @@ function Home() {
                 const ub = b.user_books[0];
                 return (
                   <Link key={b.id} to="/books/$bookId" params={{ bookId: b.id }} className="fin-row">
-                    <div className="fin-cover" style={{ background: b.cover_color }} />
+                    <GeneratedCover book={b} className="fin-cover-img" />
                     <div className="fin-info">
                       <div className="fin-title">{b.title}</div>
                       <div className="fin-meta">
                         {b.author} · finished {ub?.finished_at ? format(new Date(ub.finished_at), "MMM d") : "—"}
                       </div>
                     </div>
+                    {/* TODO: half-star interactive rating in prompt 2 */}
                     <div className="fin-rating">
                       {[1, 2, 3, 4, 5].map((n) => (
                         <span key={n} className={"star " + (n <= (ub?.rating ?? 0) ? "on" : "")}>●</span>
@@ -372,7 +302,6 @@ function Empty({ children }: { children: React.ReactNode }) {
   return <div className="hp-empty">{children}</div>;
 }
 
-
 function HomepageStyles() {
   return (
     <style>{`
@@ -415,18 +344,10 @@ function HomepageStyles() {
         font-size: 64px;
         line-height: 1.02;
         letter-spacing: -0.02em;
-        margin: 0 0 18px;
+        margin: 0 0 28px;
         text-wrap: balance;
       }
       @media (max-width: 900px) { .hero-title { font-size: 44px; } }
-      .hero-title em { font-style: italic; color: var(--terra); font-weight: 300; }
-      .hero-sub {
-        font-size: 17px;
-        color: rgba(31,38,48,0.7);
-        line-height: 1.5;
-        margin: 0 0 28px;
-        max-width: 520px;
-      }
       .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
       .btn {
         display: inline-flex; align-items: center; gap: 10px;
@@ -445,11 +366,6 @@ function HomepageStyles() {
         background: var(--forest);
         color: var(--paper);
         box-shadow: 0 1px 0 rgba(31,38,48,0.06), 0 12px 24px -10px rgba(31,82,102,0.5);
-      }
-      .btn-ghost {
-        background: transparent;
-        color: var(--ink);
-        box-shadow: inset 0 0 0 1.5px rgba(31,38,48,0.18);
       }
 
       .hero-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -490,157 +406,25 @@ function HomepageStyles() {
         box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 18px 40px -28px rgba(31,38,48,0.22);
       }
 
-      .reading-grid { display: grid; gap: 20px; --card-size: 220px; }
-      .reading-grid .bc-card {
-        padding: clamp(14px, calc(var(--card-size) * 0.09), 28px);
-        border-radius: clamp(14px, calc(var(--card-size) * 0.09), 26px);
+      .reading-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 20px;
       }
-      .reading-grid .bc-cover {
-        padding: clamp(10px, calc(var(--card-size) * 0.07), 22px);
-      }
-      .reading-grid .bc-cover .cv-title {
-        font-size: clamp(14px, calc(var(--card-size) * 0.108), 34px);
-      }
-      .reading-grid .bc-cover .cv-author {
-        font-size: clamp(8px, calc(var(--card-size) * 0.042), 13px);
-      }
-      .reading-grid .bc-title-text {
-        font-size: clamp(14px, calc(var(--card-size) * 0.092), 28px);
-      }
-      .reading-grid .bc-author {
-        font-size: clamp(11px, calc(var(--card-size) * 0.052), 16px);
-      }
-      .reading-grid .bc-cover-wrap {
-        margin-bottom: clamp(10px, calc(var(--card-size) * 0.07), 22px);
-      }
-      .size-slider {
-        display: inline-flex; align-items: center; gap: 8px;
-        background: var(--paper); border-radius: 999px; padding: 4px 12px;
-        box-shadow: inset 0 0 0 1px rgba(31,38,48,0.1);
-        transition: box-shadow 0.15s ease;
-      }
-      .size-slider:focus-within {
-        box-shadow: inset 0 0 0 1px var(--forest), 0 0 0 3px rgba(45,80,55,0.18);
-      }
-      .size-slider-lbl {
-        font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600;
-        color: rgba(31,38,48,0.55); letter-spacing: 0.08em;
-      }
-      .size-slider input[type="range"] {
-        -webkit-appearance: none; appearance: none;
-        width: 80px; height: 4px; background: rgba(31,38,48,0.15);
-        border-radius: 999px; outline: none; cursor: pointer;
-      }
-      .size-slider input[type="range"]::-webkit-slider-thumb {
-        -webkit-appearance: none; appearance: none;
-        width: 14px; height: 14px; border-radius: 50%;
-        background: var(--forest); cursor: pointer; border: 2px solid var(--paper);
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        transition: transform 0.12s ease, box-shadow 0.12s ease;
-      }
-      .size-slider input[type="range"]::-moz-range-thumb {
-        width: 14px; height: 14px; border-radius: 50%;
-        background: var(--forest); cursor: pointer; border: 2px solid var(--paper);
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        transition: transform 0.12s ease, box-shadow 0.12s ease;
-      }
-      .size-slider input[type="range"]:focus-visible::-webkit-slider-thumb {
-        transform: scale(1.2);
-        box-shadow: 0 0 0 4px rgba(45,80,55,0.25);
-      }
-      .size-slider input[type="range"]:focus-visible::-moz-range-thumb {
-        transform: scale(1.2);
-        box-shadow: 0 0 0 4px rgba(45,80,55,0.25);
-      }
-
-      .read-card {
-        display: grid; grid-template-columns: 168px 1fr; gap: 24px;
-        padding: 24px; background: var(--paper); border-radius: 26px;
-        box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 22px 44px -28px rgba(31,38,48,0.22);
-      }
-      .cover-wrap { position: relative; }
-      .cover {
-        aspect-ratio: 2/3;
-        border-radius: 6px 12px 12px 6px;
-        padding: 18px 16px;
-        display: flex; flex-direction: column; justify-content: space-between;
-        font-family: 'Newsreader', serif;
-        box-shadow:
-          inset 4px 0 0 rgba(0,0,0,0.12),
-          0 6px 14px -6px rgba(31,38,48,0.3),
-          0 14px 32px -16px rgba(31,38,48,0.2);
-        position: relative;
-      }
-      .cv-stripe { height: 1px; background: currentColor; opacity: 0.4; width: 60%; margin-top: 10px; }
-      .cv-meta { margin-top: auto; }
-      .cv-author { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.85; margin-bottom: 8px; }
-      .cv-title { font-size: 22px; line-height: 1.05; font-weight: 500; letter-spacing: -0.01em; }
-      .cv-corner { position: absolute; top: 8px; right: 12px; font-size: 24px; opacity: 0.4; }
-
-      .bookmark {
-        position: absolute; top: -6px; left: 50%;
-        transform: translateX(-50%);
-        width: 14px; height: 56px;
-        border-radius: 0 0 4px 4px;
-        box-shadow: 0 4px 8px -4px rgba(31,38,48,0.4);
-      }
-      .bookmark::before {
-        content: ""; position: absolute; top: 0; left: 0; bottom: 0;
-        width: 3px; background: linear-gradient(90deg, rgba(0,0,0,0.18), transparent);
-      }
-      .bookmark::after {
-        content: ""; position: absolute; bottom: -6px; left: 0;
-        width: 14px; height: 8px; background: inherit;
-        clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 50%, 0 100%);
-      }
-      .audio-spool-hp {
-        position: absolute; top: 12px; right: 12px;
-        padding: 5px 9px; background: rgba(0,0,0,0.28);
-        border-radius: 999px; display: flex; gap: 3px; align-items: center;
-      }
-      .audio-spool-hp .asbar { width: 2px; background: rgba(250,251,243,0.95); border-radius: 2px; }
-
-      .read-info { display: flex; flex-direction: column; gap: 6px; padding-top: 4px; }
-      .read-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-      .read-title { font-family: 'Newsreader', serif; font-size: 26px; font-weight: 500; letter-spacing: -0.01em; }
-      .read-fmt { padding: 4px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; flex-shrink: 0; }
-      .read-fmt.print { background: rgba(111,179,122,0.18); color: #2F6638; }
-      .read-fmt.ebook { background: rgba(45,106,149,0.16); color: #1F5266; }
-      .read-fmt.audiobook { background: rgba(209,118,72,0.18); color: #A85428; }
-      .read-pages { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: rgba(31,38,48,0.55); }
-      .read-author { font-size: 14px; color: rgba(31,38,48,0.6); margin-bottom: 14px; }
-      .read-bar { height: 8px; background: var(--mist); border-radius: 999px; overflow: hidden; margin-bottom: 10px; }
-      .read-fill { height: 100%; border-radius: 999px; }
-      .read-meta { display: flex; gap: 8px; font-size: 12.5px; color: rgba(31,38,48,0.55); margin-bottom: 14px; }
-      .dot-sep { color: rgba(31,38,48,0.3); }
-      .read-actions { display: flex; gap: 8px; margin-top: auto; flex-wrap: wrap; }
-      .chip-btn {
-        padding: 8px 14px; border-radius: 999px;
-        border: 1.5px solid rgba(31,38,48,0.12);
-        background: transparent; font-family: inherit; font-size: 12.5px; font-weight: 600;
-        color: var(--ink); cursor: pointer; text-decoration: none;
-      }
-      .chip-btn.primary { background: var(--forest); color: var(--paper); border-color: var(--forest); }
 
       .two-col { display: grid; grid-template-columns: 1.3fr 1fr; gap: 32px; margin-bottom: 48px; }
       @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
 
-      .upnext-wrap { position: relative; }
       .upnext-row {
-        display: flex; gap: 14px;
+        display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start;
         padding: 18px;
         background: var(--paper);
         border-radius: 24px;
-        overflow-x: auto;
-        scrollbar-width: thin;
-        scroll-behavior: smooth;
-        scroll-snap-type: x mandatory;
         box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 18px 40px -28px rgba(31,38,48,0.22);
       }
       .upnext-item {
         flex: 0 0 84px;
         width: 84px;
-        scroll-snap-align: start;
         text-decoration: none;
         color: inherit;
         display: flex; flex-direction: column; gap: 8px;
@@ -648,14 +432,13 @@ function HomepageStyles() {
       .upnext-cover {
         width: 84px;
         height: 126px;
-        flex: 0 0 126px;
         border-radius: 4px;
-        box-shadow: 0 6px 14px -8px rgba(31,38,48,0.35);
+        box-shadow: inset -2px 0 0 rgba(0,0,0,0.15), 0 6px 14px -8px rgba(31,38,48,0.35);
         transition: transform 0.18s ease, box-shadow 0.18s ease;
       }
       .upnext-item:hover .upnext-cover {
         transform: translateY(-3px);
-        box-shadow: 0 12px 22px -10px rgba(31,38,48,0.4);
+        box-shadow: inset -2px 0 0 rgba(0,0,0,0.15), 0 12px 22px -10px rgba(31,38,48,0.4);
       }
       .upnext-title {
         font-size: 11.5px; line-height: 1.3;
@@ -668,7 +451,6 @@ function HomepageStyles() {
         width: 84px;
         height: 126px;
         align-self: flex-start;
-        scroll-snap-align: start;
         border-radius: 4px;
         border: 1.5px dashed rgba(31,38,48,0.18);
         display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -677,27 +459,31 @@ function HomepageStyles() {
         transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
       }
       .upnext-add:hover { border-color: var(--forest); color: var(--forest); transform: translateY(-2px); }
-      .upnext-nav {
-        position: absolute;
-        top: calc(50% - 12px);
-        transform: translateY(-50%);
-        width: 32px; height: 32px;
-        border-radius: 999px;
-        background: var(--paper);
-        border: 1px solid rgba(31,38,48,0.12);
-        display: flex; align-items: center; justify-content: center;
-        color: var(--ink);
-        cursor: pointer;
-        box-shadow: 0 4px 10px -4px rgba(31,38,48,0.25);
-        transition: opacity 0.15s ease, background 0.15s ease;
-        z-index: 2;
+      .upnext-showall {
+        margin-top: 14px;
+        background: transparent; border: none; padding: 0;
+        color: var(--forest); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
       }
-      .upnext-nav.left { left: -12px; }
-      .upnext-nav.right { right: -12px; }
-      .upnext-nav:hover:not(:disabled) { background: var(--cream); }
-      .upnext-nav:disabled { opacity: 0; pointer-events: none; }
+      .upnext-grid {
+        margin-top: 16px;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 14px;
+        padding: 18px;
+        background: var(--paper);
+        border-radius: 24px;
+        box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 18px 40px -28px rgba(31,38,48,0.22);
+      }
+      .upnext-grid .upnext-item { width: 100%; flex: initial; }
+      .upnext-grid .upnext-cover { width: 100%; height: auto; aspect-ratio: 2 / 3; }
       .add-plus { font-size: 22px; font-family: 'Newsreader', serif; }
       .add-lbl { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+
+      @media (max-width: 768px) {
+        .upnext-row { flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x mandatory; }
+        .upnext-row > * { scroll-snap-align: start; }
+        .upnext-grid { grid-template-columns: repeat(2, 1fr); }
+      }
 
       .finished-list {
         display: flex; flex-direction: column; gap: 4px;
@@ -707,15 +493,17 @@ function HomepageStyles() {
         box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 18px 40px -28px rgba(31,38,48,0.22);
       }
       .fin-row {
-        display: grid; grid-template-columns: 28px 1fr auto; gap: 16px;
+        display: grid; grid-template-columns: 48px 1fr auto; gap: 16px;
         align-items: center; padding: 14px;
         border-radius: 16px; text-decoration: none; color: inherit;
       }
       .fin-row:hover { background: var(--cream); }
-      .fin-cover {
-        width: 28px; height: 40px;
-        border-radius: 2px 4px 4px 2px;
-        box-shadow: inset -2px 0 0 rgba(0,0,0,0.15), 0 2px 4px -2px rgba(31,38,48,0.3);
+      .fin-cover-img {
+        width: 48px;
+        height: 72px;
+        border-radius: 3px;
+        flex-shrink: 0;
+        box-shadow: inset -2px 0 0 rgba(0,0,0,0.15), 0 2px 6px -2px rgba(31,38,48,0.3);
       }
       .fin-title { font-family: 'Newsreader', serif; font-size: 17px; font-weight: 500; }
       .fin-meta { font-size: 12px; color: rgba(31,38,48,0.55); }
