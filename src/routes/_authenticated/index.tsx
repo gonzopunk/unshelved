@@ -41,6 +41,11 @@ function Home() {
     .reduce((sum, s) => sum + (s.minutes ?? 0), 0);
 
   const readingAll = library.filter((b) => b.user_books[0]?.status === "reading");
+  const reading = [...readingAll]
+    .sort((a, b) =>
+      (b.user_books[0]?.started_at ?? "").localeCompare(a.user_books[0]?.started_at ?? "")
+    )
+    .slice(0, 5);
   const inFlight = readingAll.length;
   const upNext = library.filter((b) => b.user_books[0]?.status === "want").slice(0, 20);
   const finished = library
