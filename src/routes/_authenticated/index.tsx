@@ -8,7 +8,7 @@ import { useMemo, useState } from "react";
 import BookCard from "@/components/BookCard";
 import GeneratedCover from "@/components/GeneratedCover";
 import AddBookModal from "@/components/AddBookModal";
-import { useAllSessions, fmtMinutes } from "@/lib/sessions";
+import { useAllSessions } from "@/lib/sessions";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({ meta: [{ title: "Unshelved — Library" }] }),
@@ -41,6 +41,11 @@ function Home() {
     .reduce((sum, s) => sum + (s.minutes ?? 0), 0);
 
   const readingAll = library.filter((b) => b.user_books[0]?.status === "reading");
+  const reading = [...readingAll]
+    .sort((a, b) =>
+      (b.user_books[0]?.started_at ?? "").localeCompare(a.user_books[0]?.started_at ?? "")
+    )
+    .slice(0, 5);
   const inFlight = readingAll.length;
   const upNext = library.filter((b) => b.user_books[0]?.status === "want").slice(0, 20);
   const finished = library
@@ -67,8 +72,7 @@ function Home() {
   const focusPct = focusUb?.total_pages
     ? Math.round(((focusUb.current_page ?? 0) / focusUb.total_pages) * 100)
     : Math.round(Number(focusUb?.progress_pct ?? 0));
-  const focusHasSession = focus ? lastSessionByBook.has(focus.id) : false;
-  const showFocusCard = !!focus && (focusPct > 0 || focusHasSession);
+  const showFocusCard = readingAll.length > 0 && !!focus;
 
   const quote = highlights[0] as
     | { id: string; book_id: string; quote_text: string; page_number: number | null; books?: { title: string; author: string } | null }
@@ -104,21 +108,29 @@ function Home() {
 
   const firstName = (profile?.display_name ?? "reader").split(" ")[0];
   const initials = firstName.slice(0, 2).toUpperCase();
+  const dayName = format(new Date(), "EEEE");
   const hour = new Date().getHours();
-  const tod = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-  const greeting =
+  const partOfDay = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
+  const weekMin = weekMinutes;
+  const weekFormatted = weekMin < 60
+    ? `${weekMin} min`
+    : `${Math.floor(weekMin / 60)} hr ${weekMin % 60 > 0 ? (weekMin % 60) + " min" : ""}`.trim();
+  const contextualLine =
     focus && focusPct > 5
-      ? `${tod}, ${firstName}. You're ${focusPct}% through ${focus.title}.`
-      : `${tod}, ${firstName}. Your library is waiting.`;
+      ? `You're ${focusPct}% through ${focus.title}.`
+      : `Your library is waiting.`;
 
   return (
     <div className="hp">
       <section className="hero">
         <div className="hero-text">
           <div className="hero-eyebrow">
-            <span className="dot" /> {fmtMinutes(weekMinutes)} this week · {inFlight} in progress
+            <span className="dot" /> {dayName} {partOfDay} · {weekFormatted} this week · {inFlight} in progress
           </div>
-          <h1 className="hero-title">{greeting}</h1>
+          <h1 className="hero-title">
+            Welcome back, {firstName}.<br />
+            <em>{contextualLine}</em>
+          </h1>
           <div className="hero-cta">
             <button type="button" className="btn btn-primary" onClick={() => {}}>
               Log a session
@@ -159,15 +171,15 @@ function Home() {
 
       <section className="section">
         <div className="section-head">
-          <h2>Currently reading</h2>
+          <h2>Currently unshelved</h2>
           <span className="section-rule" />
           <Link to="/board" className="section-link">All shelves →</Link>
         </div>
-        {readingAll.length === 0 ? (
+        {reading.length === 0 ? (
           <Empty>Nothing in progress. Pick something from your shelf.</Empty>
         ) : (
           <div className="reading-grid">
-            {readingAll.map((b) => (
+            {reading.map((b) => (
               <BookCard key={b.id} book={b} userBook={b.user_books[0]} />
             ))}
           </div>
@@ -205,7 +217,7 @@ function Home() {
               className="upnext-showall"
               onClick={() => setShowAllUpNext((v) => !v)}
             >
-              {showAllUpNext ? "Show less" : `Show all (${upNext.length})`}
+              {showAllUpNext ? "Show fewer" : `Show all (${upNext.length})`}
             </button>
           )}
           {showAllUpNext && upNext.length > 5 && (
@@ -348,6 +360,7 @@ function HomepageStyles() {
         text-wrap: balance;
       }
       @media (max-width: 900px) { .hero-title { font-size: 44px; } }
+      .hero-title em { font-style: italic; color: var(--terra); font-weight: 300; }
       .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
       .btn {
         display: inline-flex; align-items: center; gap: 10px;
