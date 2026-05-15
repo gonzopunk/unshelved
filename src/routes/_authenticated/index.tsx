@@ -262,7 +262,19 @@ function Home() {
                     {/* TODO: half-star interactive rating in prompt 2 */}
                     <div className="fin-rating">
                       {[1, 2, 3, 4, 5].map((n) => (
-                        <span key={n} className={"star " + (n <= (ub?.rating ?? 0) ? "on" : "")}>●</span>
+                        <button
+                          key={n}
+                          type="button"
+                          className={"star-btn " + (n <= (ub?.rating ?? 0) ? "on" : "")}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (ub?.id) updateRating.mutate({ id: ub.id, rating: n });
+                          }}
+                          aria-label={`Rate ${n} star${n !== 1 ? "s" : ""}`}
+                        >
+                          ●
+                        </button>
                       ))}
                     </div>
                   </Link>
