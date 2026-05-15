@@ -534,8 +534,18 @@ function HomepageStyles() {
       .fin-title { font-family: 'Newsreader', serif; font-size: 17px; font-weight: 500; }
       .fin-meta { font-size: 12px; color: rgba(31,38,48,0.55); }
       .fin-rating { display: flex; gap: 3px; }
-      .star { font-size: 8px; color: rgba(31,38,48,0.18); }
-      .star.on { color: var(--honey); }
+      .star-btn {
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        font-size: 8px;
+        color: rgba(31,38,48,0.18);
+        transition: color 0.12s ease;
+        line-height: 1;
+      }
+      .star-btn.on { color: var(--honey); }
+      .star-btn:hover { color: var(--honey); opacity: 0.7; }
 
       .quote {
         background: var(--forest);
