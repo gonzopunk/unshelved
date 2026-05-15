@@ -217,7 +217,7 @@ function Home() {
               className="upnext-showall"
               onClick={() => setShowAllUpNext((v) => !v)}
             >
-              {showAllUpNext ? "Show less" : `Show all (${upNext.length})`}
+              {showAllUpNext ? "Show fewer" : `Show all (${upNext.length})`}
             </button>
           )}
           {showAllUpNext && upNext.length > 5 && (
