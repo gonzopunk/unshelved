@@ -21,6 +21,7 @@ function Home() {
   const { user } = useAuth();
   const [addOpen, setAddOpen] = useState(false);
   const [showAllUpNext, setShowAllUpNext] = useState(false);
+  const updateRating = useUpdateRating();
 
   const { data: highlights = [] } = useQuery({
     queryKey: ["highlights-all", user?.id],
