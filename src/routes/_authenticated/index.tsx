@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useLibrary, useProfile } from "@/lib/queries";
+import { useLibrary, useProfile, useUpdateRating } from "@/lib/queries";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -21,6 +21,7 @@ function Home() {
   const { user } = useAuth();
   const [addOpen, setAddOpen] = useState(false);
   const [showAllUpNext, setShowAllUpNext] = useState(false);
+  const updateRating = useUpdateRating();
 
   const { data: highlights = [] } = useQuery({
     queryKey: ["highlights-all", user?.id],
@@ -261,7 +262,19 @@ function Home() {
                     {/* TODO: half-star interactive rating in prompt 2 */}
                     <div className="fin-rating">
                       {[1, 2, 3, 4, 5].map((n) => (
-                        <span key={n} className={"star " + (n <= (ub?.rating ?? 0) ? "on" : "")}>●</span>
+                        <button
+                          key={n}
+                          type="button"
+                          className={"star-btn " + (n <= (ub?.rating ?? 0) ? "on" : "")}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (ub?.id) updateRating.mutate({ id: ub.id, rating: n });
+                          }}
+                          aria-label={`Rate ${n} star${n !== 1 ? "s" : ""}`}
+                        >
+                          ●
+                        </button>
                       ))}
                     </div>
                   </Link>
@@ -521,8 +534,18 @@ function HomepageStyles() {
       .fin-title { font-family: 'Newsreader', serif; font-size: 17px; font-weight: 500; }
       .fin-meta { font-size: 12px; color: rgba(31,38,48,0.55); }
       .fin-rating { display: flex; gap: 3px; }
-      .star { font-size: 8px; color: rgba(31,38,48,0.18); }
-      .star.on { color: var(--honey); }
+      .star-btn {
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        font-size: 8px;
+        color: rgba(31,38,48,0.18);
+        transition: color 0.12s ease;
+        line-height: 1;
+      }
+      .star-btn.on { color: var(--honey); }
+      .star-btn:hover { color: var(--honey); opacity: 0.7; }
 
       .quote {
         background: var(--forest);

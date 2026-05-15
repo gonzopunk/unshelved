@@ -89,6 +89,23 @@ export function useUpdateStatus() {
   });
 }
 
+export function useUpdateRating() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, rating }: { id: string; rating: number }) => {
+      const { error } = await supabase
+        .from("user_books")
+        .update({ rating })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["library"] });
+      qc.invalidateQueries({ queryKey: ["book"] });
+    },
+  });
+}
+
 export function useUpdateProgress() {
   const qc = useQueryClient();
   return useMutation({
