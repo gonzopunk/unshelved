@@ -72,8 +72,7 @@ function Home() {
   const focusPct = focusUb?.total_pages
     ? Math.round(((focusUb.current_page ?? 0) / focusUb.total_pages) * 100)
     : Math.round(Number(focusUb?.progress_pct ?? 0));
-  const focusHasSession = focus ? lastSessionByBook.has(focus.id) : false;
-  const showFocusCard = !!focus && (focusPct > 0 || focusHasSession);
+  const showFocusCard = readingAll.length > 0 && !!focus;
 
   const quote = highlights[0] as
     | { id: string; book_id: string; quote_text: string; page_number: number | null; books?: { title: string; author: string } | null }
