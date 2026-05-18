@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useLibrary, useProfile, useUpdateRating } from "@/lib/queries";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import BookCard from "@/components/BookCard";
 import GeneratedCover from "@/components/GeneratedCover";
 import AddBookModal from "@/components/AddBookModal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAllSessions } from "@/lib/sessions";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -21,6 +22,8 @@ function Home() {
   const { user } = useAuth();
   const [addOpen, setAddOpen] = useState(false);
   const [showAllUpNext, setShowAllUpNext] = useState(false);
+  const [logSessionOpen, setLogSessionOpen] = useState(false);
+  const navigate = useNavigate();
   const updateRating = useUpdateRating();
 
   const { data: highlights = [] } = useQuery({
@@ -42,6 +45,7 @@ function Home() {
     .reduce((sum, s) => sum + (s.minutes ?? 0), 0);
 
   const readingAll = library.filter((b) => b.user_books[0]?.status === "reading");
+  const allReading = readingAll;
   const reading = [...readingAll]
     .sort((a, b) =>
       (b.user_books[0]?.started_at ?? "").localeCompare(a.user_books[0]?.started_at ?? "")
@@ -133,7 +137,7 @@ function Home() {
             <em>{contextualLine}</em>
           </h1>
           <div className="hero-cta">
-            <button type="button" className="btn btn-primary" onClick={() => {}}>
+            <button type="button" className="btn btn-primary" onClick={() => setLogSessionOpen(true)}>
               Log a session
             </button>
           </div>
@@ -319,6 +323,44 @@ function Home() {
       <HomepageStyles />
       <span className="sr-only">{initials}</span>
       <AddBookModal open={addOpen} onOpenChange={setAddOpen} />
+      <Dialog open={logSessionOpen} onOpenChange={setLogSessionOpen}>
+        <DialogContent className="rounded-2xl bg-card">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl">Which book?</DialogTitle>
+          </DialogHeader>
+          {allReading.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground italic">
+              No books currently in progress.
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
+              {allReading.map((b) => {
+                const ub = b.user_books[0];
+                const pct = ub?.total_pages && ub.current_page != null
+                  ? Math.round((ub.current_page / ub.total_pages) * 100)
+                  : Math.round(Number(ub?.progress_pct ?? 0));
+                return (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => {
+                      setLogSessionOpen(false);
+                      navigate({ to: "/books/$bookId", params: { bookId: b.id } });
+                    }}
+                    className="flex items-center gap-3 rounded-xl p-2 text-left hover:bg-muted transition-colors"
+                  >
+                    <GeneratedCover book={b} className="h-14 w-10 rounded shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate">{b.title}</div>
+                      <div className="text-xs text-muted-foreground truncate">{b.author} · {pct}%</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
