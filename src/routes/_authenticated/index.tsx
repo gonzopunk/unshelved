@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useLibrary, useProfile, useUpdateRating } from "@/lib/queries";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import BookCard from "@/components/BookCard";
 import GeneratedCover from "@/components/GeneratedCover";
 import AddBookModal from "@/components/AddBookModal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAllSessions } from "@/lib/sessions";
 
 export const Route = createFileRoute("/_authenticated/")({
