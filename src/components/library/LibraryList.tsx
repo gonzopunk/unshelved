@@ -23,7 +23,7 @@ export default function LibraryList({ books }: { books: BookWithShelf[] }) {
             key={b.id}
             to="/books/$bookId"
             params={{ bookId: b.id }}
-            className="grid grid-cols-[2.5rem_minmax(0,2.5fr)_minmax(0,1.5fr)_6rem_4rem_5rem_5rem] items-center gap-3 px-4 py-2.5 border-b border-border last:border-0 hover:bg-muted/40 transition"
+            className="grid grid-cols-[2.5rem_minmax(0,2.5fr)_minmax(0,1.5fr)_6rem_4rem] md:grid-cols-[2.5rem_minmax(0,2.5fr)_minmax(0,1.5fr)_6rem_4rem_5rem_5rem] items-center gap-3 px-4 py-2.5 border-b border-border last:border-0 hover:bg-muted/40 transition"
           >
             <div
               className="h-8 w-7 rounded-sm shrink-0"
@@ -39,11 +39,11 @@ export default function LibraryList({ books }: { books: BookWithShelf[] }) {
             <div className="text-xs font-mono">
               {ub.rating ? "★".repeat(ub.rating) : "—"}
             </div>
-            <div className="text-xs text-muted-foreground">
+            <div className="hidden md:block text-xs text-muted-foreground">
               {FORMAT_LABELS[b.format]}
             </div>
-            <div className="text-xs font-mono text-muted-foreground">
-              {ub.finished_at ? format(new Date(ub.finished_at), "MMM d, yy") : "—"}
+            <div className="hidden md:block text-xs font-mono text-muted-foreground">
+              {ub.finished_at ? format(new Date(ub.finished_at), "MMM d, yyyy") : "—"}
             </div>
           </Link>
         );
