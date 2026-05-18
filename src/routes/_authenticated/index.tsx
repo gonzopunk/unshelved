@@ -137,7 +137,7 @@ function Home() {
             <em>{contextualLine}</em>
           </h1>
           <div className="hero-cta">
-            <button type="button" className="btn btn-primary" onClick={() => {}}>
+            <button type="button" className="btn btn-primary" onClick={() => setLogSessionOpen(true)}>
               Log a session
             </button>
           </div>
