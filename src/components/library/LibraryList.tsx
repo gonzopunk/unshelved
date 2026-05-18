@@ -6,14 +6,14 @@ import { STATUS_LABELS, FORMAT_LABELS } from "@/lib/library-filter";
 export default function LibraryList({ books }: { books: BookWithShelf[] }) {
   return (
     <div className="rounded-2xl bg-card shadow-paper overflow-hidden">
-      <div className="grid grid-cols-[2.5rem_minmax(0,2.5fr)_minmax(0,1.5fr)_6rem_4rem_5rem_5rem] items-center gap-3 px-4 py-2 border-b border-border text-[10px] uppercase tracking-widest font-mono text-muted-foreground">
+      <div className="grid grid-cols-[2.5rem_minmax(0,2.5fr)_minmax(0,1.5fr)_6rem_4rem] md:grid-cols-[2.5rem_minmax(0,2.5fr)_minmax(0,1.5fr)_6rem_4rem_5rem_5rem] items-center gap-3 px-4 py-2 border-b border-border text-[10px] uppercase tracking-widest font-mono text-muted-foreground">
         <span></span>
         <span>Title</span>
         <span>Author</span>
         <span>Status</span>
         <span>Rating</span>
-        <span>Format</span>
-        <span>Finished</span>
+        <span className="hidden md:block">Format</span>
+        <span className="hidden md:block">Finished</span>
       </div>
       {books.map((b) => {
         const ub = b.user_books[0];
