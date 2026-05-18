@@ -1,28 +1,30 @@
-## Problem
+## Diagnosis
 
-Board columns currently use `minmax(220px, 1fr)` (4-up Shelves, 3-up Rated) inside a horizontally-scrollable grid. 220px is still too tight — card titles wrap aggressively and the columns feel cramped at typical viewport widths.
+The previous `minmax(280px, 1fr)` change in `src/routes/_authenticated/board.tsx` is being overridden by later global CSS in `src/styles.css`:
 
-## Fix
-
-Bump the per-column floor to a more readable size in `src/routes/_authenticated/board.tsx` (BoardStyles block, lines 425–426):
-
-```text
-.cols-4 { grid-template-columns: repeat(4, minmax(280px, 1fr)); }
-.cols-3 { grid-template-columns: repeat(3, minmax(280px, 1fr)); }
+```css
+.bv-cols.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.bv-cols.cols-3 { grid-template-columns: repeat(3, 1fr); }
 ```
 
-That's the only change. Existing horizontal-scroll wrapper (`.bv-cols { overflow-x: auto }`) already handles the case where 4×280px exceeds the viewport — narrow screens will scroll horizontally instead of squeezing columns to unreadable widths.
+Because `src/styles.css` is loaded globally and uses more specific selectors, the browser keeps using equal fractional columns, so the board still shrinks at narrow widths.
 
-## Why 280px
+## Plan
 
-- 220px → titles wrap to 3+ lines, rating/meta row gets tight.
-- 280px → comfortable for a 2-line title plus author and meta on one row.
-- 4×280 + 3×16 gap = ~1168px, which fits at the user's current 1181px viewport without scroll; below that, the section scrolls horizontally.
+1. Update the board-specific injected styles in `src/routes/_authenticated/board.tsx` so they beat the global selectors:
 
-## Open question
+```css
+.bv-cols.cols-4 { grid-template-columns: repeat(4, minmax(280px, 1fr)); }
+.bv-cols.cols-3 { grid-template-columns: repeat(3, minmax(280px, 1fr)); }
+```
 
-If you'd prefer a different floor (e.g. 260px to keep 4-up fitting at slightly narrower widths, or 300px for extra breathing room), say the number and I'll use it instead.
+2. Keep the existing horizontal-scroll behavior on `.bv-cols`.
 
-## Scope
+3. Verify in a narrow viewport that:
+   - shelf columns keep a readable fixed minimum width,
+   - the board scrolls horizontally instead of squeezing columns,
+   - the global `src/styles.css` rules no longer override this route.
 
-One file, two lines. No other styles, logic, breakpoints, or files touched.
+## Files to change
+
+- `src/routes/_authenticated/board.tsx` only.

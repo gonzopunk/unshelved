@@ -422,8 +422,8 @@ function BoardStyles() {
       }
 
       .bv-cols { display: grid; gap: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; }
-      .cols-4 { grid-template-columns: repeat(4, minmax(280px, 1fr)); }
-      .cols-3 { grid-template-columns: repeat(3, minmax(280px, 1fr)); }
+      .bv-cols.cols-4 { grid-template-columns: repeat(4, minmax(280px, 1fr)); }
+      .bv-cols.cols-3 { grid-template-columns: repeat(3, minmax(280px, 1fr)); }
 
       .col {
         background: var(--paper); border-radius: 20px;
