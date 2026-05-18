@@ -421,11 +421,9 @@ function BoardStyles() {
         color: rgba(31,38,48,0.5); font-family: 'JetBrains Mono', monospace;
       }
 
-      .bv-cols { display: grid; gap: 16px; }
-      .cols-4 { grid-template-columns: repeat(4, 1fr); }
-      .cols-3 { grid-template-columns: repeat(3, 1fr); }
-      @media (max-width: 900px) { .cols-4 { grid-template-columns: repeat(2, 1fr); } .cols-3 { grid-template-columns: repeat(2, 1fr); } }
-      @media (max-width: 640px) { .cols-4, .cols-3 { grid-template-columns: 1fr; } }
+      .bv-cols { display: grid; gap: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; }
+      .cols-4 { grid-template-columns: repeat(4, minmax(220px, 1fr)); }
+      .cols-3 { grid-template-columns: repeat(3, minmax(220px, 1fr)); }
 
       .col {
         background: var(--paper); border-radius: 20px;
