@@ -22,6 +22,8 @@ function Home() {
   const { user } = useAuth();
   const [addOpen, setAddOpen] = useState(false);
   const [showAllUpNext, setShowAllUpNext] = useState(false);
+  const [logSessionOpen, setLogSessionOpen] = useState(false);
+  const navigate = useNavigate();
   const updateRating = useUpdateRating();
 
   const { data: highlights = [] } = useQuery({
