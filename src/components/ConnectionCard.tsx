@@ -16,9 +16,9 @@ export type EndpointInfo = {
 function Endpoint({ e }: { e: EndpointInfo }) {
   const inner = (
     <div className="min-w-0">
-      <div className="font-display text-base truncate">{e.title}</div>
-      {e.author && <div className="text-xs text-muted-foreground italic truncate">{e.author}{e.isReference ? " · reference" : ""}</div>}
-      {e.snippet && <div className="text-xs italic text-muted-foreground line-clamp-2 mt-1">"{e.snippet}"</div>}
+      <div className="font-display text-base line-clamp-2 overflow-hidden">{e.title}</div>
+      {e.author && <div className="text-xs text-muted-foreground italic line-clamp-1 overflow-hidden">{e.author}{e.isReference ? " · reference" : ""}</div>}
+      {e.snippet && <div className="text-xs italic text-muted-foreground line-clamp-2 overflow-hidden mt-1">"{e.snippet}"</div>}
     </div>
   );
   if (e.kind === "book") {
