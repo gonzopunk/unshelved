@@ -424,7 +424,7 @@ function BoardStyles() {
       .bv-cols { display: grid; gap: 16px; }
       .cols-4 { grid-template-columns: repeat(4, 1fr); }
       .cols-3 { grid-template-columns: repeat(3, 1fr); }
-      @media (max-width: 1100px) { .cols-4 { grid-template-columns: repeat(2, 1fr); } .cols-3 { grid-template-columns: repeat(2, 1fr); } }
+      @media (max-width: 900px) { .cols-4 { grid-template-columns: repeat(2, 1fr); } .cols-3 { grid-template-columns: repeat(2, 1fr); } }
       @media (max-width: 640px) { .cols-4, .cols-3 { grid-template-columns: 1fr; } }
 
       .col {
