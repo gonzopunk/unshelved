@@ -28,6 +28,9 @@ import RhythmStrip from "@/components/sessions/RhythmStrip";
 
 
 export const Route = createFileRoute("/_authenticated/books/$bookId")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: typeof search.tab === "string" ? search.tab : "notes",
+  }),
   component: BookDetail,
 });
 
