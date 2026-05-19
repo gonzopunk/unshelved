@@ -52,6 +52,7 @@ function BookDetail() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const { tab } = Route.useSearch();
   const [editOpen, setEditOpen] = useState(false);
   const [weaveSource, setWeaveSource] = useState<{ kind: ConnectionKind; id: string; label: string } | null>(null);
   const [editingConn, setEditingConn] = useState<Connection | null>(null);
