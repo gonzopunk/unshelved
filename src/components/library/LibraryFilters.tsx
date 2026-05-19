@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Search, ChevronDown, Check } from "lucide-react";
 import {
   Popover, PopoverContent, PopoverTrigger,
@@ -186,19 +186,24 @@ export default function LibraryFilters({
 
 /* ---------- shared bits ---------- */
 
-function TriggerBtn({ label, value }: { label: string; value: string | null }) {
+const TriggerBtn = React.forwardRef<
+  HTMLButtonElement,
+  { label: string; value: string | null } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "value">
+>(function TriggerBtn({ label, value, ...props }, ref) {
   return (
     <Button
+      ref={ref}
       variant="outline"
       size="sm"
       className="rounded-full bg-card gap-1.5 font-normal"
+      {...props}
     >
       <span className="text-muted-foreground">{label}</span>
       {value && <span className="text-ink">{value}</span>}
       <ChevronDown className="h-3 w-3 opacity-60" />
     </Button>
   );
-}
+});
 
 function MultiPopover({
   label,
