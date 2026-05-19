@@ -45,7 +45,7 @@ export const Route = createFileRoute("/_authenticated/library")({
 });
 
 function LibraryPage() {
-  const navigate = useNavigate({ from: "/_authenticated/library" });
+  const navigate = useNavigate();
   const search = useSearch({ from: "/_authenticated/library" });
   const filters = useMemo(() => searchToFilters(search), [search]);
   const sort: SortKey = (search.sort as SortKey) ?? "added";
@@ -87,6 +87,7 @@ function LibraryPage() {
 
   const writeSearch = (patch: Record<string, unknown>) =>
     navigate({
+      to: ".",
       search: (prev: Record<string, unknown>) => {
         const next = { ...prev, ...patch };
         for (const [k, v] of Object.entries(next)) {
@@ -98,7 +99,7 @@ function LibraryPage() {
         return next;
       },
       replace: true,
-    });
+    } as never);
 
   const onFiltersChange = (patch: Partial<F>) => {
     const merged = { ...filters, ...patch };
