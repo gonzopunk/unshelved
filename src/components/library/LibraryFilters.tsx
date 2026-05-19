@@ -188,7 +188,7 @@ export default function LibraryFilters({
 
 const TriggerBtn = React.forwardRef<
   HTMLButtonElement,
-  { label: string; value: string | null } & React.ButtonHTMLAttributes<HTMLButtonElement>
+  { label: string; value: string | null } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "value">
 >(function TriggerBtn({ label, value, ...props }, ref) {
   return (
     <Button
