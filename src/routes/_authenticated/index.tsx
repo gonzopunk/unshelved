@@ -345,7 +345,7 @@ function Home() {
                     type="button"
                     onClick={() => {
                       setLogSessionOpen(false);
-                      navigate({ to: "/books/$bookId", params: { bookId: b.id } });
+                      navigate({ to: "/books/$bookId", params: { bookId: b.id }, search: { tab: "sessions" } });
                     }}
                     className="flex items-center gap-3 rounded-xl p-2 text-left hover:bg-muted transition-colors"
                   >

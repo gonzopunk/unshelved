@@ -28,6 +28,9 @@ import RhythmStrip from "@/components/sessions/RhythmStrip";
 
 
 export const Route = createFileRoute("/_authenticated/books/$bookId")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: typeof search.tab === "string" ? search.tab : "notes",
+  }),
   component: BookDetail,
 });
 
@@ -49,6 +52,7 @@ function BookDetail() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const { tab } = Route.useSearch();
   const [editOpen, setEditOpen] = useState(false);
   const [weaveSource, setWeaveSource] = useState<{ kind: ConnectionKind; id: string; label: string } | null>(null);
   const [editingConn, setEditingConn] = useState<Connection | null>(null);
@@ -147,7 +151,7 @@ function BookDetail() {
 
       <QuickTagBar bookId={book.id} />
 
-      <Tabs defaultValue="notes" className="mt-12">
+      <Tabs defaultValue={tab} className="mt-12">
         <TabsList className="rounded-full bg-card shadow-paper p-1">
           <TabsTrigger value="notes" className="rounded-full">Notes</TabsTrigger>
           <TabsTrigger value="quotes" className="rounded-full">Quotes</TabsTrigger>
