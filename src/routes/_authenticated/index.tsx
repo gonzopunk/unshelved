@@ -385,6 +385,7 @@ function HomepageStyles() {
           radial-gradient(circle at 0% 60%, rgba(111,179,122,0.08), transparent 40%);
       }
       @media (max-width: 900px) { .hp { padding: 8px 20px 40px; } }
+      @media (max-width: 640px) { .hp { padding: 8px 16px 40px; } }
 
       .hero {
         display: grid;
