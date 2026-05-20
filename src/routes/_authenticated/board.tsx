@@ -36,7 +36,7 @@ type ColDef = {
 
 const SHELVES: ColDef[] = [
   { id: "want", title: "Want to Read", sub: "queued up", accent: "var(--sage)" },
-  { id: "reading", title: "Currently Reading", sub: "in flight", accent: "var(--terra)" },
+  { id: "reading", title: "Currently Reading", sub: "in progress", accent: "var(--terra)" },
   { id: "later", title: "Come Back Later", sub: "paused, no rush", accent: "var(--dust)" },
   { id: "dnf", title: "DNF", sub: "set down for now", accent: "rgba(31,38,48,0.4)" },
 ];
