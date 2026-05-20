@@ -64,8 +64,41 @@ function PillNav({ onAdd, onImport, onSearch, onLogout }: { onAdd: () => void; o
   const isMac = useIsMac();
   return (
     <div className="fixed top-5 left-1/2 -translate-x-1/2 z-40">
-      <nav className="flex items-center gap-1 rounded-full bg-paper/80 backdrop-blur-md shadow-lift px-2 py-2 border border-border">
-        <Link to="/" className="font-display text-xl px-2 md:px-4 text-primary">Unshelved</Link>
+      {/* Mobile */}
+      <nav className="md:hidden flex items-center gap-1 rounded-full bg-paper/80 backdrop-blur-md shadow-lift px-2 py-2 border border-border">
+        <Link to="/" className="font-display text-lg font-medium px-2 text-primary">U</Link>
+        <span className="h-6 w-px bg-border mx-1" />
+        <MobileNavItem to="/library" icon={<LibraryIcon className="h-4 w-4" />} label="Library" />
+        <MobileNavItem to="/board" icon={<LayoutGrid className="h-4 w-4" />} label="Board" />
+        <MobileNavItem to="/weave" icon={<Network className="h-4 w-4" />} label="Connections" />
+        <MobileNavItem to="/notations" icon={<NotebookPen className="h-4 w-4" />} label="Notations" />
+        <MobileNavItem to="/visualizations" icon={<BarChart3 className="h-4 w-4" />} label="Visualizations" />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button aria-label="More" className="ml-1 p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors">
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="rounded-2xl">
+            <DropdownMenuItem onClick={onSearch} className="gap-2 rounded-xl">
+              <Search className="h-4 w-4" /> Search
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onAdd} className="gap-2 rounded-xl">
+              <BookPlus className="h-4 w-4" /> Add a book
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="gap-2 rounded-xl">
+              <Link to="/settings"><SettingsIcon className="h-4 w-4" /> Settings</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onLogout} className="gap-2 rounded-xl">
+              <LogOut className="h-4 w-4" /> Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </nav>
+
+      {/* Desktop */}
+      <nav className="hidden md:flex items-center gap-1 rounded-full bg-paper/80 backdrop-blur-md shadow-lift px-2 py-2 border border-border">
+        <Link to="/" className="font-display text-xl px-4 text-primary">Unshelved</Link>
         <span className="h-6 w-px bg-border mx-1" />
         <NavItem to="/library" icon={<LibraryIcon className="h-4 w-4" />} label="Library" />
         <NavItem to="/board" icon={<LayoutGrid className="h-4 w-4" />} label="Board" />
@@ -80,30 +113,21 @@ function PillNav({ onAdd, onImport, onSearch, onLogout }: { onAdd: () => void; o
         >
           <Search className="h-4 w-4" />
         </button>
-        <button
-          onClick={onAdd}
-          aria-label="Add a book"
-          className="md:hidden ml-1 p-2 rounded-full bg-forest text-paper"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
-        <div className="hidden md:flex">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" className="rounded-full ml-1 gap-1.5 pr-2">
-                <Plus className="h-4 w-4" /> Add <ChevronDown className="h-3 w-3 -ml-0.5 opacity-70" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="rounded-2xl">
-              <DropdownMenuItem onClick={onAdd} className="gap-2 rounded-xl">
-                <BookPlus className="h-4 w-4" /> Add a book
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onImport} className="gap-2 rounded-xl">
-                <Upload className="h-4 w-4" /> Import library…
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" className="rounded-full ml-1 gap-1.5 pr-2">
+              <Plus className="h-4 w-4" /> Add <ChevronDown className="h-3 w-3 -ml-0.5 opacity-70" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="rounded-2xl">
+            <DropdownMenuItem onClick={onAdd} className="gap-2 rounded-xl">
+              <BookPlus className="h-4 w-4" /> Add a book
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onImport} className="gap-2 rounded-xl">
+              <Upload className="h-4 w-4" /> Import library…
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <span className="h-6 w-px bg-border mx-2" />
         <Link to="/settings" aria-label="Settings" activeProps={{ className: "bg-forest text-paper" }} inactiveProps={{ className: "text-muted-foreground hover:bg-muted" }} className="p-2 rounded-full transition-colors">
           <SettingsIcon className="h-4 w-4" />
@@ -123,9 +147,24 @@ function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label
       activeOptions={{ exact: true }}
       activeProps={{ className: "bg-forest text-paper" }}
       inactiveProps={{ className: "text-ink hover:bg-muted" }}
-      className="flex items-center gap-1.5 rounded-full px-2 py-1.5 md:px-3 text-sm transition-colors"
+      className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors"
     >
-      {icon}<span className="hidden md:inline">{label}</span>
+      {icon}{label}
+    </Link>
+  );
+}
+
+function MobileNavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
+  return (
+    <Link
+      to={to}
+      aria-label={label}
+      activeOptions={{ exact: true }}
+      activeProps={{ className: "bg-forest text-paper" }}
+      inactiveProps={{ className: "text-ink hover:bg-muted" }}
+      className="flex items-center rounded-full px-2 py-1.5 text-sm transition-colors"
+    >
+      {icon}
     </Link>
   );
 }
