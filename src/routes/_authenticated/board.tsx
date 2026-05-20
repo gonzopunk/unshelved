@@ -173,7 +173,7 @@ function BoardPage() {
         </div>
         <div className="bv-counts">
           <Count value={total} label="total books" />
-          <Count value={inFlight} label="in flight" />
+          <Count value={inFlight} label="in progress" />
           <Count value={thisYear} label="this year" />
         </div>
       </div>
