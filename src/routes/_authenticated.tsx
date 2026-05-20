@@ -80,21 +80,30 @@ function PillNav({ onAdd, onImport, onSearch, onLogout }: { onAdd: () => void; o
         >
           <Search className="h-4 w-4" />
         </button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" className="rounded-full ml-1 gap-1.5 pr-2">
-              <Plus className="h-4 w-4" /> Add <ChevronDown className="h-3 w-3 -ml-0.5 opacity-70" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="rounded-2xl">
-            <DropdownMenuItem onClick={onAdd} className="gap-2 rounded-xl">
-              <BookPlus className="h-4 w-4" /> Add a book
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onImport} className="gap-2 rounded-xl">
-              <Upload className="h-4 w-4" /> Import library…
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <button
+          onClick={onAdd}
+          aria-label="Add a book"
+          className="md:hidden ml-1 p-2 rounded-full bg-forest text-paper"
+        >
+          <Plus className="h-4 w-4" />
+        </button>
+        <div className="hidden md:flex">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" className="rounded-full ml-1 gap-1.5 pr-2">
+                <Plus className="h-4 w-4" /> Add <ChevronDown className="h-3 w-3 -ml-0.5 opacity-70" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="rounded-2xl">
+              <DropdownMenuItem onClick={onAdd} className="gap-2 rounded-xl">
+                <BookPlus className="h-4 w-4" /> Add a book
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onImport} className="gap-2 rounded-xl">
+                <Upload className="h-4 w-4" /> Import library…
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
         <span className="h-6 w-px bg-border mx-2" />
         <Link to="/settings" aria-label="Settings" activeProps={{ className: "bg-forest text-paper" }} inactiveProps={{ className: "text-muted-foreground hover:bg-muted" }} className="p-2 rounded-full transition-colors">
           <SettingsIcon className="h-4 w-4" />
