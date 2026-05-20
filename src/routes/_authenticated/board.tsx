@@ -54,7 +54,15 @@ const ALL_COL_IDS: BookStatus[] = ["want", "reading", "later", "dnf", "loved", "
 function BoardPage() {
   const { data: library = [] } = useLibrary();
   const reorder = useReorderBoard();
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const sensors = useSensors(
+    useSensor(MouseSensor),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const grouped = useMemo(() => {
