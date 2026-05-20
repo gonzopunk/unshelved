@@ -65,7 +65,7 @@ function PillNav({ onAdd, onImport, onSearch, onLogout }: { onAdd: () => void; o
   return (
     <div className="fixed top-5 left-1/2 -translate-x-1/2 z-40">
       <nav className="flex items-center gap-1 rounded-full bg-paper/80 backdrop-blur-md shadow-lift px-2 py-2 border border-border">
-        <Link to="/" className="font-display text-xl px-4 text-primary">Unshelved</Link>
+        <Link to="/" className="font-display text-xl px-2 md:px-4 text-primary">Unshelved</Link>
         <span className="h-6 w-px bg-border mx-1" />
         <NavItem to="/library" icon={<LibraryIcon className="h-4 w-4" />} label="Library" />
         <NavItem to="/board" icon={<LayoutGrid className="h-4 w-4" />} label="Board" />
@@ -114,9 +114,9 @@ function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label
       activeOptions={{ exact: true }}
       activeProps={{ className: "bg-forest text-paper" }}
       inactiveProps={{ className: "text-ink hover:bg-muted" }}
-      className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors"
+      className="flex items-center gap-1.5 rounded-full px-2 py-1.5 md:px-3 text-sm transition-colors"
     >
-      {icon} {label}
+      {icon}<span className="hidden md:inline">{label}</span>
     </Link>
   );
 }
