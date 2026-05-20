@@ -3,7 +3,8 @@ import { useLibrary, useReorderBoard, type BookStatus, type BookWithShelf, type 
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useDroppable,
   useSensor,
   useSensors,
@@ -35,7 +36,7 @@ type ColDef = {
 
 const SHELVES: ColDef[] = [
   { id: "want", title: "Want to Read", sub: "queued up", accent: "var(--sage)" },
-  { id: "reading", title: "Currently Reading", sub: "in flight", accent: "var(--terra)" },
+  { id: "reading", title: "Currently Reading", sub: "in progress", accent: "var(--terra)" },
   { id: "later", title: "Come Back Later", sub: "paused, no rush", accent: "var(--dust)" },
   { id: "dnf", title: "DNF", sub: "set down for now", accent: "rgba(31,38,48,0.4)" },
 ];
@@ -53,7 +54,15 @@ const ALL_COL_IDS: BookStatus[] = ["want", "reading", "later", "dnf", "loved", "
 function BoardPage() {
   const { data: library = [] } = useLibrary();
   const reorder = useReorderBoard();
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const sensors = useSensors(
+    useSensor(MouseSensor),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const grouped = useMemo(() => {
@@ -164,7 +173,7 @@ function BoardPage() {
         </div>
         <div className="bv-counts">
           <Count value={total} label="total books" />
-          <Count value={inFlight} label="in flight" />
+          <Count value={inFlight} label="in progress" />
           <Count value={thisYear} label="this year" />
         </div>
       </div>
