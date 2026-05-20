@@ -480,6 +480,9 @@ function HomepageStyles() {
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         gap: 20px;
       }
+      @media (max-width: 640px) {
+        .reading-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+      }
 
       .two-col { display: grid; grid-template-columns: 1.3fr 1fr; gap: 32px; margin-bottom: 48px; }
       @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
