@@ -370,7 +370,7 @@ function WeavePage() {
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground font-mono uppercase tracking-widest">
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: "#1F5266" }} /> Your books</span>
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: "#5DA8D5" }} /> References</span>
-            <span className="normal-case tracking-normal font-sans italic">
+            <span className="hidden md:block normal-case tracking-normal font-sans italic">
               {connectMode
                 ? "Connect mode: drag from one book to another to link them"
                 : "Click a dot to open · Click a line to view · Shift-drag between books to connect"}
