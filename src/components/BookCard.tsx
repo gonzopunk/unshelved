@@ -100,7 +100,7 @@ export default function BookCard({ book, userBook, tilt = 0 }: Props) {
         </div>
       </div>
 
-      <div className="bc-body">
+      <div className="bc-body hidden md:block">
         <div className="bc-titlerow">
           <div className="bc-title-text line-clamp-2">{book.title}</div>
           <div className={"bc-fmt-pill " + book.format}>
