@@ -2073,7 +2073,10 @@
 }
 .finished-stamp::before, .finished-stamp::after { content: "✦"; margin: 0 6px; color: var(--terra); }
 
-.bc-body { display: flex; flex-direction: column; gap: 4px; position: relative; z-index: 1; }
+.bc-body { display: none; flex-direction: column; gap: 4px; position: relative; z-index: 1; }
+@media (min-width: 768px) {
+  .bc-body { display: flex; }
+}
 .bc-titlerow { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .bc-title-text {
   font-family: 'Newsreader', serif; font-size: 22px; font-weight: 500;
