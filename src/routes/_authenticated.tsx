@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, Link, useNavigate } from "@tanstack/react-rout
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
-import { LayoutGrid, Plus, LogOut, Network, Settings as SettingsIcon, Search, BookPlus, Upload, ChevronDown, NotebookPen, Library as LibraryIcon, BarChart3 } from "lucide-react";
+import { LayoutGrid, Plus, LogOut, Network, Settings as SettingsIcon, Search, BookPlus, Upload, ChevronDown, NotebookPen, Library as LibraryIcon, BarChart3, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
