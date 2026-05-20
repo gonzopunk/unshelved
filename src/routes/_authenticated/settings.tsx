@@ -31,8 +31,70 @@ function SettingsPage() {
         <ProfileCard />
         <ImportsCard />
         <SampleLibraryCard />
+        <ResetLibraryCard />
       </div>
     </main>
+  );
+}
+
+function ResetLibraryCard() {
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+
+  const reset = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("reset_to_sample_library");
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      toast.success("Library reset");
+      await qc.invalidateQueries();
+      navigate({ to: "/" });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <section className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6">
+      <div className="flex items-start gap-3">
+        <div className="rounded-full bg-destructive/10 p-2 mt-0.5">
+          <AlertTriangle className="h-4 w-4 text-destructive" />
+        </div>
+        <div className="flex-1">
+          <h2 className="font-display text-2xl mb-1 text-destructive">Reset library</h2>
+          <p className="text-sm text-muted-foreground">
+            Wipe your entire library and start fresh with the original sample set. This permanently deletes every book, note, quote, session, tag, custom axis, and connection — including the ones you've added yourself. Your display name and yearly goal stay the same. This can't be undone.
+          </p>
+          <div className="mt-5">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" disabled={reset.isPending}>
+                  {reset.isPending ? "Resetting…" : "Reset library"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Reset everything?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will delete every book, user book, reading session, note, quote, tag, custom axis, import, and connection in your account — even ones you added yourself — and replace them with the original sample library. Your profile (display name, yearly goal) won't change. There is no undo.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Keep my library</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => reset.mutate()}
+                    disabled={reset.isPending}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {reset.isPending ? "Resetting…" : "Reset library"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
