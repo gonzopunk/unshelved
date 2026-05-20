@@ -3,7 +3,8 @@ import { useLibrary, useReorderBoard, type BookStatus, type BookWithShelf, type 
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useDroppable,
   useSensor,
   useSensors,
