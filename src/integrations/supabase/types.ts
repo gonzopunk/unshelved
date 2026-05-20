@@ -526,6 +526,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      reset_to_sample_library: { Args: never; Returns: undefined }
+      seed_sample_library: { Args: { _user_id: string }; Returns: undefined }
       seed_tag_axes: { Args: { _user_id: string }; Returns: undefined }
     }
     Enums: {
