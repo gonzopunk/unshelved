@@ -438,6 +438,7 @@ function HomepageStyles() {
       }
       @media (max-width: 900px) { .hero-title { font-size: 44px; } }
       .hero-title em { font-style: italic; color: var(--terra); font-weight: 300; }
+      .hero-body { font-size: 14.5px; line-height: 1.55; color: var(--ink); opacity: 0.65; margin: -8px 0 24px; max-width: 56ch; }
       .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
       .btn {
         display: inline-flex; align-items: center; gap: 10px;
