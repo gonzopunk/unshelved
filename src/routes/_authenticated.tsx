@@ -99,7 +99,9 @@ function PillNav({ onAdd, onImport, onSearch, onLogout }: { onAdd: () => void; o
 
       {/* Desktop */}
       <nav className="hidden md:flex items-center gap-1 rounded-full bg-paper/80 backdrop-blur-md shadow-lift px-2 py-2 border border-border">
-        <Link to="/" className="font-display text-xl px-4 text-primary">Unshelved</Link>
+        <Link to="/" aria-label="Unshelved home" className="px-3 flex items-center">
+          <img src={unshelvedLogo} alt="Unshelved" className="h-8 w-auto" />
+        </Link>
         <span className="h-6 w-px bg-border mx-1" />
         <NavItem to="/library" icon={<LibraryIcon className="h-4 w-4" />} label="Library" />
         <NavItem to="/board" icon={<LayoutGrid className="h-4 w-4" />} label="Board" />
