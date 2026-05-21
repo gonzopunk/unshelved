@@ -46,8 +46,11 @@ function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md rounded-3xl bg-card shadow-paper p-8">
-        <Link to="/" className="font-display text-3xl text-primary">Unshelved</Link>
-        <p className="mt-1 text-sm text-muted-foreground">Track what you read, however you read.</p>
+        <div className="flex flex-col items-center">
+          <img src={unshelvedLogo} alt="Unshelved" width={120} height={120} className="w-[120px] h-auto" />
+          <h1 className="mt-2 font-display text-2xl text-terra text-center">Unshelved</h1>
+          <p className="mt-1 text-sm text-muted-foreground tracking-wide text-center">Read. Connect. Reflect.</p>
+        </div>
         <form onSubmit={signIn} className="mt-6 space-y-4">
           <div>
             <Label htmlFor="email">Email</Label>
