@@ -1,30 +1,9 @@
-## Diagnosis
+The logo file and `/unshelved_logo_transparent.png` path are working. The issue is the image itself: it is a square 1254×1254 PNG with the visible mark offset to the lower-right, so when it is constrained to 32px tall it renders as a tiny sliver in the nav. There is enough room in the nav; the asset needs a cropped/normalized version for this placement.
 
-The previous `minmax(280px, 1fr)` change in `src/routes/_authenticated/board.tsx` is being overridden by later global CSS in `src/styles.css`:
+Plan:
+1. Create a corrected public PNG from `public/unshelved_logo_transparent.png` by cropping to the visible pixels and preserving transparency.
+2. Keep the desktop nav image source as `/unshelved_logo_transparent.png`, with `alt="Unshelved"` and 32px height, so the route code stays minimal.
+3. Verify in the preview that the logo appears before Library and the other nav elements remain unchanged.
 
-```css
-.bv-cols.cols-4 { grid-template-columns: repeat(4, 1fr); }
-.bv-cols.cols-3 { grid-template-columns: repeat(3, 1fr); }
-```
-
-Because `src/styles.css` is loaded globally and uses more specific selectors, the browser keeps using equal fractional columns, so the board still shrinks at narrow widths.
-
-## Plan
-
-1. Update the board-specific injected styles in `src/routes/_authenticated/board.tsx` so they beat the global selectors:
-
-```css
-.bv-cols.cols-4 { grid-template-columns: repeat(4, minmax(280px, 1fr)); }
-.bv-cols.cols-3 { grid-template-columns: repeat(3, minmax(280px, 1fr)); }
-```
-
-2. Keep the existing horizontal-scroll behavior on `.bv-cols`.
-
-3. Verify in a narrow viewport that:
-   - shelf columns keep a readable fixed minimum width,
-   - the board scrolls horizontally instead of squeezing columns,
-   - the global `src/styles.css` rules no longer override this route.
-
-## Files to change
-
-- `src/routes/_authenticated/board.tsx` only.
+Technical detail:
+- Only the static asset will be replaced; `_authenticated.tsx` should not need markup changes unless verification shows a sizing rule is still needed.
