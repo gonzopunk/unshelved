@@ -63,7 +63,7 @@ function AuthLayout() {
 function PillNav({ onAdd, onImport, onSearch, onLogout }: { onAdd: () => void; onImport: () => void; onSearch: () => void; onLogout: () => void }) {
   const isMac = useIsMac();
   return (
-    <div className="fixed top-5 left-1/2 -translate-x-1/2 z-40">
+    <div className="fixed top-5 left-1/2 -translate-x-1/2 z-40 w-max max-w-[calc(100vw-2rem)]">
       {/* Mobile */}
       <nav className="md:hidden flex items-center gap-1 rounded-full bg-paper/80 backdrop-blur-md shadow-lift px-2 py-2 border border-border">
         <Link to="/" className="font-display text-xl leading-none font-medium px-2 text-terra mt-1 ml-1">U</Link>
@@ -97,7 +97,7 @@ function PillNav({ onAdd, onImport, onSearch, onLogout }: { onAdd: () => void; o
       </nav>
 
       {/* Desktop */}
-      <nav className="hidden md:flex items-center gap-1 rounded-full bg-paper/80 backdrop-blur-md shadow-lift px-2 py-2 border border-border max-w-[900px] w-max mx-auto">
+      <nav className="hidden md:flex items-center gap-1 rounded-full bg-paper/80 backdrop-blur-md shadow-lift px-2 py-2 border border-border max-w-full overflow-x-auto">
         <Link to="/" aria-label="Unshelved home" className="px-3 flex items-center">
           <img src="/unshelved_logo_transparent.png?v=2" alt="Unshelved" width={32} height={32} className="h-8 w-8 max-w-none object-contain ml-[14px] mt-[6px]" />
         </Link>
