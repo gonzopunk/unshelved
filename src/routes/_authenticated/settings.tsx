@@ -13,8 +13,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { track } from "@/lib/analytics";
-import { Sparkles, Upload, ChevronRight, AlertTriangle } from "lucide-react";
+import { track, resetAnalytics } from "@/lib/analytics";
+import { deleteMyAccount } from "@/lib/account.functions";
+import { Sparkles, Upload, ChevronRight, AlertTriangle, Trash2 } from "lucide-react";
+
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
@@ -33,10 +35,114 @@ function SettingsPage() {
         <ImportsCard />
         <SampleLibraryCard />
         <ResetLibraryCard />
+        <DeleteAccountCard />
       </div>
     </main>
   );
 }
+
+function DeleteAccountCard() {
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+  const [step, setStep] = useState<"closed" | "confirm" | "type">("closed");
+  const [typed, setTyped] = useState("");
+  const [pending, setPending] = useState(false);
+
+  const close = () => {
+    setStep("closed");
+    setTyped("");
+  };
+
+  const handleDelete = async () => {
+    if (typed !== "DELETE") return;
+    setPending(true);
+    try {
+      await deleteMyAccount();
+      resetAnalytics();
+      await supabase.auth.signOut();
+      qc.clear();
+      close();
+      navigate({ to: "/login" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete account");
+      setPending(false);
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6">
+      <div className="flex items-start gap-3">
+        <div className="rounded-full bg-destructive/10 p-2 mt-0.5">
+          <Trash2 className="h-4 w-4 text-destructive" />
+        </div>
+        <div className="flex-1">
+          <h2 className="font-display text-2xl mb-1 text-destructive">Delete account</h2>
+          <p className="text-sm text-muted-foreground">
+            Permanently delete your account and all your data. This cannot be undone.
+          </p>
+          <div className="mt-5">
+            <Button variant="destructive" onClick={() => setStep("confirm")}>
+              Delete account
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <AlertDialog open={step === "confirm"} onOpenChange={(o) => !o && close()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete your account and all your data. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={close}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); setStep("type"); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={step === "type"} onOpenChange={(o) => !o && !pending && close()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Type DELETE to confirm</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action is permanent. Type the word <span className="font-mono font-semibold">DELETE</span> to confirm.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-2">
+            <Label htmlFor="delete_confirm" className="sr-only">Type DELETE</Label>
+            <Input
+              id="delete_confirm"
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              placeholder="DELETE"
+              autoComplete="off"
+              disabled={pending}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={close} disabled={pending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDelete(); }}
+              disabled={typed !== "DELETE" || pending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {pending ? "Deleting…" : "Delete my account"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </section>
+  );
+}
+
 
 function ResetLibraryCard() {
   const qc = useQueryClient();
