@@ -125,6 +125,8 @@ function Home() {
       ? `You're ${focusPct}% through ${focus.title}.`
       : `Your library is waiting.`;
 
+  const isNewUser = library.length === 0 || library.every((b) => b.is_sample === true);
+
   return (
     <div className="hp">
       <section className="hero">
@@ -132,15 +134,34 @@ function Home() {
           <div className="hero-eyebrow">
             <span className="dot" /> {dayName} {partOfDay} · {weekFormatted} this week · {inFlight} in progress
           </div>
-          <h1 className="hero-title">
-            Welcome back, {firstName}.<br />
-            <em>{contextualLine}</em>
-          </h1>
-          <div className="hero-cta">
-            <button type="button" className="btn btn-primary" onClick={() => setLogSessionOpen(true)}>
-              Log a session
-            </button>
-          </div>
+          {isNewUser ? (
+            <>
+              <h1 className="hero-title">
+                Welcome to Unshelved.<br />
+                <em>Your library is ready to explore — these are sample books.</em>
+              </h1>
+              <p className="hero-body">
+                Browse your Library, Connections, and Visualizations to see what Unshelved can do. When you're ready to start fresh, go to Settings → Reset library to clear the sample books and add your own.
+              </p>
+              <div className="hero-cta">
+                <button type="button" className="btn btn-primary" onClick={() => setAddOpen(true)}>
+                  + Add your first book
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <h1 className="hero-title">
+                Welcome back, {firstName}.<br />
+                <em>{contextualLine}</em>
+              </h1>
+              <div className="hero-cta">
+                <button type="button" className="btn btn-primary" onClick={() => setLogSessionOpen(true)}>
+                  Log a session
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="hero-stats">
