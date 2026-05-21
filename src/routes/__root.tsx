@@ -7,6 +7,9 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { initAnalytics, identifyUser, resetAnalytics } from "@/lib/analytics";
 
 import appCss from "../styles.css?url";
 
@@ -84,6 +87,17 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useEffect(() => {
+    initAnalytics();
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (session?.user?.id) identifyUser(session.user.id);
+      else resetAnalytics();
+    });
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user?.id) identifyUser(data.session.user.id);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
