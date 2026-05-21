@@ -146,12 +146,14 @@ function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label
   return (
     <Link
       to={to}
+      aria-label={label}
+      title={label}
       activeOptions={{ exact: true }}
       activeProps={{ className: "bg-forest text-paper" }}
       inactiveProps={{ className: "text-ink hover:bg-muted" }}
       className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors"
     >
-      {icon}{label}
+      {icon}<span className="hidden lg:inline">{label}</span>
     </Link>
   );
 }
