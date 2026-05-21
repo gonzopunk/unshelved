@@ -8,6 +8,7 @@ import { CalendarIcon, Clock, Zap, History } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 import { MOODS, useSaveSession, type MoodKey, type SessionInsert } from "@/lib/sessions";
 import SessionTimer from "./SessionTimer";
 import type { Database } from "@/integrations/supabase/types";
@@ -126,6 +127,7 @@ export default function NewSessionCard({
       { ...row, userBookId: userBook.id, patchUserBook: patch },
       {
         onSuccess: () => {
+          track("session_logged");
           toast.success("Session logged");
           reset();
           // finish prompt
