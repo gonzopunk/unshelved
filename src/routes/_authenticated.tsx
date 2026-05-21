@@ -63,7 +63,7 @@ function AuthLayout() {
 function PillNav({ onAdd, onImport, onSearch, onLogout }: { onAdd: () => void; onImport: () => void; onSearch: () => void; onLogout: () => void }) {
   const isMac = useIsMac();
   return (
-    <div className="fixed top-5 left-1/2 -translate-x-1/2 z-40 w-max max-w-[calc(100vw-2rem)]">
+    <div className="fixed top-5 left-1/2 -translate-x-1/2 z-40">
       {/* Mobile */}
       <nav className="md:hidden flex items-center gap-1 rounded-full bg-paper/80 backdrop-blur-md shadow-lift px-2 py-2 border border-border">
         <Link to="/" className="font-display text-xl leading-none font-medium px-2 text-terra mt-1 ml-1">U</Link>
@@ -97,7 +97,7 @@ function PillNav({ onAdd, onImport, onSearch, onLogout }: { onAdd: () => void; o
       </nav>
 
       {/* Desktop */}
-      <nav className="hidden md:flex items-center gap-1 rounded-full bg-paper/80 backdrop-blur-md shadow-lift px-2 py-2 border border-border max-w-full overflow-x-auto">
+      <nav className="hidden md:flex items-center gap-1 rounded-full bg-paper/80 backdrop-blur-md shadow-lift px-2 py-2 border border-border w-max mx-auto">
         <Link to="/" aria-label="Unshelved home" className="px-3 flex items-center">
           <img src="/unshelved_logo_transparent.png?v=2" alt="Unshelved" width={32} height={32} className="h-8 w-8 max-w-none object-contain ml-[14px] mt-[6px]" />
         </Link>
@@ -146,12 +146,14 @@ function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label
   return (
     <Link
       to={to}
+      aria-label={label}
+      title={label}
       activeOptions={{ exact: true }}
       activeProps={{ className: "bg-forest text-paper" }}
       inactiveProps={{ className: "text-ink hover:bg-muted" }}
       className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors"
     >
-      {icon}{label}
+      {icon}<span className="hidden lg:inline">{label}</span>
     </Link>
   );
 }
