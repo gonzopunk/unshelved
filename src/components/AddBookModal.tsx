@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { BookStatus, BookFormat, Book, UserBook } from "@/lib/queries";
 import { extractCoverPalette } from "@/lib/palette";
+import { track } from "@/lib/analytics";
 
 const PALETTE = [
   { color: "#1F5266", text: "#FAFBF3", name: "Forest" },
@@ -163,6 +164,7 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
           total_pages: totalPages ?? undefined,
         });
       }
+      if (!editing) track("book_added");
       qc.invalidateQueries({ queryKey: ["library"] });
       qc.invalidateQueries({ queryKey: ["book"] });
       toast.success(editing ? "Book updated" : "Book added");
