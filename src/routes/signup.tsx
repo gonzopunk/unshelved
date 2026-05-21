@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 import unshelvedLogo from "@/assets/unshelved_logo.png";
 
 export const Route = createFileRoute("/signup")({
@@ -39,6 +40,7 @@ function SignupPage() {
       setErrorMsg(error.message);
       return;
     }
+    track("signup_completed");
     if (data.session) {
       // Auto-confirm is on — user is signed in immediately.
       toast.success("Welcome to Unshelved!");
