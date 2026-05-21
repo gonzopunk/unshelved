@@ -13,6 +13,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 import { Sparkles, Upload, ChevronRight, AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -47,6 +48,7 @@ function ResetLibraryCard() {
       if (error) throw error;
     },
     onSuccess: async () => {
+      track("sample_library_reset");
       toast.success("Library reset");
       await qc.invalidateQueries();
       navigate({ to: "/" });
