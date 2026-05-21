@@ -11,6 +11,7 @@ import AddBookModal from "@/components/AddBookModal";
 import CommandPalette from "@/components/CommandPalette";
 import ImportWizard from "@/components/import/ImportWizard";
 import { useIsMac } from "@/components/Kbd";
+import unshelvedLogo from "@/assets/unshelved_logo.png";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthLayout,
