@@ -13,6 +13,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import ImportWizard from "@/components/import/ImportWizard";
+import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/_authenticated/settings_/imports")({
   component: ImportsPage,
@@ -66,7 +67,7 @@ function ImportsPage() {
           <h1 className="font-display text-4xl md:text-5xl">Imports</h1>
           <p className="text-muted-foreground mt-2">A record of every library you've poured in. Undo any one in one click.</p>
         </div>
-        <Button onClick={() => setWizardOpen(true)} className="rounded-full gap-1.5">
+        <Button onClick={() => { track("import_started"); setWizardOpen(true); }} className="rounded-full gap-1.5">
           <Upload className="h-4 w-4" /> New import
         </Button>
       </header>
