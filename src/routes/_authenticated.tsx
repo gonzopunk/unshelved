@@ -97,7 +97,7 @@ function PillNav({ onAdd, onImport, onSearch, onLogout }: { onAdd: () => void; o
       </nav>
 
       {/* Desktop */}
-      <nav className="hidden md:flex items-center gap-1 rounded-full bg-paper/80 backdrop-blur-md shadow-lift px-2 py-2 border border-border max-w-[900px] w-max mx-auto">
+      <nav className="hidden md:flex items-center gap-1 rounded-full bg-paper/80 backdrop-blur-md shadow-lift px-2 py-2 border border-border max-w-full overflow-x-auto">
         <Link to="/" aria-label="Unshelved home" className="px-3 flex items-center">
           <img src="/unshelved_logo_transparent.png?v=2" alt="Unshelved" width={32} height={32} className="h-8 w-8 max-w-none object-contain ml-[14px] mt-[6px]" />
         </Link>
