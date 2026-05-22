@@ -138,7 +138,7 @@ function Home() {
             <>
               <h1 className="hero-title">
                 Welcome to Unshelved.<br />
-                <em>Your library is filled with sample books and data for you to explore.</em>
+                <em>Take a look around — you have sample books and data to explore.</em>
               </h1>
               <p className="hero-body">
                 Browse your Library, Connections, and Visualizations to see what Unshelved can do. When you're ready to start fresh, go to Settings → Reset library to clear the sample books and add your own.
