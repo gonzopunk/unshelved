@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { track } from "@/lib/analytics";
-import unshelvedLogo from "@/assets/unshelved_logo.png";
+import Logo from "@/components/Logo";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Sign up — Unshelved" }] }),
@@ -63,7 +63,7 @@ function SignupPage() {
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md rounded-3xl bg-card shadow-paper p-8">
         <div className="flex flex-col items-center">
-          <img src={unshelvedLogo} alt="Unshelved" width={120} height={120} className="w-[120px] h-auto" />
+          <Logo className="w-[120px] h-[120px]" />
           <h1 className="mt-2 font-display text-2xl text-terra text-center">Unshelved</h1>
           <p className="mt-1 text-sm text-muted-foreground tracking-wide text-center">Read. Connect. Reflect.</p>
         </div>
