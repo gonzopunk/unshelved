@@ -65,6 +65,18 @@ export default function WebGraph({
     return () => window.removeEventListener("resize", update);
   }, []);
 
+  useEffect(() => {
+    const g = graphRef.current as GraphRef | null;
+    if (!g || !Graph) return;
+    const charge = g.d3Force("charge") as { strength: (v: number) => unknown; distanceMax: (v: number) => unknown } | null;
+    if (charge) {
+      charge.strength(-40).distanceMax(180);
+    }
+    const center = g.d3Force("center") as { strength: (v: number) => unknown } | null;
+    if (center) center.strength(1);
+    g.d3ReheatSimulation();
+  }, [Graph, nodes.length]);
+
   // Find nearest node within HIT_RADIUS pixels of a screen point.
   const pickNode = useCallback((screenX: number, screenY: number): Node | null => {
     if (!graphRef.current) return null;
