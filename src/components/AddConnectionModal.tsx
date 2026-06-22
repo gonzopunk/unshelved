@@ -47,6 +47,7 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
     if (editing) {
       setWhy(editing.why ?? "");
       setTagsInput(editing.tags.join(", "));
+      setStrength(editing.strength ?? 3);
       // Resolve current target from library/refBooks
       const fromLib = libraryRef.current.find(b => b.id === editing.target_id);
       const fromRef = refBooksRef.current.find(r => r.id === editing.target_id);
@@ -62,6 +63,7 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
       setTarget(initialTarget);
       setWhy("");
       setTagsInput("");
+      setStrength(3);
     }
   }, [open, editing?.id, initialTarget?.id]);
 
