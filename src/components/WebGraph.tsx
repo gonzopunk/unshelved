@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
 type Node = { id: string; name: string; kind: "book" | "reference_book"; color: string; x?: number; y?: number };
-type Link = { source: string; target: string; count?: number };
+type Link = { source: string; target: string; count?: number; strength?: number };
 
 type Props = {
   nodes: Node[];
