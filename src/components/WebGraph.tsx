@@ -68,13 +68,31 @@ export default function WebGraph({
   useEffect(() => {
     const g = graphRef.current as GraphRef | null;
     if (!g || !Graph) return;
+    // Reduce charge so link gravity can dominate
     const charge = g.d3Force("charge") as unknown as { strength: (v: number) => unknown; distanceMax: (v: number) => unknown } | null;
     if (charge) {
-      charge.strength(-40);
-      charge.distanceMax(180);
+      charge.strength(-25);
+      charge.distanceMax(200);
     }
+    // Strengthen centering
     const center = g.d3Force("center") as unknown as { strength: (v: number) => unknown } | null;
     if (center) center.strength(1);
+    // Link force: extreme distance differential so strength has a dramatic spatial effect.
+    // strength 1 (passing echo) → 300px apart; strength 5 (profound resonance) → 30px apart
+    const linkForce = g.d3Force("link") as unknown as {
+      distance: (fn: (l: unknown) => number) => unknown;
+      strength: (fn: (l: unknown) => number) => unknown;
+    } | null;
+    if (linkForce) {
+      linkForce.distance((l: unknown) => {
+        const str = (l as Link).strength ?? 3;
+        return 300 - (str - 1) * 67.5; // 300 → 30
+      });
+      linkForce.strength((l: unknown) => {
+        const str = (l as Link).strength ?? 3;
+        return Math.min(1, 0.02 + (str - 1) * 0.27); // 0.02 → ~1.1 (clamped)
+      });
+    }
     g.d3ReheatSimulation();
   }, [Graph, nodes.length]);
 
@@ -186,24 +204,15 @@ export default function WebGraph({
             const t = typeof link.target === "string" ? link.target : (link.target as { id: string }).id;
             const dim = dimmedNodeIds?.has(s) || dimmedNodeIds?.has(t);
             const strength = link.strength ?? 3;
-            const a = 0.12 + (strength - 1) * 0.14;
-            return dim ? `rgba(31,38,48,${a * 0.2})` : `rgba(31,38,48,${a})`;
+            const a = 0.25 + (strength - 1) * 0.15;
+            return dim ? `rgba(209,118,72,${a * 0.15})` : `rgba(209,118,72,${a})`;
           }}
           linkWidth={(l: unknown) => {
             const s = (l as Link).strength ?? 3;
             return 0.8 + (s - 1) * 0.8;
           }}
-          linkStrength={(l: unknown) => {
-            const str = (l as Link).strength ?? 3;
-            return 0.05 + (str - 1) * 0.25;
-          }}
-          linkDistance={(l: unknown) => {
-            const str = (l as Link).strength ?? 3;
-            return 180 - (str - 1) * 30;
-          }}
-          d3AlphaDecay={0.05}
-          d3VelocityDecay={0.5}
-          warmupTicks={60}
+          d3AlphaDecay={0.015}
+          d3VelocityDecay={0.3}
           linkLabel={(l: unknown) => {
             const c = (l as Link).count ?? 1;
             return c > 1 ? `${c} connections` : "1 connection";
