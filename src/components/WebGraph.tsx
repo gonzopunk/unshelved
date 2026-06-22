@@ -68,11 +68,11 @@ export default function WebGraph({
   useEffect(() => {
     const g = graphRef.current as GraphRef | null;
     if (!g || !Graph) return;
-    const charge = g.d3Force("charge") as { strength: (v: number) => unknown; distanceMax: (v: number) => unknown } | null;
+    const charge = g.d3Force("charge") as unknown as { strength: (v: number) => unknown; distanceMax: (v: number) => unknown } | null;
     if (charge) {
       charge.strength(-40).distanceMax(180);
     }
-    const center = g.d3Force("center") as { strength: (v: number) => unknown } | null;
+    const center = g.d3Force("center") as unknown as { strength: (v: number) => unknown } | null;
     if (center) center.strength(1);
     g.d3ReheatSimulation();
   }, [Graph, nodes.length]);
