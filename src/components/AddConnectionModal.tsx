@@ -31,6 +31,7 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
   const [target, setTarget] = useState<Candidate | null>(null);
   const [why, setWhy] = useState("");
   const [tagsInput, setTagsInput] = useState("");
+  const [strength, setStrength] = useState(3);
   const [busy, setBusy] = useState(false);
 
   const isEditing = !!editing;
