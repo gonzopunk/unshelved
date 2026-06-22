@@ -1,32 +1,59 @@
-## Problem
+# Weighted Connections
 
-At tablet widths (md breakpoint ≤ ~1024px), the desktop pill nav's content (logo + 5 labeled items + Search + Add button + Settings + Sign out) exceeds the available viewport width. The last change added `overflow-x-auto`, which technically prevents page overflow but leaves a visible horizontal scrollbar under the pill — not acceptable.
+Add a `strength` integer (1–5, default 3) on `connections` that drives card visuals and graph physics.
 
-The mobile nav (icon-only) only kicks in below `md` (< 768px), so the 768–1024px range is the painful band.
+## 1. Migration
 
-## Recommended fix
+- Add `strength int NOT NULL DEFAULT 3` with `CHECK (strength BETWEEN 1 AND 5)` on `public.connections`.
+- Replace `seed_sample_library` — identical to current version except the `connections` INSERT column list gains `strength` and each of the 18 rows gets the explicit value from the spec.
 
-Introduce a third tier: **icon-only desktop nav at tablet widths**, full labeled nav at larger desktop widths. Keep mobile nav unchanged.
+## 2. `src/lib/weave.ts`
 
-Breakpoints:
-- `< md` (< 768px): existing mobile nav (unchanged)
-- `md` to `< lg` (768–1023px): desktop pill, **icons only** for the 5 main nav items (Library, Board, Connections, Notations, Visualizations). Logo, divider, Search, Add, Settings, Sign out remain as-is.
-- `lg+` (≥ 1024px): existing desktop pill with icon + label
+- `useCreateConnection`: input type gains `strength?: number`; insert payload sets `strength: input.strength ?? 3`.
+- `useUpdateConnection`: args gain `strength?: number`; patch builder adds `if (strength !== undefined) patch.strength = strength`.
 
-Implementation in `src/routes/_authenticated.tsx`:
-- `NavItem` gains a label that's hidden at `md` and shown at `lg+` — wrap the label text in a `<span className="hidden lg:inline">`. Keep `aria-label` on the `<Link>` so the icon-only state stays accessible.
-- Remove the `overflow-x-auto` and `max-w-[calc(100vw-2rem)]` band-aids; the nav will fit naturally at every width.
-- Restore the outer wrapper to `fixed top-5 left-1/2 -translate-x-1/2 z-40` and the inner nav to its previous `w-max mx-auto` shape (no max-width needed now that content fits).
+## 3. `src/components/AddConnectionModal.tsx`
 
-## Alternatives considered (not recommended)
+- New `strength` state (default 3); initialize in the open-effect for both editing (`editing.strength ?? 3`) and create (3) branches.
+- Pass `strength` in both create and update mutate payloads.
+- Insert the strength selector (5 round buttons + descriptor) between the Why textarea and the Tags input, per spec markup.
 
-1. **Shrink padding/gap only** — buys ~50px, not enough to fit 5 labels + Add button at 768px.
-2. **Collapse some items into a "More" dropdown at tablet** — adds a click to reach core nav; worse than icon-only.
-3. **Scale text down at tablet** — looks awkward and still tight.
+## 4. `src/components/ConnectionCard.tsx`
 
-## Verification
+Full replacement, keeping `EndpointInfo` export and props signature:
 
-- 768px (current viewport): nav fits centered, no scrollbar, 5 icons visible with tooltips via `aria-label`.
-- ~900px: same icon-only state.
-- 1024px+: full labels return.
-- < 768px: unchanged mobile nav.
+- Card shell uses `borderLeft: 5px solid var(--forest)` on the rounded card.
+- Local `STRENGTH_CFG` map (1→5) controlling `gap`, `lineH`, `lineOpacity`, `dotSize`.
+- `dotColor(kind)` → `var(--honey)` for `reference_book`, else `var(--forest)`.
+- Connector row: `items-stretch`, two endpoint cells with soft green fill, dots absolutely positioned on inner edges at 50%, middle connector div sized by `cfg.gap` with a centered horizontal bar.
+- Why text unchanged.
+- Footer: tags + new strength pill (`STRENGTH: N`) on the left; existing edit/delete buttons on the right.
+
+## 5. `src/components/WebGraph.tsx`
+
+- `Link` type gains `strength?: number`.
+- `linkWidth`: `0.8 + (s-1)*0.8`.
+- `linkColor`: opacity `0.12 + (s-1)*0.14`, multiplied by `0.2` when either endpoint is dimmed.
+- Add `linkStrength` prop: `0.1 + (s-1)*0.18`.
+
+## 6. `src/routes/_authenticated/weave.tsx`
+
+In the graph `useMemo`:
+- Add `const maxStrength = new Map<string, number>()` alongside `counts`.
+- In the connections loop, after `counts.set(...)`, track `Math.max(prev, c.strength ?? 3)` per pair key.
+- Links output adds `strength: maxStrength.get(key) ?? 3`.
+
+## Execution order
+
+1. Apply migration (column + seed replacement) — wait for approval & regenerated types.
+2. Edit the five source files.
+3. Run `bun run test` once (expect 18/18).
+
+## Verification checklist
+
+- Cards render new design; strength badge visible.
+- Modal selector defaults to 3, descriptor updates, edit pre-populates.
+- Strength-5 card: narrow gap, thick dark line, large dots.
+- Web graph: strength-5 edges thick/opaque, strength-1 faint; high-strength pairs cluster closer.
+- Sample reset works; seeded connections show strengths.
+- `bun run test` passes 18/18.
