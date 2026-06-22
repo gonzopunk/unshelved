@@ -100,6 +100,7 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
           target_id: target.id,
           why: why.trim() || null,
           tags,
+          strength,
         });
         toast.success("Updated");
       } else {
@@ -108,6 +109,7 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
           target_kind: target.kind, target_id: target.id,
           why: why.trim() || null,
           tags,
+          strength,
         });
         toast.success("Connected");
       }
