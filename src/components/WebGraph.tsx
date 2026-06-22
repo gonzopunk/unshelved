@@ -195,8 +195,15 @@ export default function WebGraph({
           }}
           linkStrength={(l: unknown) => {
             const str = (l as Link).strength ?? 3;
-            return 0.1 + (str - 1) * 0.18;
+            return 0.05 + (str - 1) * 0.25;
           }}
+          linkDistance={(l: unknown) => {
+            const str = (l as Link).strength ?? 3;
+            return 180 - (str - 1) * 30;
+          }}
+          d3AlphaDecay={0.05}
+          d3VelocityDecay={0.5}
+          warmupTicks={60}
           linkLabel={(l: unknown) => {
             const c = (l as Link).count ?? 1;
             return c > 1 ? `${c} connections` : "1 connection";
