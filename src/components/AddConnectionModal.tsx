@@ -187,6 +187,29 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
           </div>
 
           <div>
+            <Label>Connection strength</Label>
+            <div className="mt-2 flex items-center gap-2">
+              {[1, 2, 3, 4, 5].map(n => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setStrength(n)}
+                  className={`w-8 h-8 rounded-full text-sm font-mono transition ${
+                    strength === n
+                      ? 'bg-forest text-paper border-2 border-forest'
+                      : 'border border-border text-muted-foreground bg-transparent hover:bg-muted'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+              <span className="text-xs text-muted-foreground italic ml-1">
+                {['','Passing echo','Shallow connection','Meaningful connection','Deep connection','Profound resonance'][strength]}
+              </span>
+            </div>
+          </div>
+
+          <div>
             <Label htmlFor="tags">Tags (comma separated)</Label>
             <Input id="tags" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="nature, family, voice" className="mt-1" />
           </div>
