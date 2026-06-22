@@ -20,6 +20,8 @@ type GraphRef = {
   graph2ScreenCoords: (x: number, y: number) => { x: number; y: number };
   pauseAnimation: () => void;
   resumeAnimation: () => void;
+  d3Force: (name: string, force?: unknown) => unknown;
+  d3ReheatSimulation: () => void;
 };
 
 type DragState = {
