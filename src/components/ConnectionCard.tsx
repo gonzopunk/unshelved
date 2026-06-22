@@ -14,15 +14,15 @@ export type EndpointInfo = {
 };
 
 const STRENGTH_CFG = {
-  1: { gap: 82, lineH: 1,   lineOpacity: 0.15, dotSize: 16 },
-  2: { gap: 68, lineH: 1.5, lineOpacity: 0.26, dotSize: 18 },
-  3: { gap: 52, lineH: 2.5, lineOpacity: 0.40, dotSize: 20 },
-  4: { gap: 36, lineH: 3.5, lineOpacity: 0.58, dotSize: 22 },
-  5: { gap: 20, lineH: 5,   lineOpacity: 0.76, dotSize: 24 },
+  1: { gap: 90, lineH: 1,   lineOpacity: 0.15, dotSize: 16 },
+  2: { gap: 74, lineH: 1.5, lineOpacity: 0.26, dotSize: 18 },
+  3: { gap: 58, lineH: 2.5, lineOpacity: 0.40, dotSize: 20 },
+  4: { gap: 44, lineH: 3.5, lineOpacity: 0.58, dotSize: 22 },
+  5: { gap: 32, lineH: 5,   lineOpacity: 0.76, dotSize: 24 },
 } as const;
 
 function dotColor(kind: ConnectionKind): string {
-  return kind === 'reference_book' ? 'var(--honey)' : 'var(--terra)';
+  return kind === 'reference_book' ? 'var(--honey)' : 'var(--forest)';
 }
 
 function EndpointInner({ e }: { e: EndpointInfo }) {
