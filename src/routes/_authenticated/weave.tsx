@@ -28,7 +28,14 @@ function WeavePage() {
   const { data: library = [] } = useLibrary();
   const { data: refBooks = [] } = useReferenceBooks();
   const { data: connections = [], isLoading } = useAllConnections();
-  const [view, setView] = useState<"list" | "web">("web");
+  const [view, setView] = useState<"list" | "web">(() => {
+    try { return (localStorage.getItem("connections-view") as "list" | "web") ?? "web"; }
+    catch { return "web"; }
+  });
+  const changeView = (v: "list" | "web") => {
+    setView(v);
+    try { localStorage.setItem("connections-view", v); } catch { /* noop */ }
+  };
   const [filter, setFilter] = useState("");
   const [pendingSource, setPendingSource] = useState<{ kind: ConnectionKind; id: string; label: string } | null>(null);
   const [pendingTarget, setPendingTarget] = useState<{ kind: ConnectionKind; id: string; title: string; author: string | null; isReference: boolean } | null>(null);
@@ -45,7 +52,16 @@ function WeavePage() {
   const openEdit = (c: Connection) => {
     const s = lookup.get(c.source_id);
     const label = s?.title ?? "Source";
+    const t = lookup.get(c.target_id);
+    const preTarget = t ? {
+      kind: c.target_kind,
+      id: c.target_id,
+      title: t.title,
+      author: t.author ?? null,
+      isReference: c.target_kind === "reference_book",
+    } : null;
     setPendingSource({ kind: c.source_kind, id: c.source_id, label });
+    setPendingTarget(preTarget);
     setEditingConn(c);
     setModalOpen(true);
   };
@@ -314,10 +330,10 @@ function WeavePage() {
 
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <div className="inline-flex rounded-full bg-card shadow-paper p-1">
-          <button onClick={() => setView("list")} className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm transition ${view === "list" ? "bg-forest text-paper" : "text-ink hover:bg-muted"}`}>
+          <button onClick={() => changeView("list")} className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm transition ${view === "list" ? "bg-forest text-paper" : "text-ink hover:bg-muted"}`}>
             <List className="h-4 w-4" /> List
           </button>
-          <button onClick={() => setView("web")} className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm transition ${view === "web" ? "bg-forest text-paper" : "text-ink hover:bg-muted"}`}>
+          <button onClick={() => changeView("web")} className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm transition ${view === "web" ? "bg-forest text-paper" : "text-ink hover:bg-muted"}`}>
             <Network className="h-4 w-4" /> Web
           </button>
         </div>

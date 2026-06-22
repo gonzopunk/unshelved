@@ -20,6 +20,8 @@ type GraphRef = {
   graph2ScreenCoords: (x: number, y: number) => { x: number; y: number };
   pauseAnimation: () => void;
   resumeAnimation: () => void;
+  d3Force: (name: string, force?: unknown) => unknown;
+  d3ReheatSimulation: () => void;
 };
 
 type DragState = {
@@ -62,6 +64,19 @@ export default function WebGraph({
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, []);
+
+  useEffect(() => {
+    const g = graphRef.current as GraphRef | null;
+    if (!g || !Graph) return;
+    const charge = g.d3Force("charge") as unknown as { strength: (v: number) => unknown; distanceMax: (v: number) => unknown } | null;
+    if (charge) {
+      charge.strength(-40);
+      charge.distanceMax(180);
+    }
+    const center = g.d3Force("center") as unknown as { strength: (v: number) => unknown } | null;
+    if (center) center.strength(1);
+    g.d3ReheatSimulation();
+  }, [Graph, nodes.length]);
 
   // Find nearest node within HIT_RADIUS pixels of a screen point.
   const pickNode = useCallback((screenX: number, screenY: number): Node | null => {
@@ -180,8 +195,15 @@ export default function WebGraph({
           }}
           linkStrength={(l: unknown) => {
             const str = (l as Link).strength ?? 3;
-            return 0.1 + (str - 1) * 0.18;
+            return 0.05 + (str - 1) * 0.25;
           }}
+          linkDistance={(l: unknown) => {
+            const str = (l as Link).strength ?? 3;
+            return 180 - (str - 1) * 30;
+          }}
+          d3AlphaDecay={0.05}
+          d3VelocityDecay={0.5}
+          warmupTicks={60}
           linkLabel={(l: unknown) => {
             const c = (l as Link).count ?? 1;
             return c > 1 ? `${c} connections` : "1 connection";
