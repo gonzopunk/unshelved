@@ -70,7 +70,7 @@ export default function ConnectionCard({
         {/* Left endpoint cell */}
         <div
           className="flex-1 min-w-0 rounded-[10px] px-3 py-2.5 relative overflow-visible"
-          style={{ background: 'rgba(221,229,223,0.42)' }}
+          style={{ background: 'rgba(221,229,223,0.42)', zIndex: 1 }}
         >
           {sourceHref ? (
             <Link to={sourceHref.to} params={sourceHref.params} className="block hover:text-primary transition-colors">
@@ -88,7 +88,7 @@ export default function ConnectionCard({
               width: `${cfg.dotSize}px`,
               height: `${cfg.dotSize}px`,
               background: dotColor(source.kind),
-              border: '1.5px solid var(--card)',
+              border: '1.5px solid rgba(31, 38, 48, 0.12)',
             }}
           />
         </div>
@@ -109,7 +109,7 @@ export default function ConnectionCard({
         {/* Right endpoint cell */}
         <div
           className="flex-1 min-w-0 rounded-[10px] px-3 py-2.5 relative overflow-visible"
-          style={{ background: 'rgba(221,229,223,0.42)' }}
+          style={{ background: 'rgba(221,229,223,0.42)', zIndex: 1 }}
         >
           <div
             className="absolute rounded-full"
@@ -120,7 +120,7 @@ export default function ConnectionCard({
               width: `${cfg.dotSize}px`,
               height: `${cfg.dotSize}px`,
               background: dotColor(target.kind),
-              border: '1.5px solid var(--card)',
+              border: '1.5px solid rgba(31, 38, 48, 0.12)',
             }}
           />
           {targetHref ? (
