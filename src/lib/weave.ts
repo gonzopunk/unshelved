@@ -65,12 +65,13 @@ export function useCreateConnection() {
     mutationFn: async (input: {
       source_kind: ConnectionKind; source_id: string;
       target_kind: ConnectionKind; target_id: string;
-      why?: string | null; tags?: string[];
+      why?: string | null; tags?: string[]; strength?: number;
     }) => {
       if (!user) throw new Error("Not signed in");
       const { error } = await supabase.from("connections").insert({
         user_id: user.id, ...input,
         tags: input.tags ?? [],
+        strength: input.strength ?? 3,
       });
       if (error) throw error;
     },
