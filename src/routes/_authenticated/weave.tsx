@@ -28,7 +28,14 @@ function WeavePage() {
   const { data: library = [] } = useLibrary();
   const { data: refBooks = [] } = useReferenceBooks();
   const { data: connections = [], isLoading } = useAllConnections();
-  const [view, setView] = useState<"list" | "web">("web");
+  const [view, setView] = useState<"list" | "web">(() => {
+    try { return (localStorage.getItem("connections-view") as "list" | "web") ?? "web"; }
+    catch { return "web"; }
+  });
+  const changeView = (v: "list" | "web") => {
+    setView(v);
+    try { localStorage.setItem("connections-view", v); } catch { /* noop */ }
+  };
   const [filter, setFilter] = useState("");
   const [pendingSource, setPendingSource] = useState<{ kind: ConnectionKind; id: string; label: string } | null>(null);
   const [pendingTarget, setPendingTarget] = useState<{ kind: ConnectionKind; id: string; title: string; author: string | null; isReference: boolean } | null>(null);
