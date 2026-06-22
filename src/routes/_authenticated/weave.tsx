@@ -198,6 +198,7 @@ function WeavePage() {
     };
     const nodeIds = new Set<string>();
     const counts = new Map<string, number>();
+    const maxStrength = new Map<string, number>();
     const pairs = new Map<string, { source: string; target: string }>();
     for (const c of connections) {
       const s = bookOf(c.source_kind, c.source_id);
@@ -206,11 +207,15 @@ function WeavePage() {
       nodeIds.add(s.id); nodeIds.add(t.id);
       const key = [s.id, t.id].sort().join("::");
       counts.set(key, (counts.get(key) ?? 0) + 1);
+      const connStrength = (c as Connection).strength ?? 3;
+      const prevMax = maxStrength.get(key) ?? 0;
+      maxStrength.set(key, Math.max(prevMax, connStrength));
       if (!pairs.has(key)) pairs.set(key, { source: s.id, target: t.id });
     }
     const links = Array.from(pairs.entries()).map(([key, p]) => ({
       ...p,
       count: counts.get(key) ?? 1,
+      strength: maxStrength.get(key) ?? 3,
     }));
     const nodes = Array.from(nodeIds).map(id => {
       const ep = lookup.get(id);

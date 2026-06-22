@@ -31,6 +31,7 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
   const [target, setTarget] = useState<Candidate | null>(null);
   const [why, setWhy] = useState("");
   const [tagsInput, setTagsInput] = useState("");
+  const [strength, setStrength] = useState(3);
   const [busy, setBusy] = useState(false);
 
   const isEditing = !!editing;
@@ -46,6 +47,7 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
     if (editing) {
       setWhy(editing.why ?? "");
       setTagsInput(editing.tags.join(", "));
+      setStrength(editing.strength ?? 3);
       // Resolve current target from library/refBooks
       const fromLib = libraryRef.current.find(b => b.id === editing.target_id);
       const fromRef = refBooksRef.current.find(r => r.id === editing.target_id);
@@ -61,6 +63,7 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
       setTarget(initialTarget);
       setWhy("");
       setTagsInput("");
+      setStrength(3);
     }
   }, [open, editing?.id, initialTarget?.id]);
 
@@ -97,6 +100,7 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
           target_id: target.id,
           why: why.trim() || null,
           tags,
+          strength,
         });
         toast.success("Updated");
       } else {
@@ -105,6 +109,7 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
           target_kind: target.kind, target_id: target.id,
           why: why.trim() || null,
           tags,
+          strength,
         });
         toast.success("Connected");
       }
@@ -179,6 +184,29 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
           <div>
             <Label htmlFor="why">Why (optional)</Label>
             <Textarea id="why" value={why} onChange={(e) => setWhy(e.target.value)} placeholder="What ties them together?" className="mt-1 min-h-20" />
+          </div>
+
+          <div>
+            <Label>Connection strength</Label>
+            <div className="mt-2 flex items-center gap-2">
+              {[1, 2, 3, 4, 5].map(n => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setStrength(n)}
+                  className={`w-8 h-8 rounded-full text-sm font-mono transition ${
+                    strength === n
+                      ? 'bg-forest text-paper border-2 border-forest'
+                      : 'border border-border text-muted-foreground bg-transparent hover:bg-muted'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+              <span className="text-xs text-muted-foreground italic ml-1">
+                {['','Passing echo','Shallow connection','Meaningful connection','Deep connection','Profound resonance'][strength]}
+              </span>
+            </div>
           </div>
 
           <div>

@@ -139,6 +139,7 @@ export type Database = {
           is_sample: boolean
           source_id: string
           source_kind: Database["public"]["Enums"]["connection_kind"]
+          strength: number
           tags: string[]
           target_id: string
           target_kind: Database["public"]["Enums"]["connection_kind"]
@@ -151,6 +152,7 @@ export type Database = {
           is_sample?: boolean
           source_id: string
           source_kind: Database["public"]["Enums"]["connection_kind"]
+          strength?: number
           tags?: string[]
           target_id: string
           target_kind: Database["public"]["Enums"]["connection_kind"]
@@ -163,6 +165,7 @@ export type Database = {
           is_sample?: boolean
           source_id?: string
           source_kind?: Database["public"]["Enums"]["connection_kind"]
+          strength?: number
           tags?: string[]
           target_id?: string
           target_kind?: Database["public"]["Enums"]["connection_kind"]
