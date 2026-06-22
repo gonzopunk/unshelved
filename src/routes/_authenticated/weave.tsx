@@ -330,10 +330,10 @@ function WeavePage() {
 
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <div className="inline-flex rounded-full bg-card shadow-paper p-1">
-          <button onClick={() => setView("list")} className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm transition ${view === "list" ? "bg-forest text-paper" : "text-ink hover:bg-muted"}`}>
+          <button onClick={() => changeView("list")} className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm transition ${view === "list" ? "bg-forest text-paper" : "text-ink hover:bg-muted"}`}>
             <List className="h-4 w-4" /> List
           </button>
-          <button onClick={() => setView("web")} className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm transition ${view === "web" ? "bg-forest text-paper" : "text-ink hover:bg-muted"}`}>
+          <button onClick={() => changeView("web")} className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm transition ${view === "web" ? "bg-forest text-paper" : "text-ink hover:bg-muted"}`}>
             <Network className="h-4 w-4" /> Web
           </button>
         </div>
