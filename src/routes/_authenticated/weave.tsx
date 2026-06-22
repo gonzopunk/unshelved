@@ -52,7 +52,16 @@ function WeavePage() {
   const openEdit = (c: Connection) => {
     const s = lookup.get(c.source_id);
     const label = s?.title ?? "Source";
+    const t = lookup.get(c.target_id);
+    const preTarget = t ? {
+      kind: c.target_kind,
+      id: c.target_id,
+      title: t.title,
+      author: t.author ?? null,
+      isReference: c.target_kind === "reference_book",
+    } : null;
     setPendingSource({ kind: c.source_kind, id: c.source_id, label });
+    setPendingTarget(preTarget);
     setEditingConn(c);
     setModalOpen(true);
   };
