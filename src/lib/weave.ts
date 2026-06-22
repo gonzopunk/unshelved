@@ -82,18 +82,20 @@ export function useCreateConnection() {
 export function useUpdateConnection() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, why, tags, target_kind, target_id }: {
+    mutationFn: async ({ id, why, tags, target_kind, target_id, strength }: {
       id: string;
       why?: string | null;
       tags?: string[];
       target_kind?: ConnectionKind;
       target_id?: string;
+      strength?: number;
     }) => {
       const patch: Database["public"]["Tables"]["connections"]["Update"] = {};
       if (why !== undefined) patch.why = why;
       if (tags !== undefined) patch.tags = tags;
       if (target_kind !== undefined) patch.target_kind = target_kind;
       if (target_id !== undefined) patch.target_id = target_id;
+      if (strength !== undefined) patch.strength = strength;
       const { error } = await supabase.from("connections").update(patch).eq("id", id);
       if (error) throw error;
     },
