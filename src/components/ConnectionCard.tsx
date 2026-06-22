@@ -22,7 +22,7 @@ const STRENGTH_CFG = {
 } as const;
 
 function dotColor(kind: ConnectionKind): string {
-  return kind === 'reference_book' ? 'var(--honey)' : 'var(--forest)';
+  return kind === 'reference_book' ? 'var(--honey)' : 'var(--terra)';
 }
 
 function EndpointInner({ e }: { e: EndpointInfo }) {
@@ -64,7 +64,7 @@ export default function ConnectionCard({
   return (
     <div
       className="rounded-2xl bg-card shadow-paper p-4"
-      style={{ borderLeft: '5px solid var(--forest)' }}
+      style={{ borderLeft: '5px solid var(--terra)' }}
     >
       <div className="flex items-stretch gap-0">
         {/* Left endpoint cell */}
@@ -101,7 +101,7 @@ export default function ConnectionCard({
               top: '50%',
               transform: 'translateY(-50%)',
               height: `${cfg.lineH}px`,
-              background: `rgba(31, 82, 102, ${cfg.lineOpacity})`,
+              background: `rgba(209, 118, 72, ${cfg.lineOpacity})`,
             }}
           />
         </div>
