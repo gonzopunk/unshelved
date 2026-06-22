@@ -55,8 +55,9 @@ export default function AddConnectionModal({ open, onOpenChange, source, initial
         setTarget({ kind: "book", id: fromLib.id, title: fromLib.title, author: fromLib.author, isReference: false });
       } else if (fromRef) {
         setTarget({ kind: "reference_book", id: fromRef.id, title: fromRef.title, author: fromRef.author, isReference: true });
+      } else if (initialTarget) {
+        setTarget(initialTarget);
       } else {
-        // Highlight/note targets are not editable here; keep as null and let user pick a new target if they want.
         setTarget(null);
       }
     } else {
