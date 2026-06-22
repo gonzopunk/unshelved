@@ -170,13 +170,17 @@ export default function WebGraph({
             const s = typeof link.source === "string" ? link.source : (link.source as { id: string }).id;
             const t = typeof link.target === "string" ? link.target : (link.target as { id: string }).id;
             const dim = dimmedNodeIds?.has(s) || dimmedNodeIds?.has(t);
-            const c = link.count ?? 1;
-            const a = Math.min(0.25 + (c - 1) * 0.12, 0.7);
-            return dim ? `rgba(31, 38, 48, ${a * 0.2})` : `rgba(31, 38, 48, ${a})`;
+            const strength = link.strength ?? 3;
+            const a = 0.12 + (strength - 1) * 0.14;
+            return dim ? `rgba(31,38,48,${a * 0.2})` : `rgba(31,38,48,${a})`;
           }}
           linkWidth={(l: unknown) => {
-            const c = (l as Link).count ?? 1;
-            return 1 + Math.log2(c) * 1.4;
+            const s = (l as Link).strength ?? 3;
+            return 0.8 + (s - 1) * 0.8;
+          }}
+          linkStrength={(l: unknown) => {
+            const str = (l as Link).strength ?? 3;
+            return 0.1 + (str - 1) * 0.18;
           }}
           linkLabel={(l: unknown) => {
             const c = (l as Link).count ?? 1;
