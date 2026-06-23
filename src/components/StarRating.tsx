@@ -10,7 +10,8 @@ type Props = {
 
 export default function StarRating({ value, size = 16, onChange, className }: Props) {
   const [hovered, setHovered] = useState<number | null>(null);
-  const displayValue = onChange ? (hovered ?? value ?? 0) : (value ?? 0);
+  const numericValue = value == null ? 0 : Number(value);
+  const displayValue = onChange ? (hovered ?? numericValue) : numericValue;
 
   const getHoveredValue = (e: React.MouseEvent, n: number) => {
     const rect = e.currentTarget.getBoundingClientRect();
