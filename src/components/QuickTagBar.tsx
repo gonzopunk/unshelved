@@ -81,11 +81,11 @@ function ScaleAxis({ axis, bookId, value }: { axis: TagAxis; bookId: string; val
   const current = value?.scale_value ?? null;
   const isSpice = axis.key === "spice";
   const isPace = axis.key === "pace";
-  // For spice, render 1..max (0 = unset, no highlighted pepper)
-  const start = isSpice ? Math.max(1, min) : min;
+  // 0 = unset; scale buttons are always 1..max
+  const start = Math.max(1, min);
   const dots = [];
   for (let i = start; i <= max; i++) dots.push(i);
-  const glyph = isSpice ? "🌶" : "●";
+  const glyph = isSpice ? "🌶" : isPace ? ">" : "●";
   const paceLabels: Record<number, string> = {
     1: "glacial",
     2: "languid",
@@ -103,7 +103,7 @@ function ScaleAxis({ axis, bookId, value }: { axis: TagAxis; bookId: string; val
   return (
     <div className="flex items-center gap-1.5">
       <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{axis.label}</span>
-      <div className="flex items-center gap-0.5">
+      <div className={`flex items-center ${isPace ? "gap-0" : "gap-0.5"}`}>
         {dots.map((d) => {
           const active = current !== null && current > 0 && d <= current;
           const title = isPace
@@ -121,9 +121,11 @@ function ScaleAxis({ axis, bookId, value }: { axis: TagAxis; bookId: string; val
                   ? clear.mutate({ book_id: bookId, axis_id: axis.id })
                   : set.mutate({ book_id: bookId, axis_id: axis.id, scale_value: d })
               }
-              className={`h-5 w-5 rounded-full text-xs leading-none transition ${
-                isSpice ? "text-terra" : ""
-              } ${active ? "" : "opacity-25 hover:opacity-60"}`}
+              className={`leading-none transition ${
+                isPace
+                  ? "h-6 w-4 font-mono text-[11px]"
+                  : "h-5 w-5 rounded-full text-xs"
+              } ${isSpice ? "text-terra" : ""} ${active ? "" : "opacity-25 hover:opacity-60"}`}
               aria-label={`${axis.label} ${d}${isPace ? ` (${paceLabels[d]})` : isSpice ? ` (${spiceLabels[d]})` : ""}`}
             >
               {glyph}
