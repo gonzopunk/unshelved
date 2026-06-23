@@ -23,7 +23,7 @@ export default function Constellations() {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<unknown>(null);
-  const [size, setSize] = useState({ w: 800, h: 560 });
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const [Graph, setGraph] = useState<React.ComponentType<Record<string, unknown>> | null>(null);
   const [center, setCenter] = useState<CenterMode>("recency");
 
@@ -107,34 +107,54 @@ export default function Constellations() {
       d3Force: (name: string, force?: unknown) => unknown;
       d3ReheatSimulation: () => void;
     } | null;
-    if (!g || !Graph || nodes.length === 0) return;
+    if (!g || !Graph || nodes.length === 0 || !size) return;
     g.d3Force("link", null);
     g.d3Force("center", null);
     const charge = g.d3Force("charge") as { strength: (v: number) => unknown; distanceMax: (v: number) => unknown } | null;
     if (charge) { charge.strength(-50); charge.distanceMax(250); }
-    const simNodes = nodes as (Node & { x?: number; y?: number; vx?: number; vy?: number })[];
-    g.d3Force("radial", (alpha: number) => {
-      for (const n of simNodes) {
-        const pull = (strengthMap.get(n.id) ?? 0) * alpha * 0.35;
-        if (n.x != null) n.vx = (n.vx ?? 0) - n.x * pull;
-        if (n.y != null) n.vy = (n.vy ?? 0) - n.y * pull;
+    // Both radial and boundary use the initialize pattern to get real sim nodes
+    let _rNodes: Array<Node & { x?: number; y?: number; vx?: number; vy?: number }> = [];
+    const radialForce = Object.assign(
+      function (alpha: number) {
+        for (const n of _rNodes) {
+          const pull = (strengthMap.get(n.id) ?? 0) * alpha * 0.35;
+          if (n.x != null) n.vx = (n.vx ?? 0) - n.x * pull;
+          if (n.y != null) n.vy = (n.vy ?? 0) - n.y * pull;
+        }
+      },
+      {
+        initialize(nodes: unknown[]) {
+          _rNodes = nodes as Array<Node & { x?: number; y?: number; vx?: number; vy?: number }>;
+        },
       }
-    });
-    // Hard boundary — clamp positions and kill outward velocity at canvas edge
+    );
+    g.d3Force("radial", radialForce);
+
     const MARGIN = 50;
-    g.d3Force("boundary", () => {
-      const hw = size.w / 2 - MARGIN;
-      const hh = size.h / 2 - MARGIN;
-      for (const n of simNodes) {
-        if (n.x == null || n.y == null) continue;
-        if (n.x < -hw) { n.x = -hw; n.vx = Math.max(0, n.vx ?? 0); }
-        if (n.x > hw)  { n.x = hw;  n.vx = Math.min(0, n.vx ?? 0); }
-        if (n.y < -hh) { n.y = -hh; n.vy = Math.max(0, n.vy ?? 0); }
-        if (n.y > hh)  { n.y = hh;  n.vy = Math.min(0, n.vy ?? 0); }
+    const sizeW = size.w;
+    const sizeH = size.h;
+    let _bNodes: Array<{ x?: number; y?: number; vx?: number; vy?: number }> = [];
+    const boundaryForce = Object.assign(
+      function () {
+        const hw = sizeW / 2 - MARGIN;
+        const hh = sizeH / 2 - MARGIN;
+        for (const n of _bNodes) {
+          if (n.x == null || n.y == null) continue;
+          if (n.x < -hw) { n.x = -hw; n.vx = Math.max(0, n.vx ?? 0); }
+          if (n.x > hw)  { n.x = hw;  n.vx = Math.min(0, n.vx ?? 0); }
+          if (n.y < -hh) { n.y = -hh; n.vy = Math.max(0, n.vy ?? 0); }
+          if (n.y > hh)  { n.y = hh;  n.vy = Math.min(0, n.vy ?? 0); }
+        }
+      },
+      {
+        initialize(nodes: unknown[]) {
+          _bNodes = nodes as Array<{ x?: number; y?: number; vx?: number; vy?: number }>;
+        },
       }
-    });
+    );
+    g.d3Force("boundary", boundaryForce);
     g.d3ReheatSimulation();
-  }, [center, strengthMap, nodes, Graph, size.w, size.h]);
+  }, [center, strengthMap, nodes, Graph, size?.w, size?.h]);
 
   if (library.length === 0) {
     return (
@@ -171,7 +191,7 @@ export default function Constellations() {
         ref={containerRef}
         className="rounded-2xl bg-card shadow-paper overflow-hidden relative"
       >
-        {Graph ? (
+        {Graph && size ? (
           <Graph
             ref={graphRef as React.Ref<unknown>}
             graphData={{ nodes, links: [] }}
@@ -210,7 +230,7 @@ export default function Constellations() {
           />
         ) : (
           <div className="h-[480px] flex items-center justify-center text-muted-foreground italic">
-            Drawing the cloud…
+            Drawing the constellation…
           </div>
         )}
       </div>
