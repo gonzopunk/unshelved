@@ -174,16 +174,18 @@ function LibraryPage() {
         </p>
       </header>
 
-      <div className="space-y-3 mb-6">
-        <LibraryFilters
-          filters={filters}
-          onChange={onFiltersChange}
-          library={library}
-          bookTags={bookTags}
-          axisOptions={axisOptions}
-        />
-        <ActiveFilters chips={chips} onClearAll={clearAll} />
-      </div>
+      {view !== "board" && (
+        <div className="space-y-3 mb-6">
+          <LibraryFilters
+            filters={filters}
+            onChange={onFiltersChange}
+            library={library}
+            bookTags={bookTags}
+            axisOptions={axisOptions}
+          />
+          <ActiveFilters chips={chips} onClearAll={clearAll} />
+        </div>
+      )}
 
       <div className="mb-4">
         <LibraryToolbar
