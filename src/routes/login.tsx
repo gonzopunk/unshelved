@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import unshelvedLogo from "@/assets/unshelved_logo.png";
+import unshelvedLogo from "@/assets/unshelved_logo_transparent.png";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Sign in — Unshelved" }] }),
