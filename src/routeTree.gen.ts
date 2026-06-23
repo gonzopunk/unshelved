@@ -18,7 +18,6 @@ import { Route as AuthenticatedVisualizationsRouteImport } from './routes/_authe
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedNotationsRouteImport } from './routes/_authenticated/notations'
 import { Route as AuthenticatedLibraryRouteImport } from './routes/_authenticated/library'
-import { Route as AuthenticatedBoardRouteImport } from './routes/_authenticated/board'
 import { Route as AuthenticatedSettingsImportsRouteImport } from './routes/_authenticated/settings_.imports'
 import { Route as AuthenticatedBooksBookIdRouteImport } from './routes/_authenticated/books.$bookId'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -70,11 +69,6 @@ const AuthenticatedLibraryRoute = AuthenticatedLibraryRouteImport.update({
   path: '/library',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedBoardRoute = AuthenticatedBoardRouteImport.update({
-  id: '/board',
-  path: '/board',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedSettingsImportsRoute =
   AuthenticatedSettingsImportsRouteImport.update({
     id: '/settings_/imports',
@@ -108,7 +102,6 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/board': typeof AuthenticatedBoardRoute
   '/library': typeof AuthenticatedLibraryRoute
   '/notations': typeof AuthenticatedNotationsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -123,7 +116,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/board': typeof AuthenticatedBoardRoute
   '/library': typeof AuthenticatedLibraryRoute
   '/notations': typeof AuthenticatedNotationsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -141,7 +133,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/_authenticated/board': typeof AuthenticatedBoardRoute
   '/_authenticated/library': typeof AuthenticatedLibraryRoute
   '/_authenticated/notations': typeof AuthenticatedNotationsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -160,7 +151,6 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/signup'
-    | '/board'
     | '/library'
     | '/notations'
     | '/settings'
@@ -175,7 +165,6 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/signup'
-    | '/board'
     | '/library'
     | '/notations'
     | '/settings'
@@ -192,7 +181,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/signup'
-    | '/_authenticated/board'
     | '/_authenticated/library'
     | '/_authenticated/notations'
     | '/_authenticated/settings'
@@ -280,13 +268,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLibraryRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/board': {
-      id: '/_authenticated/board'
-      path: '/board'
-      fullPath: '/board'
-      preLoaderRoute: typeof AuthenticatedBoardRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/settings_/imports': {
       id: '/_authenticated/settings_/imports'
       path: '/settings/imports'
@@ -326,7 +307,6 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteChildren {
-  AuthenticatedBoardRoute: typeof AuthenticatedBoardRoute
   AuthenticatedLibraryRoute: typeof AuthenticatedLibraryRoute
   AuthenticatedNotationsRoute: typeof AuthenticatedNotationsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -338,7 +318,6 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedBoardRoute: AuthenticatedBoardRoute,
   AuthenticatedLibraryRoute: AuthenticatedLibraryRoute,
   AuthenticatedNotationsRoute: AuthenticatedNotationsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
