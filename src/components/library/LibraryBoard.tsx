@@ -47,7 +47,7 @@ const FMT_LABEL: Record<string, string> = { print: "Print", ebook: "Ebook", audi
 
 const ALL_COL_IDS: BookStatus[] = ["want", "reading", "later", "dnf", "loved", "liked", "meh"];
 
-function BoardPage() {
+export default function LibraryBoard() {
   const { data: library = [] } = useLibrary();
   const reorder = useReorderBoard();
   const sensors = useSensors(
@@ -87,11 +87,6 @@ function BoardPage() {
 
   const activeBook = library.find((b) => b.id === activeId) ?? null;
   const activeCol = activeBook?.user_books[0]?.status as BookStatus | undefined;
-
-  const total = library.length;
-  const inFlight = grouped.reading.length;
-  const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
-  const thisYear = library.filter((b) => (b.user_books[0]?.finished_at ?? "") >= yearStart).length;
 
   const findContainer = (id: string): BookStatus | null => {
     if (ALL_COL_IDS.includes(id as BookStatus)) return id as BookStatus;
@@ -161,19 +156,6 @@ function BoardPage() {
 
   return (
     <div className="bv">
-      <div className="bv-title-row">
-        <div>
-          <div className="bv-eyebrow"><span className="dot" /> Your board</div>
-          <h1 className="bv-h1">All your shelves, <em>at a glance.</em></h1>
-          <p className="bv-sub">Drag a book between columns to update its status. Ratings live below.</p>
-        </div>
-        <div className="bv-counts">
-          <Count value={total} label="total books" />
-          <Count value={inFlight} label="in progress" />
-          <Count value={thisYear} label="this year" />
-        </div>
-      </div>
-
       <DndContext sensors={sensors} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd}>
         <section className="bv-section">
           <div className="bv-section-head">
