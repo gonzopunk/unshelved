@@ -4,15 +4,20 @@ import { useLibrary } from "@/lib/queries";
 import { useAllSessions } from "@/lib/sessions";
 import { useAllConnections } from "@/lib/weave";
 
+const CENTER_OPTIONS = [
+  { id: "recency",     label: "Recency" },
+  { id: "rating",      label: "Rating" },
+  { id: "time",        label: "Reading Time" },
+  { id: "connections", label: "Connections" },
+] as const;
+type CenterMode = typeof CENTER_OPTIONS[number]["id"];
+
 type Node = {
   id: string;
   name: string;
   author: string | null;
-  size: number;       // raw minutes
-  radius: number;     // clamped node radius
   color: string;
 };
-type Link = { source: string; target: string };
 
 export default function Bookcloud() {
   const navigate = useNavigate();
@@ -20,7 +25,7 @@ export default function Bookcloud() {
   const graphRef = useRef<unknown>(null);
   const [size, setSize] = useState({ w: 800, h: 560 });
   const [Graph, setGraph] = useState<React.ComponentType<Record<string, unknown>> | null>(null);
-  const [showEdges, setShowEdges] = useState(true);
+  const [center, setCenter] = useState<CenterMode>("recency");
 
   const { data: library = [] } = useLibrary();
   const { data: sessions = [] } = useAllSessions(365);
@@ -35,52 +40,89 @@ export default function Bookcloud() {
   }, []);
 
   useEffect(() => {
-    const update = () => {
-      if (containerRef.current) {
-        setSize({
-          w: containerRef.current.clientWidth,
-          h: Math.max(440, Math.min(720, window.innerHeight - 240)),
-        });
-      }
-    };
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const { width } = entries[0].contentRect;
+      setSize({
+        w: width,
+        h: Math.max(440, Math.min(720, window.innerHeight - 240)),
+      });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
-  const { nodes, links } = useMemo(() => {
-    // Sum minutes per book.
-    const minutes = new Map<string, number>();
-    for (const s of sessions as { book_id: string | null; minutes: number | null }[]) {
-      if (!s.book_id) continue;
-      minutes.set(s.book_id, (minutes.get(s.book_id) ?? 0) + (s.minutes ?? 0));
+  const strengthMap = useMemo<Map<string, number>>(() => {
+    const map = new Map<string, number>();
+    if (center === "recency") {
+      const now = Date.now();
+      let maxRecency = 1;
+      const raw = new Map<string, number>();
+      for (const b of library) {
+        const fin = (b as { finished_at?: string | null }).finished_at;
+        if (!fin) continue;
+        const days = (now - new Date(fin).getTime()) / 86400000;
+        const recency = Math.max(0, 1 - days / 365);
+        raw.set(b.id, recency);
+        if (recency > maxRecency) maxRecency = recency;
+      }
+      for (const [id, v] of raw) map.set(id, v / maxRecency);
+    } else if (center === "rating") {
+      for (const b of library) {
+        const r = (b as { rating?: number | null }).rating ?? 0;
+        map.set(b.id, r / 5);
+      }
+    } else if (center === "time") {
+      const mins = new Map<string, number>();
+      for (const s of sessions as { book_id: string | null; minutes: number | null }[]) {
+        if (!s.book_id) continue;
+        mins.set(s.book_id, (mins.get(s.book_id) ?? 0) + (s.minutes ?? 0));
+      }
+      const max = Math.max(1, ...mins.values());
+      for (const [id, v] of mins) map.set(id, v / max);
+    } else if (center === "connections") {
+      const counts = new Map<string, number>();
+      for (const c of connections) {
+        if (c.source_kind === "book") counts.set(c.source_id, (counts.get(c.source_id) ?? 0) + 1);
+        if (c.target_kind === "book") counts.set(c.target_id, (counts.get(c.target_id) ?? 0) + 1);
+      }
+      const max = Math.max(1, ...counts.values());
+      for (const [id, v] of counts) map.set(id, v / max);
     }
-    const nodes: Node[] = library.map((b) => {
-      const raw = minutes.get(b.id) ?? 0;
-      // clamp size: floor 4, ceiling 18
-      const radius = Math.max(4, Math.min(18, 4 + Math.sqrt(raw) * 0.45));
-      return {
-        id: b.id,
-        name: b.title,
-        author: b.author,
-        size: raw,
-        radius,
-        color: b.cover_color || "#1F5266",
-      };
+    return map;
+  }, [center, library, sessions, connections]);
+
+  const nodes = useMemo<Node[]>(() =>
+    library.map((b) => ({
+      id: b.id,
+      name: b.title,
+      author: b.author,
+      color: b.cover_color || "#1F5266",
+    })),
+  [library]);
+
+  useEffect(() => {
+    const g = graphRef.current as {
+      d3Force: (name: string, force?: unknown) => unknown;
+      d3ReheatSimulation: () => void;
+      graphData: () => { nodes: (Node & { x?: number; y?: number; vx?: number; vy?: number })[] };
+    } | null;
+    if (!g || !Graph || nodes.length === 0) return;
+    g.d3Force("link", null);
+    g.d3Force("center", null);
+    const charge = g.d3Force("charge") as { strength: (v: number) => unknown; distanceMax: (v: number) => unknown } | null;
+    if (charge) { charge.strength(-50); charge.distanceMax(250); }
+    const simNodes = g.graphData().nodes;
+    g.d3Force("radial", (alpha: number) => {
+      for (const n of simNodes) {
+        const pull = (strengthMap.get(n.id) ?? 0) * alpha * 0.35;
+        if (n.x != null) n.vx = (n.vx ?? 0) - n.x * pull;
+        if (n.y != null) n.vy = (n.vy ?? 0) - n.y * pull;
+      }
     });
-    const idSet = new Set(nodes.map((n) => n.id));
-    const seen = new Set<string>();
-    const links: Link[] = [];
-    for (const c of connections) {
-      if (c.source_kind !== "book" || c.target_kind !== "book") continue;
-      if (!idSet.has(c.source_id) || !idSet.has(c.target_id)) continue;
-      const key = [c.source_id, c.target_id].sort().join("::");
-      if (seen.has(key)) continue;
-      seen.add(key);
-      links.push({ source: c.source_id, target: c.target_id });
-    }
-    return { nodes, links };
-  }, [library, sessions, connections]);
+    g.d3ReheatSimulation();
+  }, [center, strengthMap, nodes.length, Graph]);
 
   if (library.length === 0) {
     return (
@@ -92,14 +134,26 @@ export default function Bookcloud() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-        <button
-          onClick={() => setShowEdges((v) => !v)}
-          className={`rounded-full px-3 py-1 transition ${showEdges ? "bg-forest text-paper" : "bg-mist hover:bg-muted"}`}
-        >
-          {showEdges ? "Edges on" : "Edges off"}
-        </button>
-        <span className="italic">Node size: total reading minutes · color: cover · click a book to open it.</span>
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs text-muted-foreground font-mono uppercase tracking-widest">
+          Center by
+        </span>
+        {CENTER_OPTIONS.map((opt) => (
+          <button
+            key={opt.id}
+            onClick={() => setCenter(opt.id)}
+            className={`rounded-full px-3 py-1 text-xs transition ${
+              center === opt.id
+                ? "bg-terra text-paper"
+                : "bg-mist text-muted-foreground hover:bg-muted"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+        <span className="text-xs text-muted-foreground italic ml-1">
+          · color: cover · click to open
+        </span>
       </div>
       <div
         ref={containerRef}
@@ -108,18 +162,18 @@ export default function Bookcloud() {
         {Graph ? (
           <Graph
             ref={graphRef as React.Ref<unknown>}
-            graphData={{ nodes, links: showEdges ? links : [] }}
+            graphData={{ nodes, links: [] }}
             width={size.w}
             height={size.h}
             nodeLabel={(n: unknown) => {
               const node = n as Node;
-              return `${node.name}${node.author ? " — " + node.author : ""}${node.size ? ` · ${node.size} min` : ""}`;
+              return `${node.name}${node.author ? " — " + node.author : ""}`;
             }}
             nodeColor={(n: unknown) => (n as Node).color}
-            nodeVal={(n: unknown) => (n as Node).radius}
-            nodeRelSize={4}
-            linkColor={() => "rgba(31, 38, 48, 0.18)"}
-            linkWidth={() => 1}
+            nodeVal={() => 1}
+            nodeRelSize={8}
+            d3AlphaDecay={0.015}
+            d3VelocityDecay={0.3}
             backgroundColor="transparent"
             onNodeClick={(n: unknown) =>
               navigate({ to: "/books/$bookId", params: { bookId: (n as Node).id } })
@@ -132,15 +186,14 @@ export default function Bookcloud() {
             nodeCanvasObjectMode={() => "after"}
             nodeCanvasObject={(n: unknown, ctx: CanvasRenderingContext2D, scale: number) => {
               const node = n as Node & { x?: number; y?: number };
-              if (node.x == null || node.y == null) return;
-              if (scale < 1.5) return; // hide labels when zoomed out
+              if (node.x == null || node.y == null || scale < 1.5) return;
               const fontSize = Math.min(11, 10 / scale + 5);
               ctx.font = `${fontSize}px serif`;
               ctx.textAlign = "center";
               ctx.textBaseline = "top";
               ctx.fillStyle = "#1F2630";
               const lbl = node.name.length > 26 ? node.name.slice(0, 24) + "…" : node.name;
-              ctx.fillText(lbl, node.x, node.y + node.radius + 2);
+              ctx.fillText(lbl, node.x, node.y + 10);
             }}
           />
         ) : (
