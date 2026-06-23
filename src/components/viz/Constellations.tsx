@@ -39,13 +39,14 @@ export default function Constellations() {
     return () => { m = false; };
   }, []);
 
+  // Use a callback ref so the ResizeObserver attaches when the container
+  // mounts — not on first render, which may be before the library loads
+  // and the container is gated behind an early return.
   useEffect(() => {
     const el = containerRef.current;
-    console.log("[Cons] mount effect, el=", el);
     if (!el) return;
     const ro = new ResizeObserver((entries) => {
       const { width } = entries[0].contentRect;
-      console.log("[Cons] RO fired width=", width);
       setSize({
         w: width,
         h: Math.max(440, Math.min(720, window.innerHeight - 240)),
@@ -53,7 +54,7 @@ export default function Constellations() {
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [library.length === 0]);
 
   const strengthMap = useMemo<Map<string, number>>(() => {
     const map = new Map<string, number>();
