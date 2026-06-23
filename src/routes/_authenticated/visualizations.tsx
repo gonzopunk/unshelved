@@ -21,7 +21,11 @@ export const Route = createFileRoute("/_authenticated/visualizations")({
 
 function VisualizationsPage() {
   const navigate = useNavigate();
-  const { tab = "charts" } = useSearch({ from: "/_authenticated/visualizations" });
+  const { tab: urlTab } = useSearch({ from: "/_authenticated/visualizations" });
+  const tab: Tab = urlTab ?? (() => {
+    try { return (localStorage.getItem("visualizations-tab") as Tab) ?? "charts"; }
+    catch { return "charts"; }
+  })();
 
   const { data: library = [], isLoading } = useLibrary();
   const { data: bookTags = {} } = useBookTagsMap();
@@ -29,12 +33,14 @@ function VisualizationsPage() {
   const { data: sessions = [] } = useAllSessions(365);
   const seedColors = useLibraryPalette(8);
 
-  const setTab = (t: Tab) =>
+  const setTab = (t: Tab) => {
+    try { localStorage.setItem("visualizations-tab", t); } catch { /* noop */ }
     navigate({
       to: ".",
       search: (prev: Record<string, unknown>) => ({ ...prev, tab: t === "charts" ? undefined : t }),
       replace: true,
     } as never);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-6">
