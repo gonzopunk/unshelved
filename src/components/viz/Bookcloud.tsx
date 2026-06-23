@@ -106,14 +106,13 @@ export default function Bookcloud() {
     const g = graphRef.current as {
       d3Force: (name: string, force?: unknown) => unknown;
       d3ReheatSimulation: () => void;
-      graphData: () => { nodes: (Node & { x?: number; y?: number; vx?: number; vy?: number })[] };
     } | null;
     if (!g || !Graph || nodes.length === 0) return;
     g.d3Force("link", null);
     g.d3Force("center", null);
     const charge = g.d3Force("charge") as { strength: (v: number) => unknown; distanceMax: (v: number) => unknown } | null;
     if (charge) { charge.strength(-50); charge.distanceMax(250); }
-    const simNodes = g.graphData().nodes;
+    const simNodes = nodes as (Node & { x?: number; y?: number; vx?: number; vy?: number })[];
     g.d3Force("radial", (alpha: number) => {
       for (const n of simNodes) {
         const pull = (strengthMap.get(n.id) ?? 0) * alpha * 0.35;
@@ -122,7 +121,7 @@ export default function Bookcloud() {
       }
     });
     g.d3ReheatSimulation();
-  }, [center, strengthMap, nodes.length, Graph]);
+  }, [center, strengthMap, nodes, Graph]);
 
   if (library.length === 0) {
     return (
