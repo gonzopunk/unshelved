@@ -1,4 +1,4 @@
-import { LayoutGrid, List as ListIcon, ChevronDown } from "lucide-react";
+import { LayoutGrid, List as ListIcon, Kanban, ChevronDown } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -44,24 +44,26 @@ export default function LibraryToolbar({
         {count === total ? `${total} books` : `${count} of ${total} books`}
       </div>
       <div className="ml-auto flex items-center gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs hover:bg-muted">
-            <span className="text-muted-foreground">Sort</span>
-            <span>{current}</span>
-            <ChevronDown className="h-3 w-3 opacity-60" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="rounded-2xl">
-            {SORT_OPTIONS.map((o) => (
-              <DropdownMenuItem
-                key={`${o.sort}-${o.dir}`}
-                onClick={() => onSortChange(o.sort, o.dir)}
-                className="rounded-xl text-sm"
-              >
-                {o.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {view !== "board" && (
+          <DropdownMenu>
+            <DropdownMenuTrigger className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs hover:bg-muted">
+              <span className="text-muted-foreground">Sort</span>
+              <span>{current}</span>
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="rounded-2xl">
+              {SORT_OPTIONS.map((o) => (
+                <DropdownMenuItem
+                  key={`${o.sort}-${o.dir}`}
+                  onClick={() => onSortChange(o.sort, o.dir)}
+                  className="rounded-xl text-sm"
+                >
+                  {o.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         <div className="inline-flex items-center rounded-full bg-muted p-1">
           <button
             onClick={() => onViewChange("grid")}
@@ -82,6 +84,16 @@ export default function LibraryToolbar({
             aria-label="List view"
           >
             <ListIcon className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => onViewChange("board")}
+            className={`p-1.5 rounded-full transition ${
+              view === "board" ? "bg-card shadow-paper" : "text-muted-foreground"
+            }`}
+            title="Board view"
+            aria-label="Board view"
+          >
+            <Kanban className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>

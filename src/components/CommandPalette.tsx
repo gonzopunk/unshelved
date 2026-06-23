@@ -92,7 +92,7 @@ export default function CommandPalette({ open, onOpenChange, onImport }: { open:
         {!q && (
           <CommandGroup heading="Jump to">
             <CommandItem onSelect={() => go("/library")}><LibraryIcon className="mr-2 h-4 w-4" /> Library</CommandItem>
-            <CommandItem onSelect={() => go("/board")}><LayoutGrid className="mr-2 h-4 w-4" /> Board</CommandItem>
+            <CommandItem onSelect={() => go("/library?view=board")}><LayoutGrid className="mr-2 h-4 w-4" /> Board</CommandItem>
             <CommandItem onSelect={() => go("/weave")}><Network className="mr-2 h-4 w-4" /> Connections</CommandItem>
             <CommandItem onSelect={() => go("/notations")}><NotebookPen className="mr-2 h-4 w-4" /> Notations</CommandItem>
             <CommandItem onSelect={() => go("/visualizations")}><BarChart3 className="mr-2 h-4 w-4" /> Visualizations</CommandItem>

@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
 import BookCard from "@/components/BookCard";
+import StarRating from "@/components/StarRating";
 import GeneratedCover from "@/components/GeneratedCover";
 import AddBookModal from "@/components/AddBookModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -159,13 +160,16 @@ function Home() {
                 <button type="button" className="btn btn-primary" onClick={() => setLogSessionOpen(true)}>
                   Log a session
                 </button>
+                <button type="button" className="btn btn-secondary" onClick={() => setAddOpen(true)}>
+                  + Add a book
+                </button>
               </div>
             </>
           )}
         </div>
 
         <div className="hero-stats">
-          <Link to="/board" className="stat stat-link">
+          <Link to="/library" search={{ view: "board" }} className="stat stat-link">
             <div className="stat-num">{finishedThisYear}</div>
             <div className="stat-lbl">books this year</div>
             <div className="stat-bar">
@@ -199,7 +203,7 @@ function Home() {
         <div className="section-head">
           <h2>Currently unshelved</h2>
           <span className="section-rule" />
-          <Link to="/board" className="section-link">Organize your shelves →</Link>
+          <Link to="/library" search={{ view: "board" }} className="section-link">Organize your shelves →</Link>
         </div>
         {reading.length === 0 ? (
           <Empty>Nothing in progress. Pick something from your shelf.</Empty>
@@ -217,7 +221,7 @@ function Home() {
           <div className="section-head">
             <h2>Up next</h2>
             <span className="section-rule" />
-            <Link to="/board" className="section-link">Reorder →</Link>
+            <Link to="/library" search={{ view: "board" }} className="section-link">Reorder →</Link>
           </div>
           <div className="upnext-row">
             {upNext.slice(0, 5).map((b) => (
@@ -285,23 +289,18 @@ function Home() {
                       </div>
                     </div>
                     {/* TODO: half-star interactive rating in prompt 2 */}
-                    <div className="fin-rating">
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <button
-                          key={n}
-                          type="button"
-                          className={"star-btn " + (n <= (ub?.rating ?? 0) ? "on" : "")}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (ub?.id) updateRating.mutate({ id: ub.id, rating: n });
-                          }}
-                          aria-label={`Rate ${n} star${n !== 1 ? "s" : ""}`}
-                        >
-                          ●
-                        </button>
-                      ))}
-                    </div>
+                    <span
+                      className="fin-rating-wrap"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    >
+                      <StarRating
+                        value={ub?.rating}
+                        size={16}
+                        onChange={(v) => {
+                          if (ub?.id) updateRating.mutate({ id: ub.id, rating: v });
+                        }}
+                      />
+                    </span>
                   </Link>
                 );
               })}
@@ -458,6 +457,12 @@ function HomepageStyles() {
         color: var(--paper);
         box-shadow: 0 1px 0 rgba(31,38,48,0.06), 0 12px 24px -10px rgba(31,82,102,0.5);
       }
+      .btn-secondary {
+        background: var(--paper);
+        color: var(--ink);
+        border: 1px solid var(--mist);
+        box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 8px 16px -8px rgba(31,38,48,0.14);
+      }
 
       .hero-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
       .stat {
@@ -601,19 +606,7 @@ function HomepageStyles() {
       }
       .fin-title { font-family: 'Newsreader', serif; font-size: 17px; font-weight: 500; }
       .fin-meta { font-size: 12px; color: rgba(31,38,48,0.55); }
-      .fin-rating { display: flex; gap: 3px; }
-      .star-btn {
-        background: none;
-        border: none;
-        padding: 0;
-        cursor: pointer;
-        font-size: 8px;
-        color: rgba(31,38,48,0.18);
-        transition: color 0.12s ease;
-        line-height: 1;
-      }
-      .star-btn.on { color: var(--honey); }
-      .star-btn:hover { color: var(--honey); opacity: 0.7; }
+      .fin-rating-wrap { display: inline-flex; align-items: center; }
 
       .quote {
         background: var(--forest);

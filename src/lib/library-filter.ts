@@ -2,7 +2,7 @@ import type { BookWithShelf, BookStatus, BookFormat } from "@/lib/queries";
 
 export type SortKey = "added" | "title" | "author" | "rating" | "finished" | "progress";
 export type SortDir = "asc" | "desc";
-export type ViewMode = "grid" | "list";
+export type ViewMode = "grid" | "list" | "board";
 
 export type LibraryFilters = {
   q: string;

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useLibrary, useReorderBoard, type BookStatus, type BookWithShelf, type UserBook } from "@/lib/queries";
 import {
   DndContext,
@@ -21,10 +21,6 @@ import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 
-export const Route = createFileRoute("/_authenticated/board")({
-  head: () => ({ meta: [{ title: "Board — Unshelved" }] }),
-  component: BoardPage,
-});
 
 type ColDef = {
   id: BookStatus;
@@ -51,7 +47,7 @@ const FMT_LABEL: Record<string, string> = { print: "Print", ebook: "Ebook", audi
 
 const ALL_COL_IDS: BookStatus[] = ["want", "reading", "later", "dnf", "loved", "liked", "meh"];
 
-function BoardPage() {
+export default function LibraryBoard() {
   const { data: library = [] } = useLibrary();
   const reorder = useReorderBoard();
   const sensors = useSensors(
@@ -91,11 +87,6 @@ function BoardPage() {
 
   const activeBook = library.find((b) => b.id === activeId) ?? null;
   const activeCol = activeBook?.user_books[0]?.status as BookStatus | undefined;
-
-  const total = library.length;
-  const inFlight = grouped.reading.length;
-  const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
-  const thisYear = library.filter((b) => (b.user_books[0]?.finished_at ?? "") >= yearStart).length;
 
   const findContainer = (id: string): BookStatus | null => {
     if (ALL_COL_IDS.includes(id as BookStatus)) return id as BookStatus;
@@ -165,19 +156,6 @@ function BoardPage() {
 
   return (
     <div className="bv">
-      <div className="bv-title-row">
-        <div>
-          <div className="bv-eyebrow"><span className="dot" /> Your board</div>
-          <h1 className="bv-h1">All your shelves, <em>at a glance.</em></h1>
-          <p className="bv-sub">Drag a book between columns to update its status. Ratings live below.</p>
-        </div>
-        <div className="bv-counts">
-          <Count value={total} label="total books" />
-          <Count value={inFlight} label="in progress" />
-          <Count value={thisYear} label="this year" />
-        </div>
-      </div>
-
       <DndContext sensors={sensors} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd}>
         <section className="bv-section">
           <div className="bv-section-head">
@@ -215,14 +193,6 @@ function BoardPage() {
   );
 }
 
-function Count({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="bv-count">
-      <strong>{value}</strong>
-      <span>{label}</span>
-    </div>
-  );
-}
 
 function Column({ col, books }: { col: ColDef; books: BookWithShelf[] }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.id });
@@ -375,48 +345,8 @@ function BoardStyles() {
       .bv {
         font-family: 'Manrope', system-ui, sans-serif;
         color: var(--ink);
-        max-width: 1280px;
-        margin: 0 auto;
-        padding: 0 40px 56px;
-        box-sizing: border-box;
-        background-image:
-          radial-gradient(circle at 90% 0%, rgba(93,168,213,0.10), transparent 36%),
-          radial-gradient(circle at 0% 70%, rgba(111,179,122,0.08), transparent 38%);
       }
-      @media (max-width: 900px) { .bv { padding: 0 16px 40px; } }
 
-      .bv-title-row {
-        display: flex; align-items: flex-end; justify-content: space-between;
-        margin-bottom: 36px; gap: 32px; flex-wrap: wrap;
-      }
-      .bv-eyebrow {
-        display: inline-flex; align-items: center; gap: 10px;
-        font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
-        color: var(--forest); font-weight: 600; margin-bottom: 14px;
-      }
-      .bv-eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sage); }
-      .bv-h1 {
-        font-family: 'Newsreader', serif; font-weight: 400;
-        font-size: 56px; line-height: 1; letter-spacing: -0.02em; margin: 0 0 12px;
-      }
-      @media (max-width: 900px) { .bv-h1 { font-size: 36px; } }
-      .bv-h1 em { font-style: italic; color: var(--terra); font-weight: 400; }
-      .bv-sub { font-size: 16px; color: rgba(31,38,48,0.7); margin: 0; max-width: 520px; }
-
-      .bv-counts {
-        display: flex; gap: 24px; padding: 18px 26px;
-        background: var(--paper); border-radius: 22px;
-        box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 14px 32px -24px rgba(31,38,48,0.2);
-      }
-      .bv-count { display: flex; flex-direction: column; align-items: center; min-width: 64px; }
-      .bv-count strong {
-        font-family: 'Newsreader', serif; font-weight: 400;
-        font-size: 32px; line-height: 1; color: var(--ink);
-      }
-      .bv-count span {
-        font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
-        color: rgba(31,38,48,0.55); margin-top: 6px;
-      }
 
       .bv-section { margin-bottom: 40px; }
       .bv-section-head { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useBookDetail, useUpdateProgress, useUpdateStatus, type BookStatus } from "@/lib/queries";
+import { useBookDetail, useUpdateProgress, useUpdateStatus, useUpdateRating, type BookStatus } from "@/lib/queries";
 import GeneratedCover from "@/components/GeneratedCover";
 import SampleBadge from "@/components/SampleBadge";
 import StarRating from "@/components/StarRating";
@@ -49,6 +49,7 @@ function BookDetail() {
   const { data, isLoading } = useBookDetail(bookId);
   const updateStatus = useUpdateStatus();
   const updateProgress = useUpdateProgress();
+  const updateRating = useUpdateRating();
   const { user } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -110,9 +111,16 @@ function BookDetail() {
           <h1 className="font-display text-4xl md:text-5xl mt-1">{book.title}</h1>
           <p className="text-lg text-muted-foreground mt-1">{book.author}</p>
 
-          {userBook.rating && (
-            <div className="mt-3"><StarRating value={userBook.rating} size={20} /></div>
-          )}
+          <div className="mt-3">
+            <StarRating
+              value={userBook.rating}
+              size={24}
+              onChange={(v) => updateRating.mutate({ id: userBook.id, rating: v })}
+            />
+            {userBook.rating && (
+              <RatingNote userBookId={userBook.id} note={userBook.note} />
+            )}
+          </div>
 
           <div className="mt-6">
             <div className="flex items-center justify-between mb-2">
@@ -346,6 +354,32 @@ function NewQuote({ bookId, userId }: { bookId: string; userId: string }) {
   );
 }
 
+
+function RatingNote({ userBookId, note }: { userBookId: string; note: string | null }) {
+  const [value, setValue] = useState(note ?? "");
+  const qc = useQueryClient();
+
+  const save = async () => {
+    const trimmed = value.trim();
+    if (trimmed === (note ?? "").trim()) return;
+    await supabase
+      .from("user_books")
+      .update({ note: trimmed || null })
+      .eq("id", userBookId);
+    qc.invalidateQueries({ queryKey: ["book"] });
+  };
+
+  return (
+    <textarea
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={save}
+      placeholder="What stayed with you?"
+      rows={2}
+      className="mt-2 w-full bg-transparent border-0 border-b border-mist text-sm text-ink placeholder:text-muted-foreground/40 resize-none focus:outline-none focus:border-terra py-1 transition-colors leading-relaxed"
+    />
+  );
+}
 
 function Empty({ children }: { children: React.ReactNode }) {
   return <div className="rounded-2xl bg-card shadow-paper p-6 text-center text-muted-foreground italic">{children}</div>;

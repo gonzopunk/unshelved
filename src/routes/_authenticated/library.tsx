@@ -10,6 +10,7 @@ import LibraryFilters from "@/components/library/LibraryFilters";
 import LibraryToolbar from "@/components/library/LibraryToolbar";
 import LibraryGrid from "@/components/library/LibraryGrid";
 import LibraryList from "@/components/library/LibraryList";
+import LibraryBoard from "@/components/library/LibraryBoard";
 import ActiveFilters from "@/components/library/ActiveFilters";
 import {
   filterLibrary, sortLibrary,
@@ -173,16 +174,18 @@ function LibraryPage() {
         </p>
       </header>
 
-      <div className="space-y-3 mb-6">
-        <LibraryFilters
-          filters={filters}
-          onChange={onFiltersChange}
-          library={library}
-          bookTags={bookTags}
-          axisOptions={axisOptions}
-        />
-        <ActiveFilters chips={chips} onClearAll={clearAll} />
-      </div>
+      {view !== "board" && (
+        <div className="space-y-3 mb-6">
+          <LibraryFilters
+            filters={filters}
+            onChange={onFiltersChange}
+            library={library}
+            bookTags={bookTags}
+            axisOptions={axisOptions}
+          />
+          <ActiveFilters chips={chips} onClearAll={clearAll} />
+        </div>
+      )}
 
       <div className="mb-4">
         <LibraryToolbar
@@ -225,6 +228,8 @@ function LibraryPage() {
               </button>
             }
           />
+        ) : view === "board" ? (
+          <LibraryBoard />
         ) : view === "list" ? (
           <LibraryList books={sorted} />
         ) : (
