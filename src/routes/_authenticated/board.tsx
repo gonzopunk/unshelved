@@ -168,7 +168,7 @@ function BoardPage() {
       <div className="bv-title-row">
         <div>
           <div className="bv-eyebrow"><span className="dot" /> Your board</div>
-          <h1 className="bv-h1">The whole shelf, <em>at a glance.</em></h1>
+          <h1 className="bv-h1">All your shelves, <em>at a glance.</em></h1>
           <p className="bv-sub">Drag a book between columns to update its status. Ratings live below.</p>
         </div>
         <div className="bv-counts">
