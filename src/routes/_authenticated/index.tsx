@@ -199,7 +199,7 @@ function Home() {
         <div className="section-head">
           <h2>Currently unshelved</h2>
           <span className="section-rule" />
-          <Link to="/board" className="section-link">All shelves →</Link>
+          <Link to="/board" className="section-link">Organize your shelves →</Link>
         </div>
         {reading.length === 0 ? (
           <Empty>Nothing in progress. Pick something from your shelf.</Empty>
