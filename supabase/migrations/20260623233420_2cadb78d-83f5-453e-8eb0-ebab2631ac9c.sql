@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.seed_tag_axes(uuid) FROM authenticated, anon;
