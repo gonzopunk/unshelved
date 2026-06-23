@@ -23,7 +23,7 @@ export default function Constellations() {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<unknown>(null);
-  const [size, setSize] = useState({ w: 800, h: 560 });
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const [Graph, setGraph] = useState<React.ComponentType<Record<string, unknown>> | null>(null);
   const [center, setCenter] = useState<CenterMode>("recency");
 

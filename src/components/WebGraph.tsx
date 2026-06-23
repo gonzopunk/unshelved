@@ -95,18 +95,28 @@ export default function WebGraph({
     }
     // Hard boundary — keeps nodes within the visible canvas
     const MARGIN = 50;
-    const simNodes = nodes as (Node & { x?: number; y?: number; vx?: number; vy?: number })[];
-    g.d3Force("boundary", () => {
-      const hw = size.w / 2 - MARGIN;
-      const hh = size.h / 2 - MARGIN;
-      for (const n of simNodes) {
-        if (n.x == null || n.y == null) continue;
-        if (n.x < -hw) { n.x = -hw; n.vx = Math.max(0, n.vx ?? 0); }
-        if (n.x > hw)  { n.x = hw;  n.vx = Math.min(0, n.vx ?? 0); }
-        if (n.y < -hh) { n.y = -hh; n.vy = Math.max(0, n.vy ?? 0); }
-        if (n.y > hh)  { n.y = hh;  n.vy = Math.min(0, n.vy ?? 0); }
+    const sizeW = size.w;
+    const sizeH = size.h;
+    let _bNodes: Array<{ x?: number; y?: number; vx?: number; vy?: number }> = [];
+    const boundaryForce = Object.assign(
+      function () {
+        const hw = sizeW / 2 - MARGIN;
+        const hh = sizeH / 2 - MARGIN;
+        for (const n of _bNodes) {
+          if (n.x == null || n.y == null) continue;
+          if (n.x < -hw) { n.x = -hw; n.vx = Math.max(0, n.vx ?? 0); }
+          if (n.x > hw)  { n.x = hw;  n.vx = Math.min(0, n.vx ?? 0); }
+          if (n.y < -hh) { n.y = -hh; n.vy = Math.max(0, n.vy ?? 0); }
+          if (n.y > hh)  { n.y = hh;  n.vy = Math.min(0, n.vy ?? 0); }
+        }
+      },
+      {
+        initialize(nodes: unknown[]) {
+          _bNodes = nodes as Array<{ x?: number; y?: number; vx?: number; vy?: number }>;
+        },
       }
-    });
+    );
+    g.d3Force("boundary", boundaryForce);
     g.d3ReheatSimulation();
   }, [Graph, nodes.length, size.w, size.h]);
 
