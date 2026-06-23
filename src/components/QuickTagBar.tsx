@@ -98,25 +98,10 @@ function ScaleAxis({ axis, bookId, value }: { axis: TagAxis; bookId: string; val
     5: "scorching",
   };
 
-  function PaceChevron() {
-    return (
-      <svg viewBox="0 0 5 10" className="h-[10px] w-[5px]" aria-hidden="true">
-        <path
-          d="M0.5 3.5 L4 5 L0.5 6.5"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    );
-  }
-
   return (
     <div className="flex items-center gap-1.5">
       <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{axis.label}</span>
-      <div className="flex items-center gap-1">
+      <div className={`flex items-center ${isPace ? "gap-1.5" : "gap-0.5"}`}>
         {slots.map((d) => {
           const active = current !== null && current > 0 && d <= current;
           const title = isPace
@@ -134,22 +119,14 @@ function ScaleAxis({ axis, bookId, value }: { axis: TagAxis; bookId: string; val
                   ? clear.mutate({ book_id: bookId, axis_id: axis.id })
                   : set.mutate({ book_id: bookId, axis_id: axis.id, scale_value: d })
               }
-              className={`inline-flex items-center justify-center leading-none transition ${
+              className={`leading-none transition ${
                 isPace
-                  ? "h-6 min-w-[1rem] px-0.5"
-                  : "h-5 w-5 rounded-full text-xs"
+                  ? "font-mono text-[11px] px-0.5 py-1 tracking-tight"
+                  : "h-5 w-5 rounded-full text-xs inline-flex items-center justify-center"
               } ${isSpice ? "text-terra" : ""} ${active ? "" : "opacity-25 hover:opacity-60"}`}
               aria-label={`${axis.label} ${d}${isPace ? ` (${paceLabels[d]})` : isSpice ? ` (${spiceLabels[d]})` : ""}`}
             >
-              {isPace ? (
-                <span className="inline-flex items-center gap-0">
-                  {Array.from({ length: d }).map((_, i) => (
-                    <PaceChevron key={i} />
-                  ))}
-                </span>
-              ) : (
-                glyph
-              )}
+              {isPace ? "\u203a".repeat(d) : glyph}
             </button>
           );
         })}
