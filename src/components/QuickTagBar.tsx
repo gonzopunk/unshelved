@@ -76,16 +76,13 @@ function AxisControl({
 function ScaleAxis({ axis, bookId, value }: { axis: TagAxis; bookId: string; value?: BookAxisValue }) {
   const set = useSetAxisValue();
   const clear = useClearAxisValue();
-  const min = axis.scale_min ?? 0;
   const max = axis.scale_max ?? 5;
   const current = value?.scale_value ?? null;
   const isSpice = axis.key === "spice";
   const isPace = axis.key === "pace";
-  // 0 = unset; scale buttons are always 1..max
-  const start = Math.max(1, min);
-  const dots = [];
-  for (let i = start; i <= max; i++) dots.push(i);
-  const glyph = isSpice ? "🌶" : isPace ? ">" : "●";
+  // 0 = unset; render clickable slots for 1..max only
+  const slots = Array.from({ length: max }, (_, i) => i + 1);
+  const glyph = isSpice ? "🌶" : "●";
   const paceLabels: Record<number, string> = {
     1: "glacial",
     2: "languid",
@@ -100,11 +97,27 @@ function ScaleAxis({ axis, bookId, value }: { axis: TagAxis; bookId: string; val
     4: "sizzling",
     5: "scorching",
   };
+
+  function PaceChevron() {
+    return (
+      <svg viewBox="0 0 5 10" className="h-[10px] w-[5px]" aria-hidden="true">
+        <path
+          d="M0.5 3.5 L4 5 L0.5 6.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
   return (
     <div className="flex items-center gap-1.5">
       <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{axis.label}</span>
-      <div className={`flex items-center ${isPace ? "gap-0" : "gap-0.5"}`}>
-        {dots.map((d) => {
+      <div className="flex items-center gap-1">
+        {slots.map((d) => {
           const active = current !== null && current > 0 && d <= current;
           const title = isPace
             ? paceLabels[d] ?? `${d}`
@@ -121,14 +134,22 @@ function ScaleAxis({ axis, bookId, value }: { axis: TagAxis; bookId: string; val
                   ? clear.mutate({ book_id: bookId, axis_id: axis.id })
                   : set.mutate({ book_id: bookId, axis_id: axis.id, scale_value: d })
               }
-              className={`leading-none transition ${
+              className={`inline-flex items-center justify-center leading-none transition ${
                 isPace
-                  ? "h-6 w-4 font-mono text-[11px]"
+                  ? "h-6 min-w-[1rem] px-0.5"
                   : "h-5 w-5 rounded-full text-xs"
               } ${isSpice ? "text-terra" : ""} ${active ? "" : "opacity-25 hover:opacity-60"}`}
               aria-label={`${axis.label} ${d}${isPace ? ` (${paceLabels[d]})` : isSpice ? ` (${spiceLabels[d]})` : ""}`}
             >
-              {glyph}
+              {isPace ? (
+                <span className="inline-flex items-center gap-0">
+                  {Array.from({ length: d }).map((_, i) => (
+                    <PaceChevron key={i} />
+                  ))}
+                </span>
+              ) : (
+                glyph
+              )}
             </button>
           );
         })}
