@@ -10,6 +10,7 @@ import LibraryFilters from "@/components/library/LibraryFilters";
 import LibraryToolbar from "@/components/library/LibraryToolbar";
 import LibraryGrid from "@/components/library/LibraryGrid";
 import LibraryList from "@/components/library/LibraryList";
+import LibraryBoard from "@/components/library/LibraryBoard";
 import ActiveFilters from "@/components/library/ActiveFilters";
 import {
   filterLibrary, sortLibrary,
