@@ -95,9 +95,7 @@ export default function WebGraph({
     }
     // Hard boundary — keeps nodes within the visible canvas
     const MARGIN = 50;
-    const simNodes = (g.graphData() as {
-      nodes: (Node & { x?: number; y?: number; vx?: number; vy?: number })[]
-    }).nodes;
+    const simNodes = nodes as (Node & { x?: number; y?: number; vx?: number; vy?: number })[];
     g.d3Force("boundary", () => {
       const hw = size.w / 2 - MARGIN;
       const hh = size.h / 2 - MARGIN;
