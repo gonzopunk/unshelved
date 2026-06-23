@@ -228,6 +228,8 @@ function LibraryPage() {
               </button>
             }
           />
+        ) : view === "board" ? (
+          <LibraryBoard />
         ) : view === "list" ? (
           <LibraryList books={sorted} />
         ) : (
