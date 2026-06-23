@@ -193,14 +193,6 @@ export default function LibraryBoard() {
   );
 }
 
-function Count({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="bv-count">
-      <strong>{value}</strong>
-      <span>{label}</span>
-    </div>
-  );
-}
 
 function Column({ col, books }: { col: ColDef; books: BookWithShelf[] }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.id });
