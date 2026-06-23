@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
-import { BarChart3, Sparkles } from "lucide-react";
+import { BarChart3, Orbit } from "lucide-react";
 import { useLibrary, useBookTagsMap, useBookAxisMap, useLibraryPalette } from "@/lib/queries";
 import { useAllSessions } from "@/lib/sessions";
 import {
@@ -54,7 +54,7 @@ function VisualizationsPage() {
       <div className="mb-6">
         <div className="inline-flex rounded-full bg-card shadow-paper p-1">
           <TabButton active={tab === "charts"} onClick={() => setTab("charts")} icon={<BarChart3 className="h-4 w-4" />} label="Charts" />
-          <TabButton active={tab === "constellations"} onClick={() => setTab("constellations")} icon={<Sparkles className="h-4 w-4" />} label="Constellations" />
+          <TabButton active={tab === "constellations"} onClick={() => setTab("constellations")} icon={<Orbit className="h-4 w-4" />} label="Constellations" />
         </div>
       </div>
 
