@@ -41,9 +41,11 @@ export default function Constellations() {
 
   useEffect(() => {
     const el = containerRef.current;
+    console.log("[Cons] mount effect, el=", el);
     if (!el) return;
     const ro = new ResizeObserver((entries) => {
       const { width } = entries[0].contentRect;
+      console.log("[Cons] RO fired width=", width);
       setSize({
         w: width,
         h: Math.max(440, Math.min(720, window.innerHeight - 240)),
