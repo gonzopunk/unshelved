@@ -154,7 +154,7 @@ export default function Constellations() {
     );
     g.d3Force("boundary", boundaryForce);
     g.d3ReheatSimulation();
-  }, [center, strengthMap, nodes, Graph, size.w, size.h]);
+  }, [center, strengthMap, nodes, Graph, size?.w, size?.h]);
 
   if (library.length === 0) {
     return (
@@ -191,7 +191,7 @@ export default function Constellations() {
         ref={containerRef}
         className="rounded-2xl bg-card shadow-paper overflow-hidden relative"
       >
-        {Graph ? (
+        {Graph && size ? (
           <Graph
             ref={graphRef as React.Ref<unknown>}
             graphData={{ nodes, links: [] }}
@@ -230,7 +230,7 @@ export default function Constellations() {
           />
         ) : (
           <div className="h-[480px] flex items-center justify-center text-muted-foreground italic">
-            Drawing the cloud…
+            Drawing the constellation…
           </div>
         )}
       </div>
