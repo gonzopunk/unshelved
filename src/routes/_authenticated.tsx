@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, Link, useNavigate } from "@tanstack/react-rout
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
-import { LayoutGrid, Plus, LogOut, Network, Settings as SettingsIcon, Search, BookPlus, Upload, ChevronDown, NotebookPen, Library as LibraryIcon, BarChart3, MoreHorizontal } from "lucide-react";
+import { Plus, LogOut, Network, Settings as SettingsIcon, Search, BookPlus, Upload, ChevronDown, NotebookPen, Library as LibraryIcon, BarChart3, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -69,7 +69,7 @@ function PillNav({ onAdd, onImport, onSearch, onLogout }: { onAdd: () => void; o
         <Link to="/" className="font-display text-xl leading-none font-medium px-2 text-terra mt-1 ml-1">U</Link>
         <span className="h-6 w-px bg-border mx-1" />
         <MobileNavItem to="/library" icon={<LibraryIcon className="h-4 w-4" />} label="Library" />
-        <MobileNavItem to="/board" icon={<LayoutGrid className="h-4 w-4" />} label="Board" />
+        
         <MobileNavItem to="/weave" icon={<Network className="h-4 w-4" />} label="Connections" />
         <MobileNavItem to="/notations" icon={<NotebookPen className="h-4 w-4" />} label="Notations" />
         <MobileNavItem to="/visualizations" icon={<BarChart3 className="h-4 w-4" />} label="Visualizations" />
