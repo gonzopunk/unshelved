@@ -69,7 +69,6 @@ function PillNav({ onAdd, onImport, onSearch, onLogout }: { onAdd: () => void; o
         <Link to="/" className="font-display text-xl leading-none font-medium px-2 text-terra mt-1 ml-1">U</Link>
         <span className="h-6 w-px bg-border mx-1" />
         <MobileNavItem to="/library" icon={<LibraryIcon className="h-4 w-4" />} label="Library" />
-        
         <MobileNavItem to="/weave" icon={<Network className="h-4 w-4" />} label="Connections" />
         <MobileNavItem to="/notations" icon={<NotebookPen className="h-4 w-4" />} label="Notations" />
         <MobileNavItem to="/visualizations" icon={<BarChart3 className="h-4 w-4" />} label="Visualizations" />
@@ -103,7 +102,7 @@ function PillNav({ onAdd, onImport, onSearch, onLogout }: { onAdd: () => void; o
         </Link>
         <span className="h-6 w-px bg-border mx-1" />
         <NavItem to="/library" icon={<LibraryIcon className="h-4 w-4" />} label="Library" />
-        <NavItem to="/board" icon={<LayoutGrid className="h-4 w-4" />} label="Board" />
+        
         <NavItem to="/weave" icon={<Network className="h-4 w-4" />} label="Connections" />
         <NavItem to="/notations" icon={<NotebookPen className="h-4 w-4" />} label="Notations" />
         <NavItem to="/visualizations" icon={<BarChart3 className="h-4 w-4" />} label="Visualizations" />
