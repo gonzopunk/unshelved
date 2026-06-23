@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { track } from "@/lib/analytics";
-import unshelvedLogo from "@/assets/unshelved_logo.png";
+import unshelvedLogo from "@/assets/unshelved_logo_transparent.png";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Sign up — Unshelved" }] }),
