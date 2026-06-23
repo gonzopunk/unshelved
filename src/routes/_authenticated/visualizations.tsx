@@ -6,14 +6,14 @@ import {
   StatusMix, FormatSplit, FinishedByMonth, RatingHistogram,
   TopAuthors, TagCloud, AxisProfile, PaceHeatmap,
 } from "@/components/viz/Charts";
-import Bookcloud from "@/components/viz/Bookcloud";
+import Constellations from "@/components/viz/Constellations";
 
-type Tab = "charts" | "cloud";
+type Tab = "charts" | "constellations";
 
 export const Route = createFileRoute("/_authenticated/visualizations")({
   validateSearch: (search: Record<string, unknown>): { tab?: Tab } => {
     const t = search.tab;
-    return t === "cloud" ? { tab: "cloud" } : {};
+    return t === "constellations" ? { tab: "constellations" } : {};
   },
   head: () => ({ meta: [{ title: "Visualizations — Unshelved" }] }),
   component: VisualizationsPage,
@@ -47,21 +47,21 @@ function VisualizationsPage() {
       <header className="mb-6">
         <h1 className="font-display text-4xl">Visualizations</h1>
         <p className="text-sm text-muted-foreground mt-1 max-w-prose">
-          Eight ways to see your library — every chart click-throughs into the books behind it.
+          Charts that drill into the books behind them. A constellation of your library, rearranged by whatever matters most to you.
         </p>
       </header>
 
       <div className="mb-6">
         <div className="inline-flex rounded-full bg-card shadow-paper p-1">
           <TabButton active={tab === "charts"} onClick={() => setTab("charts")} icon={<BarChart3 className="h-4 w-4" />} label="Charts" />
-          <TabButton active={tab === "cloud"} onClick={() => setTab("cloud")} icon={<Sparkles className="h-4 w-4" />} label="Bookcloud" />
+          <TabButton active={tab === "constellations"} onClick={() => setTab("constellations")} icon={<Sparkles className="h-4 w-4" />} label="Constellations" />
         </div>
       </div>
 
       {isLoading ? (
         <div className="text-sm text-muted-foreground">Loading…</div>
-      ) : tab === "cloud" ? (
-        <Bookcloud />
+      ) : tab === "constellations" ? (
+        <Constellations />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pb-24">
           <FinishedByMonth library={library} />

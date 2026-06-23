@@ -19,7 +19,7 @@ type Node = {
   color: string;
 };
 
-export default function Bookcloud() {
+export default function Constellations() {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<unknown>(null);
@@ -120,8 +120,21 @@ export default function Bookcloud() {
         if (n.y != null) n.vy = (n.vy ?? 0) - n.y * pull;
       }
     });
+    // Hard boundary — clamp positions and kill outward velocity at canvas edge
+    const MARGIN = 50;
+    g.d3Force("boundary", () => {
+      const hw = size.w / 2 - MARGIN;
+      const hh = size.h / 2 - MARGIN;
+      for (const n of simNodes) {
+        if (n.x == null || n.y == null) continue;
+        if (n.x < -hw) { n.x = -hw; n.vx = Math.max(0, n.vx ?? 0); }
+        if (n.x > hw)  { n.x = hw;  n.vx = Math.min(0, n.vx ?? 0); }
+        if (n.y < -hh) { n.y = -hh; n.vy = Math.max(0, n.vy ?? 0); }
+        if (n.y > hh)  { n.y = hh;  n.vy = Math.min(0, n.vy ?? 0); }
+      }
+    });
     g.d3ReheatSimulation();
-  }, [center, strengthMap, nodes, Graph]);
+  }, [center, strengthMap, nodes, Graph, size.w, size.h]);
 
   if (library.length === 0) {
     return (
