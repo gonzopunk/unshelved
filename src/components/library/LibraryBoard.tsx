@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useLibrary, useReorderBoard, type BookStatus, type BookWithShelf, type UserBook } from "@/lib/queries";
 import {
   DndContext,
@@ -21,10 +21,6 @@ import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 
-export const Route = createFileRoute("/_authenticated/board")({
-  head: () => ({ meta: [{ title: "Board — Unshelved" }] }),
-  component: BoardPage,
-});
 
 type ColDef = {
   id: BookStatus;
