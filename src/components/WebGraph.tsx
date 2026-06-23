@@ -93,8 +93,22 @@ export default function WebGraph({
         return Math.min(1, 0.02 + (str - 1) * 0.27); // 0.02 → ~1.1 (clamped)
       });
     }
+    // Hard boundary — keeps nodes within the visible canvas
+    const MARGIN = 50;
+    const simNodes = nodes as (Node & { x?: number; y?: number; vx?: number; vy?: number })[];
+    g.d3Force("boundary", () => {
+      const hw = size.w / 2 - MARGIN;
+      const hh = size.h / 2 - MARGIN;
+      for (const n of simNodes) {
+        if (n.x == null || n.y == null) continue;
+        if (n.x < -hw) { n.x = -hw; n.vx = Math.max(0, n.vx ?? 0); }
+        if (n.x > hw)  { n.x = hw;  n.vx = Math.min(0, n.vx ?? 0); }
+        if (n.y < -hh) { n.y = -hh; n.vy = Math.max(0, n.vy ?? 0); }
+        if (n.y > hh)  { n.y = hh;  n.vy = Math.min(0, n.vy ?? 0); }
+      }
+    });
     g.d3ReheatSimulation();
-  }, [Graph, nodes.length]);
+  }, [Graph, nodes.length, size.w, size.h]);
 
   // Find nearest node within HIT_RADIUS pixels of a screen point.
   const pickNode = useCallback((screenX: number, screenY: number): Node | null => {

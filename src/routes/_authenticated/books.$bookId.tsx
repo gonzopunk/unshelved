@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useBookDetail, useUpdateProgress, useUpdateStatus, type BookStatus } from "@/lib/queries";
 import GeneratedCover from "@/components/GeneratedCover";
 import SampleBadge from "@/components/SampleBadge";
@@ -92,9 +92,12 @@ function BookDetail() {
 
   return (
     <main className="max-w-5xl mx-auto px-6">
-      <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-ink mb-6">
+      <button
+        onClick={() => window.history.back()}
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-ink mb-6"
+      >
         <ArrowLeft className="h-4 w-4" /> Back
-      </Link>
+      </button>
 
       <div className="grid md:grid-cols-[220px_1fr] gap-8 items-start">
         <GeneratedCover book={book} className="w-full aspect-[3/4] rounded-2xl shadow-lift" />
