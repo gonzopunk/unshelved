@@ -24,6 +24,7 @@ export default function CommandPalette({ open, onOpenChange, onImport }: { open:
   const { user } = useAuth();
   const { data: library } = useLibrary();
   const { data: connections } = useAllConnections();
+  const { data: refBooks } = useReferenceBooks();
 
   const { data: highlights } = useQuery({
     queryKey: ["search-highlights", user?.id],
