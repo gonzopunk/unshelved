@@ -389,6 +389,7 @@ function BoardStyles() {
       .bv {
         font-family: 'Manrope', system-ui, sans-serif;
         color: var(--ink);
+        overflow-x: auto;
       }
 
 
