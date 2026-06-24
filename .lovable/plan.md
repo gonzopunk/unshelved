@@ -1,50 +1,21 @@
-## Bug
-`/visualizations` crashes on the published site with:
+# Update vulnerable dependencies
 
-```
-TypeError: Cannot read properties of undefined (reading 'count')
-  at ratingHistogram (src/lib/viz-data.ts)
-  at useMemo in RatingHistogram (src/components/viz/Charts.tsx)
-```
+All findings are transitive vulnerabilities (undici, ws, protobufjs, dompurify, esbuild, etc.) pulled in by five direct dependencies. The fix is to bump the direct deps to their latest versions, which pull patched transitives, and refresh the lockfile.
 
-Repro confirmed against `unshelved.lovable.app/visualizations` with the user's session — the crashing frame is `out[r - 1].count++`.
+## Steps
 
-## Cause
-`ratingHistogram` assumes integer ratings 1–5:
+1. Run `bun update` for the affected direct dependencies:
+   - `@cloudflare/vite-plugin`
+   - `@supabase/supabase-js`
+   - `@tanstack/react-start` (plus the matching `@tanstack/react-router` / `@tanstack/start-*` siblings so versions stay aligned)
+   - `posthog-js`
+   - `react-email`
+2. If any high-severity transitive remains pinned, add a `bun` `overrides` entry in `package.json` (e.g. `undici`, `ws`, `protobufjs`) to force patched versions.
+3. Re-run the dependency scan / `bun audit` to confirm the high-severity advisories are gone.
+4. Smoke-test the app via the running dev server (auth, library, board) since TanStack Start and Supabase client are on the upgrade list.
 
-```ts
-const out = [1,2,3,4,5].map(r => ({ rating: r, count: 0 }));
-for (const b of library) {
-  const r = b.user_books[0]?.rating;
-  if (r && r >= 1 && r <= 5) out[r - 1].count++;  // ← out[3.5] is undefined
-}
-```
+## Notes / risks
 
-The schema permits fractional ratings (the user has at least one half-star, e.g. `4.5`). `out[4.5 - 1]` → `out[3.5]` → `undefined`, then `.count++` throws. Preview just happens to be running on data with no half-stars.
-
-## Fix
-One-line change in `src/lib/viz-data.ts`, plus a defensive guard so any future non-integer / out-of-range value can't take the page down again.
-
-```ts
-export function ratingHistogram(library: BookWithShelf[]): { rating: number; count: number }[] {
-  const out = [1, 2, 3, 4, 5].map((rating) => ({ rating, count: 0 }));
-  for (const b of library) {
-    const raw = b.user_books[0]?.rating;
-    if (raw == null) continue;
-    const r = Math.round(raw);              // 4.5 → 5, 1.5 → 2
-    if (r >= 1 && r <= 5) out[r - 1].count++;
-  }
-  return out;
-}
-```
-
-Rounding (vs. flooring) keeps half-stars in the bucket users perceive them as. The bin labels stay 1–5 stars, matching the existing X-axis tick formatter.
-
-## Scope
-- Edit only `src/lib/viz-data.ts` (`ratingHistogram`).
-- No UI / chart / route changes.
-- No migration — historical fractional ratings remain valid; only the chart aggregator changes.
-
-## Verification
-- `bun run test` — existing 18 tests still pass.
-- Re-load `/visualizations` on the published site; the Charts tab renders all 8 cards, Ratings histogram includes half-star books in the rounded bucket.
+- TanStack Start minor bumps occasionally tweak server-function or router APIs. If typecheck or build fails after the upgrade, pin to the latest compatible minor instead of latest major.
+- No application code changes are expected; this is a dependency-only update.
+- Medium-severity findings will largely clear as a side effect of the same bumps; remaining ones can be addressed in a follow-up if needed.
