@@ -11,9 +11,9 @@ import Constellations from "@/components/viz/Constellations";
 type Tab = "charts" | "constellations";
 
 export const Route = createFileRoute("/_authenticated/visualizations")({
-  validateSearch: (search: Record<string, unknown>): { tab?: Tab } => {
+  validateSearch: (search: Record<string, unknown>): { tab: Tab } => {
     const t = search.tab;
-    return t === "constellations" ? { tab: "constellations" } : {};
+    return { tab: t === "constellations" ? "constellations" : "charts" };
   },
   head: () => ({ meta: [{ title: "Visualizations — Unshelved" }] }),
   component: VisualizationsPage,
