@@ -60,8 +60,10 @@ export function finishedByMonth(library: BookWithShelf[], months = 12): { month:
 export function ratingHistogram(library: BookWithShelf[]): { rating: number; count: number }[] {
   const out = [1, 2, 3, 4, 5].map((rating) => ({ rating, count: 0 }));
   for (const b of library) {
-    const r = b.user_books[0]?.rating;
-    if (r && r >= 1 && r <= 5) out[r - 1].count++;
+    const raw = b.user_books[0]?.rating;
+    if (raw == null) continue;
+    const r = Math.round(raw);
+    if (r >= 1 && r <= 5) out[r - 1].count++;
   }
   return out;
 }

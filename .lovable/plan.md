@@ -1,23 +1,50 @@
-## Why it looks off-center
+## Bug
+`/visualizations` crashes on the published site with:
 
-The PNG file itself is asymmetric. It's 1014×1000 px with an alpha channel, and the opaque logo content occupies pixels (20, 20) to (1014, 1000) — meaning there are **20 px of transparent padding on the top and left edges, and 0 px on the bottom and right**.
+```
+TypeError: Cannot read properties of undefined (reading 'count')
+  at ratingHistogram (src/lib/viz-data.ts)
+  at useMemo in RatingHistogram (src/components/viz/Charts.tsx)
+```
 
-- In the browser, the `<img>` is rendered as a centered box. Because the transparent padding is lopsided, the visible logo gets pushed down and to the right inside that box — exactly what your screenshot shows.
-- Paint / Adobe Express show it "centered" because they either crop to the visible content or display against a different background where the asymmetric transparent margin is less obvious.
+Repro confirmed against `unshelved.lovable.app/visualizations` with the user's session — the crashing frame is `out[r - 1].count++`.
 
-This is a problem with the asset, not the login page CSS.
+## Cause
+`ratingHistogram` assumes integer ratings 1–5:
+
+```ts
+const out = [1,2,3,4,5].map(r => ({ rating: r, count: 0 }));
+for (const b of library) {
+  const r = b.user_books[0]?.rating;
+  if (r && r >= 1 && r <= 5) out[r - 1].count++;  // ← out[3.5] is undefined
+}
+```
+
+The schema permits fractional ratings (the user has at least one half-star, e.g. `4.5`). `out[4.5 - 1]` → `out[3.5]` → `undefined`, then `.count++` throws. Preview just happens to be running on data with no half-stars.
 
 ## Fix
+One-line change in `src/lib/viz-data.ts`, plus a defensive guard so any future non-integer / out-of-range value can't take the page down again.
 
-Rewrite `src/assets/unshelved_logo.png` so the opaque content sits on a symmetric, square canvas:
+```ts
+export function ratingHistogram(library: BookWithShelf[]): { rating: number; count: number }[] {
+  const out = [1, 2, 3, 4, 5].map((rating) => ({ rating, count: 0 }));
+  for (const b of library) {
+    const raw = b.user_books[0]?.rating;
+    if (raw == null) continue;
+    const r = Math.round(raw);              // 4.5 → 5, 1.5 → 2
+    if (r >= 1 && r <= 5) out[r - 1].count++;
+  }
+  return out;
+}
+```
 
-1. Trim the existing alpha bbox (gives a clean 994×980 opaque region).
-2. Paste it centered onto a new transparent square canvas (1024×1024, with equal padding on all sides).
-3. Overwrite `src/assets/unshelved_logo.png` with the new file.
+Rounding (vs. flooring) keeps half-stars in the bucket users perceive them as. The bin labels stay 1–5 stars, matching the existing X-axis tick formatter.
 
-No code or component changes are needed — `login.tsx`, `signup.tsx`, and anywhere else that imports `unshelved_logo.png` will automatically render it centered.
+## Scope
+- Edit only `src/lib/viz-data.ts` (`ratingHistogram`).
+- No UI / chart / route changes.
+- No migration — historical fractional ratings remain valid; only the chart aggregator changes.
 
 ## Verification
-
-- Reload `/login` — the U-with-reader mark sits visually centered above the "Unshelved" wordline, with equal whitespace left/right and top/bottom.
-- Same check on `/signup` and any other usage.
+- `bun run test` — existing 18 tests still pass.
+- Re-load `/visualizations` on the published site; the Charts tab renders all 8 cards, Ratings histogram includes half-star books in the rounded bucket.
