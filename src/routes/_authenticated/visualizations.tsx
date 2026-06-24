@@ -21,11 +21,7 @@ export const Route = createFileRoute("/_authenticated/visualizations")({
 
 function VisualizationsPage() {
   const navigate = useNavigate();
-  const { tab: urlTab } = useSearch({ from: "/_authenticated/visualizations" });
-  const tab: Tab = urlTab ?? (() => {
-    try { return (localStorage.getItem("visualizations-tab") as Tab) ?? "charts"; }
-    catch { return "charts"; }
-  })();
+  const { tab } = useSearch({ from: "/_authenticated/visualizations" });
 
   const { data: library = [], isLoading } = useLibrary();
   const { data: bookTags = {} } = useBookTagsMap();
