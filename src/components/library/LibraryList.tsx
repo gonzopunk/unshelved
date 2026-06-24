@@ -37,7 +37,7 @@ export default function LibraryList({ books }: { books: BookWithShelf[] }) {
             <div className="truncate text-sm text-muted-foreground">{b.author}</div>
             <div className="text-xs">{STATUS_LABELS[ub.status]}</div>
             <div className="text-xs font-mono">
-              {ub.rating ? "★".repeat(ub.rating) : "—"}
+              {ub.rating ? "★".repeat(Math.round(Number(ub.rating))) : "—"}
             </div>
             <div className="hidden md:block text-xs text-muted-foreground">
               {FORMAT_LABELS[b.format]}
