@@ -64,6 +64,10 @@ export default function LibraryBoard() {
   );
   const [activeId, setActiveId] = useState<string | null>(null);
 
+  // Tracks live visual order of all columns during drag.
+  // Empty object = not dragging.
+  const [liveItems, setLiveItems] = useState<Partial<Record<BookStatus, string[]>>>({});
+
   const grouped = useMemo(() => {
     const out: Record<BookStatus, BookWithShelf[]> = {
       want: [], reading: [], later: [], dnf: [], loved: [], liked: [], meh: [],
