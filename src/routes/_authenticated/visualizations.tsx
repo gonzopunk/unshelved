@@ -33,7 +33,7 @@ function VisualizationsPage() {
     try { localStorage.setItem("visualizations-tab", t); } catch { /* noop */ }
     navigate({
       to: ".",
-      search: (prev: Record<string, unknown>) => ({ ...prev, tab: t === "charts" ? undefined : t }),
+      search: (prev: Record<string, unknown>) => ({ ...prev, tab: t }),
       replace: true,
     } as never);
   };
