@@ -110,6 +110,6 @@
   "overrides": {
     "undici": "^7.16.0",
     "ws": "^8.18.3",
-    "dompurify": "^3.5.7"
+    "dompurify": "^3.4.11"
   }
 }
