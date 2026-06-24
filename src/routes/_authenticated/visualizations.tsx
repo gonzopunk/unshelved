@@ -13,7 +13,12 @@ type Tab = "charts" | "constellations";
 export const Route = createFileRoute("/_authenticated/visualizations")({
   validateSearch: (search: Record<string, unknown>): { tab: Tab } => {
     const t = search.tab;
-    return { tab: t === "constellations" ? "constellations" : "charts" };
+    if (t === "constellations" || t === "charts") return { tab: t as Tab };
+    try {
+      const stored = localStorage.getItem("visualizations-tab");
+      if (stored === "constellations") return { tab: "constellations" };
+    } catch { /* noop */ }
+    return { tab: "charts" };
   },
   head: () => ({ meta: [{ title: "Visualizations — Unshelved" }] }),
   component: VisualizationsPage,
