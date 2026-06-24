@@ -11,9 +11,9 @@ import Constellations from "@/components/viz/Constellations";
 type Tab = "charts" | "constellations";
 
 export const Route = createFileRoute("/_authenticated/visualizations")({
-  validateSearch: (search: Record<string, unknown>): { tab?: Tab } => {
+  validateSearch: (search: Record<string, unknown>): { tab: Tab } => {
     const t = search.tab;
-    return t === "constellations" ? { tab: "constellations" } : {};
+    return { tab: t === "constellations" ? "constellations" : "charts" };
   },
   head: () => ({ meta: [{ title: "Visualizations — Unshelved" }] }),
   component: VisualizationsPage,
@@ -21,11 +21,7 @@ export const Route = createFileRoute("/_authenticated/visualizations")({
 
 function VisualizationsPage() {
   const navigate = useNavigate();
-  const { tab: urlTab } = useSearch({ from: "/_authenticated/visualizations" });
-  const tab: Tab = urlTab ?? (() => {
-    try { return (localStorage.getItem("visualizations-tab") as Tab) ?? "charts"; }
-    catch { return "charts"; }
-  })();
+  const { tab } = useSearch({ from: "/_authenticated/visualizations" });
 
   const { data: library = [], isLoading } = useLibrary();
   const { data: bookTags = {} } = useBookTagsMap();
@@ -37,7 +33,7 @@ function VisualizationsPage() {
     try { localStorage.setItem("visualizations-tab", t); } catch { /* noop */ }
     navigate({
       to: ".",
-      search: (prev: Record<string, unknown>) => ({ ...prev, tab: t === "charts" ? undefined : t }),
+      search: (prev: Record<string, unknown>) => ({ ...prev, tab: t }),
       replace: true,
     } as never);
   };
