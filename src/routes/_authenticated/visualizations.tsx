@@ -51,7 +51,7 @@ function VisualizationsPage() {
         </p>
       </header>
 
-      <div className="mb-6">
+      <div className="mb-6 relative z-10">
         <div className="inline-flex rounded-full bg-card shadow-paper p-1">
           <TabButton active={tab === "charts"} onClick={() => setTab("charts")} icon={<BarChart3 className="h-4 w-4" />} label="Charts" />
           <TabButton active={tab === "constellations"} onClick={() => setTab("constellations")} icon={<Orbit className="h-4 w-4" />} label="Constellations" />

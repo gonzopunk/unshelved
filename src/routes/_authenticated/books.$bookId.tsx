@@ -218,8 +218,8 @@ function BookDetail() {
             highlights={highlights}
             notes={notes}
             onAdd={() => setWeaveSource({ kind: "book", id: book.id, label: book.title })}
-            onEdit={(c) => {
-              setWeaveSource({ kind: c.source_kind, id: c.source_id, label: "Edit" });
+            onEdit={(c, label) => {
+              setWeaveSource({ kind: c.source_kind, id: c.source_id, label: label ?? book.title });
               setEditingConn(c);
             }}
           />
@@ -267,7 +267,7 @@ function WeaveTab({
   highlights: { id: string; book_id: string; quote_text: string }[];
   notes: { id: string; book_id: string; content: string }[];
   onAdd: () => void;
-  onEdit?: (c: Connection) => void;
+  onEdit?: (c: Connection, sourceLabel?: string) => void;
 }) {
   const highlightIds = useMemo(() => highlights.map(h => h.id), [highlights]);
   const noteIds = useMemo(() => notes.map(n => n.id), [notes]);
@@ -283,6 +283,14 @@ function WeaveTab({
     for (const n of notes) m.set(n.id, { kind: "note", id: n.id, title: `Note on ${book.title}`, bookId: n.book_id, snippet: n.content });
     return m;
   }, [library, refBooks, highlights, notes, book.title]);
+
+  const handleEdit = useMemo(() => {
+    if (!onEdit) return undefined;
+    return (c: Connection) => {
+      const sourceLabel = lookup.get(c.source_id)?.title ?? book.title;
+      onEdit(c, sourceLabel);
+    };
+  }, [onEdit, lookup, book.title]);
 
   const resolve = (kind: ConnectionKind, id: string): EndpointInfo =>
     lookup.get(id) ?? { kind, id, title: "Unknown" };
@@ -307,7 +315,7 @@ function WeaveTab({
               connection={c}
               source={resolve(c.source_kind, c.source_id)}
               target={resolve(c.target_kind, c.target_id)}
-              onEdit={onEdit}
+              onEdit={handleEdit}
             />
           ))}
         </div>
