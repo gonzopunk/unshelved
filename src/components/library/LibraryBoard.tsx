@@ -209,7 +209,7 @@ export default function LibraryBoard() {
           </div>
           <div className="bv-cols cols-4">
             {SHELVES.map((col) => (
-              <Column key={col.id} col={col} books={grouped[col.id]} />
+              <Column key={col.id} col={col} books={getBooksForCol(col.id)} />
             ))}
           </div>
         </section>
