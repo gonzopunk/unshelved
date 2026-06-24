@@ -61,8 +61,15 @@ export default function CommandPalette({ open, onOpenChange, onImport }: { open:
 
   const bookResults = useMemo(() => {
     if (!q) return (library ?? []).slice(0, 6);
-    return (library ?? []).filter((b) => match(b.title) || match(b.author)).slice(0, 8);
-  }, [library, q]);
+    const libMatches = (library ?? [])
+      .filter((b) => match(b.title) || match(b.author))
+      .slice(0, 6);
+    const refMatches = (refBooks ?? [])
+      .filter((r) => match(r.title) || match(r.author))
+      .slice(0, 4)
+      .map((r) => ({ ...r, _isRef: true as const }));
+    return [...libMatches, ...refMatches];
+  }, [library, refBooks, q]);
 
   const highlightResults = useMemo(() => {
     if (!q) return [];
