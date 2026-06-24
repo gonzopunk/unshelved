@@ -51,7 +51,9 @@ export default function LibraryBoard() {
   const { data: library = [] } = useLibrary();
   const reorder = useReorderBoard();
   const sensors = useSensors(
-    useSensor(MouseSensor),
+    useSensor(MouseSensor, {
+      activationConstraint: { distance: 8 },
+    }),
     useSensor(TouchSensor, {
       activationConstraint: {
         delay: 250,
