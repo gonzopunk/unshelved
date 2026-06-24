@@ -13,7 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useLibrary } from "@/lib/queries";
-import { useAllConnections } from "@/lib/weave";
+import { useAllConnections, useReferenceBooks } from "@/lib/weave";
 import { BookOpen, Quote, StickyNote, Network, LayoutGrid, Settings as SettingsIcon, Upload, NotebookPen, Library as LibraryIcon, BarChart3 } from "lucide-react";
 import { Kbd, useIsMac } from "@/components/Kbd";
 
@@ -24,6 +24,7 @@ export default function CommandPalette({ open, onOpenChange, onImport }: { open:
   const { user } = useAuth();
   const { data: library } = useLibrary();
   const { data: connections } = useAllConnections();
+  const { data: refBooks } = useReferenceBooks();
 
   const { data: highlights } = useQuery({
     queryKey: ["search-highlights", user?.id],
@@ -60,8 +61,15 @@ export default function CommandPalette({ open, onOpenChange, onImport }: { open:
 
   const bookResults = useMemo(() => {
     if (!q) return (library ?? []).slice(0, 6);
-    return (library ?? []).filter((b) => match(b.title) || match(b.author)).slice(0, 8);
-  }, [library, q]);
+    const libMatches = (library ?? [])
+      .filter((b) => match(b.title) || match(b.author))
+      .slice(0, 6);
+    const refMatches = (refBooks ?? [])
+      .filter((r) => match(r.title) || match(r.author))
+      .slice(0, 4)
+      .map((r) => ({ ...r, _isRef: true as const }));
+    return [...libMatches, ...refMatches];
+  }, [library, refBooks, q]);
 
   const highlightResults = useMemo(() => {
     if (!q) return [];
@@ -109,13 +117,33 @@ export default function CommandPalette({ open, onOpenChange, onImport }: { open:
           <>
             <CommandSeparator />
             <CommandGroup heading="Books">
-              {bookResults.map((b) => (
-                <CommandItem key={b.id} value={`book-${b.id}-${b.title}`} onSelect={() => go("/books/$bookId", { bookId: b.id })}>
-                  <BookOpen className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <span className="truncate">{b.title}</span>
-                  {b.author && <span className="ml-2 text-xs text-muted-foreground truncate">{b.author}</span>}
-                </CommandItem>
-              ))}
+              {bookResults.map((b) => {
+                const isRef = "_isRef" in b && b._isRef;
+                return (
+                  <CommandItem
+                    key={b.id}
+                    value={`book-${b.id}-${b.title}`}
+                    onSelect={() =>
+                      isRef
+                        ? go("/weave")
+                        : go("/books/$bookId", { bookId: b.id })
+                    }
+                  >
+                    <BookOpen className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <span className="truncate">{b.title}</span>
+                    {b.author && (
+                      <span className="ml-2 text-xs text-muted-foreground truncate">
+                        {b.author}
+                      </span>
+                    )}
+                    {isRef && (
+                      <span className="ml-2 font-mono text-[0.6rem] uppercase tracking-widest text-muted-foreground">
+                        ref
+                      </span>
+                    )}
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
           </>
         )}

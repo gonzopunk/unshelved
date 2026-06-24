@@ -85,8 +85,52 @@ function BookDetail() {
 
   const deleteBook = async () => {
     if (!confirm("Remove this book from your library?")) return;
+
+    // Check whether this book is an endpoint in any connection.
+    const { data: connData } = await supabase
+      .from("connections")
+      .select("id, source_id, target_id")
+      .or(`source_id.eq.${book.id},target_id.eq.${book.id}`);
+
+    if (connData && connData.length > 0) {
+      // Preserve the book's identity as a reference so connections
+      // remain readable after the book is removed from the library.
+      const { data: refBook, error: refError } = await supabase
+        .from("reference_books")
+        .insert({ user_id: user!.id, title: book.title, author: book.author })
+        .select()
+        .single();
+
+      if (refError) {
+        toast.error("Could not preserve connections — book not deleted.");
+        return;
+      }
+
+      const sourceIds = connData
+        .filter((c) => c.source_id === book.id)
+        .map((c) => c.id);
+      const targetIds = connData
+        .filter((c) => c.target_id === book.id)
+        .map((c) => c.id);
+
+      if (sourceIds.length > 0) {
+        await supabase
+          .from("connections")
+          .update({ source_kind: "reference_book" as const, source_id: refBook.id })
+          .in("id", sourceIds);
+      }
+      if (targetIds.length > 0) {
+        await supabase
+          .from("connections")
+          .update({ target_kind: "reference_book" as const, target_id: refBook.id })
+          .in("id", targetIds);
+      }
+    }
+
     await supabase.from("books").delete().eq("id", book.id);
     qc.invalidateQueries({ queryKey: ["library"] });
+    qc.invalidateQueries({ queryKey: ["connections"] });
+    qc.invalidateQueries({ queryKey: ["reference_books"] });
     toast.success("Removed");
     navigate({ to: "/" });
   };
