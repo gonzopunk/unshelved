@@ -13,7 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useLibrary } from "@/lib/queries";
-import { useAllConnections } from "@/lib/weave";
+import { useAllConnections, useReferenceBooks } from "@/lib/weave";
 import { BookOpen, Quote, StickyNote, Network, LayoutGrid, Settings as SettingsIcon, Upload, NotebookPen, Library as LibraryIcon, BarChart3 } from "lucide-react";
 import { Kbd, useIsMac } from "@/components/Kbd";
 
