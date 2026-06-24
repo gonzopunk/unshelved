@@ -118,6 +118,7 @@ export default function LibraryBoard() {
 
     let insertIndex: number;
     if (ALL_COL_IDS.includes(overId as BookStatus)) {
+      if (sourceCol === targetCol) return; // same-column partial drag = no-op
       insertIndex = targetListBase.length;
     } else {
       insertIndex = targetListBase.findIndex((b) => b.id === overId);
