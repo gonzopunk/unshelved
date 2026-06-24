@@ -117,13 +117,33 @@ export default function CommandPalette({ open, onOpenChange, onImport }: { open:
           <>
             <CommandSeparator />
             <CommandGroup heading="Books">
-              {bookResults.map((b) => (
-                <CommandItem key={b.id} value={`book-${b.id}-${b.title}`} onSelect={() => go("/books/$bookId", { bookId: b.id })}>
-                  <BookOpen className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <span className="truncate">{b.title}</span>
-                  {b.author && <span className="ml-2 text-xs text-muted-foreground truncate">{b.author}</span>}
-                </CommandItem>
-              ))}
+              {bookResults.map((b) => {
+                const isRef = "_isRef" in b && b._isRef;
+                return (
+                  <CommandItem
+                    key={b.id}
+                    value={`book-${b.id}-${b.title}`}
+                    onSelect={() =>
+                      isRef
+                        ? go("/weave")
+                        : go("/books/$bookId", { bookId: b.id })
+                    }
+                  >
+                    <BookOpen className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <span className="truncate">{b.title}</span>
+                    {b.author && (
+                      <span className="ml-2 text-xs text-muted-foreground truncate">
+                        {b.author}
+                      </span>
+                    )}
+                    {isRef && (
+                      <span className="ml-2 font-mono text-[0.6rem] uppercase tracking-widest text-muted-foreground">
+                        ref
+                      </span>
+                    )}
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
           </>
         )}
