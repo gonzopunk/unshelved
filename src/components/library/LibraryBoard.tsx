@@ -95,84 +95,106 @@ export default function LibraryBoard() {
   const activeBook = library.find((b) => b.id === activeId) ?? null;
   const activeCol = activeBook?.user_books[0]?.status as BookStatus | undefined;
 
-  const findContainer = (id: string): BookStatus | null => {
-    if (ALL_COL_IDS.includes(id as BookStatus)) return id as BookStatus;
-    const book = library.find((b) => b.id === id);
-    return (book?.user_books[0]?.status as BookStatus | undefined) ?? null;
+  // Returns books for a column in live drag order (falls back to grouped when not dragging).
+  const getBooksForCol = (col: BookStatus): BookWithShelf[] => {
+    const ids = liveItems[col];
+    if (!ids) return grouped[col];
+    return ids
+      .map((id) => library.find((b) => b.id === id))
+      .filter(Boolean) as BookWithShelf[];
   };
 
-  const onDragStart = (e: DragStartEvent) => setActiveId(String(e.active.id));
+  const onDragStart = (e: DragStartEvent) => {
+    const id = String(e.active.id);
+    setActiveId(id);
+    // Snapshot current column order for all columns.
+    const snapshot: Partial<Record<BookStatus, string[]>> = {};
+    for (const k of ALL_COL_IDS) {
+      snapshot[k as BookStatus] = grouped[k as BookStatus].map((b) => b.id);
+    }
+    setLiveItems(snapshot);
+  };
 
-  const onDragEnd = (e: DragEndEvent) => {
+  const onDragEnd = (_e: DragEndEvent) => {
     setActiveId(null);
-    const activeIdStr = String(e.active.id);
+
+    if (!Object.keys(liveItems).length) return;
+    const snapshot = liveItems;
+    setLiveItems({});
+
+    // Commit any columns whose order changed from the original grouped order.
+    const updates: { id: string; status: BookStatus; board_position: number }[] = [];
+    for (const col of ALL_COL_IDS) {
+      const finalIds = snapshot[col as BookStatus];
+      if (!finalIds) continue;
+      const originalIds = grouped[col as BookStatus].map((b) => b.id);
+      const changed =
+        finalIds.length !== originalIds.length ||
+        finalIds.some((id, i) => id !== originalIds[i]);
+      if (!changed) continue;
+      finalIds.forEach((bookId, i) => {
+        const book = library.find((b) => b.id === bookId);
+        const ub = book?.user_books[0];
+        if (!ub) return;
+        updates.push({ id: ub.id, status: col as BookStatus, board_position: i });
+      });
+    }
+    if (updates.length > 0) reorder.mutate(updates);
+  };
+
+  const onDragOver = (e: DragOverEvent) => {
+    const activeId = String(e.active.id);
     const overId = e.over?.id ? String(e.over.id) : null;
     if (!overId) return;
 
-    const sourceCol = findContainer(activeIdStr);
-    const targetCol = findContainer(overId);
-    if (!sourceCol || !targetCol) return;
+    setLiveItems((prev) => {
+      if (!Object.keys(prev).length) return prev;
 
-    const activeBook = library.find((b) => b.id === activeIdStr);
-    const activeUb = activeBook?.user_books[0];
-    if (!activeBook || !activeUb) return;
-
-    // Compute the target list after the move.
-    const sourceList = grouped[sourceCol].filter((b) => b.id !== activeIdStr);
-    const targetListBase = sourceCol === targetCol ? sourceList : grouped[targetCol].slice();
-
-    let insertIndex: number;
-    if (ALL_COL_IDS.includes(overId as BookStatus)) {
-      if (sourceCol === targetCol) return; // same-column partial drag = no-op
-      insertIndex = targetListBase.length;
-    } else {
-      insertIndex = targetListBase.findIndex((b) => b.id === overId);
-      if (insertIndex < 0) insertIndex = targetListBase.length;
-      // When moving within the same column and the drop target was
-      // originally BELOW the dragged card, removing the dragged card
-      // shifts the target's index down by 1. Compensate:
-      if (sourceCol === targetCol) {
-        const origActiveIdx = grouped[sourceCol].findIndex(
-          (b) => b.id === activeIdStr
-        );
-        const origOverIdx = grouped[sourceCol].findIndex(
-          (b) => b.id === overId
-        );
-        if (origActiveIdx >= 0 && origOverIdx > origActiveIdx) {
-          insertIndex += 1;
+      // Find which column the active item is currently in.
+      let activeCol: BookStatus | null = null;
+      for (const col of ALL_COL_IDS) {
+        if (prev[col as BookStatus]?.includes(activeId)) {
+          activeCol = col as BookStatus;
+          break;
         }
       }
-    }
+      if (!activeCol) return prev;
 
-    const newTargetList = targetListBase.slice();
-    newTargetList.splice(insertIndex, 0, activeBook);
+      // Find the target column.
+      const overCol: BookStatus | null = ALL_COL_IDS.includes(overId as BookStatus)
+        ? (overId as BookStatus)
+        : (() => {
+            for (const col of ALL_COL_IDS) {
+              if (prev[col as BookStatus]?.includes(overId)) return col as BookStatus;
+            }
+            return null;
+          })();
+      if (!overCol) return prev;
 
-    // No-op if order and column unchanged.
-    if (sourceCol === targetCol) {
-      const oldIdx = grouped[sourceCol].findIndex((b) => b.id === activeIdStr);
-      if (oldIdx === insertIndex) return;
-    }
+      const activeColIds = [...(prev[activeCol] ?? [])];
+      const oldIndex = activeColIds.indexOf(activeId);
+      if (oldIndex === -1) return prev;
 
-    // Build update list: reassign board_position for the entire target column,
-    // and (if cross-column) compact the source column too.
-    const updates: { id: string; status: BookStatus; board_position: number }[] = [];
-    newTargetList.forEach((b, i) => {
-      const ub = b.user_books[0];
-      if (!ub) return;
-      updates.push({ id: ub.id, status: targetCol, board_position: i });
+      if (activeCol === overCol) {
+        // Same-column reorder via arrayMove.
+        const newIndex = ALL_COL_IDS.includes(overId as BookStatus)
+          ? activeColIds.length - 1
+          : activeColIds.indexOf(overId);
+        if (newIndex === -1 || newIndex === oldIndex) return prev;
+        return { ...prev, [activeCol]: arrayMove(activeColIds, oldIndex, newIndex) };
+      } else {
+        // Cross-column: remove from source, insert into target.
+        const overColIds = [...(prev[overCol] ?? [])];
+        const newActiveIds = activeColIds.filter((id) => id !== activeId);
+        const insertAt = ALL_COL_IDS.includes(overId as BookStatus)
+          ? overColIds.length
+          : overColIds.indexOf(overId);
+        if (insertAt === -1) return prev;
+        const newOverIds = [...overColIds];
+        newOverIds.splice(insertAt, 0, activeId);
+        return { ...prev, [activeCol]: newActiveIds, [overCol]: newOverIds };
+      }
     });
-    if (sourceCol !== targetCol) {
-      sourceList.forEach((b, i) => {
-        const ub = b.user_books[0];
-        if (!ub) return;
-        updates.push({ id: ub.id, status: sourceCol, board_position: i });
-      });
-    }
-    reorder.mutate(updates);
-  };
-
-  const onDragOver = (_e: DragOverEvent) => {
-    // Live cross-column reordering could go here; the optimistic onDragEnd is enough for snappy feel.
   };
 
 
