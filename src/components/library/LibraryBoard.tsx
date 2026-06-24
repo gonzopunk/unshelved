@@ -122,6 +122,20 @@ export default function LibraryBoard() {
     } else {
       insertIndex = targetListBase.findIndex((b) => b.id === overId);
       if (insertIndex < 0) insertIndex = targetListBase.length;
+      // When moving within the same column and the drop target was
+      // originally BELOW the dragged card, removing the dragged card
+      // shifts the target's index down by 1. Compensate:
+      if (sourceCol === targetCol) {
+        const origActiveIdx = grouped[sourceCol].findIndex(
+          (b) => b.id === activeIdStr
+        );
+        const origOverIdx = grouped[sourceCol].findIndex(
+          (b) => b.id === overId
+        );
+        if (origActiveIdx >= 0 && origOverIdx > origActiveIdx) {
+          insertIndex += 1;
+        }
+      }
     }
 
     const newTargetList = targetListBase.slice();
