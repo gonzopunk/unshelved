@@ -73,15 +73,6 @@ function BookDetail() {
   }
   const pct = Number(userBook.progress_pct ?? 0);
 
-  const setProgress = (val: number) => {
-    if (book.format === "audiobook") {
-      const total = userBook.total_seconds ?? 0;
-      updateProgress.mutate({ id: userBook.id, current_seconds: Math.round((val / 100) * total), progress_pct: val });
-    } else {
-      const total = userBook.total_pages ?? 0;
-      updateProgress.mutate({ id: userBook.id, current_page: Math.round((val / 100) * total), progress_pct: val });
-    }
-  };
 
   const deleteBook = async () => {
     if (!confirm("Remove this book from your library?")) return;
@@ -174,11 +165,6 @@ function BookDetail() {
             <div className="h-3 rounded-full bg-mist overflow-hidden">
               <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
             </div>
-            <input
-              type="range" min={0} max={100} value={Math.round(pct)}
-              onChange={(e) => setProgress(Number(e.target.value))}
-              className="w-full mt-2 accent-primary"
-            />
           </div>
 
           <div className="mt-6 flex flex-wrap items-center gap-2">
