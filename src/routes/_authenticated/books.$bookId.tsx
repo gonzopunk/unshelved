@@ -165,11 +165,6 @@ function BookDetail() {
             <div className="h-3 rounded-full bg-mist overflow-hidden">
               <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
             </div>
-            <input
-              type="range" min={0} max={100} value={Math.round(pct)}
-              onChange={(e) => setProgress(Number(e.target.value))}
-              className="w-full mt-2 accent-primary"
-            />
           </div>
 
           <div className="mt-6 flex flex-wrap items-center gap-2">
