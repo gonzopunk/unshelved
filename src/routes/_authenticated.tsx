@@ -66,12 +66,7 @@ function PillNav({ onAdd, onImport, onSearch, onLogout }: { onAdd: () => void; o
     <div className="fixed top-5 left-1/2 -translate-x-1/2 z-40">
       {/* Mobile */}
       <nav className="md:hidden flex items-center gap-1 rounded-full bg-paper/80 backdrop-blur-md shadow-lift px-2 py-2 border border-border">
-        <Link
-          to="/"
-          activeOptions={{ exact: true }}
-          activeProps={{ className: "font-display text-xl leading-none font-medium px-2 mt-1 ml-1 bg-forest text-paper rounded-full" }}
-          inactiveProps={{ className: "font-display text-xl leading-none font-medium px-2 text-terra mt-1 ml-1" }}
-        >U</Link>
+        <Link to="/" className="font-display text-xl leading-none font-medium px-2 text-terra mt-1 ml-1">U</Link>
         <span className="h-6 w-px bg-border mx-1" />
         <MobileNavItem to="/library" icon={<LibraryIcon className="h-4 w-4" />} label="Library" />
         <MobileNavItem to="/weave" icon={<Network className="h-4 w-4" />} label="Connections" />
