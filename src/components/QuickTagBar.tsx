@@ -80,6 +80,7 @@ function ScaleAxis({ axis, bookId, value }: { axis: TagAxis; bookId: string; val
   const current = value?.scale_value ?? null;
   const isSpice = axis.key === "spice";
   const isPace = axis.key === "pace";
+  const isWeight = axis.key === "weight";
   // 0 = unset; render clickable slots for 1..max only
   const slots = Array.from({ length: max }, (_, i) => i + 1);
   const glyph = isSpice ? "🌶" : "●";
@@ -97,6 +98,14 @@ function ScaleAxis({ axis, bookId, value }: { axis: TagAxis; bookId: string; val
     4: "sizzling",
     5: "scorching",
   };
+  const weightLabels: Record<number, string> = {
+    1: "light",
+    2: "accessible",
+    3: "moderate",
+    4: "dense",
+    5: "demanding",
+  };
+
 
   return (
     <div className="flex items-center gap-1.5">
