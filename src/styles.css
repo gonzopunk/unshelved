@@ -2027,8 +2027,8 @@
 }
 
 .bookmark-ribbon {
-  position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
-  width: 16px; height: 96px; z-index: 2;
+  position: absolute; top: -8px; left: 25%; transform: translateX(-50%);
+  width: 16px; height: 64px; z-index: 2;
   filter: drop-shadow(0 4px 6px rgba(31,38,48,0.25));
 }
 .bookmark-ribbon .rb-body {
