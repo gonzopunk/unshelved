@@ -466,12 +466,18 @@ function HomepageStyles() {
         box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 8px 16px -8px rgba(31,38,48,0.14);
       }
 
-      .hero-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .hero-stats { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
       .stat {
         background: var(--paper);
         border-radius: 24px;
         padding: 22px 24px;
+        min-width: 0;
+        overflow-wrap: anywhere;
         box-shadow: 0 1px 0 rgba(31,38,48,0.04), 0 18px 40px -28px rgba(31,38,48,0.22);
+      }
+      @media (max-width: 640px) {
+        .stat { padding: 18px 16px; }
+        .quote { padding: 28px 20px; }
       }
       .stat.alt { background: #D5E8F2; }
       .stat-link { display: block; text-decoration: none; color: inherit; transition: transform 0.15s ease, box-shadow 0.15s ease; cursor: pointer; }
