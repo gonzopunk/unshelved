@@ -117,7 +117,9 @@ function ScaleAxis({ axis, bookId, value }: { axis: TagAxis; bookId: string; val
             ? paceLabels[d] ?? `${d}`
             : isSpice
               ? spiceLabels[d] ?? `${d}`
-              : `${axis.label} ${d}`;
+              : isWeight
+                ? weightLabels[d] ?? `${d}`
+                : `${axis.label} ${d}`;
           return (
             <button
               key={d}
@@ -128,16 +130,29 @@ function ScaleAxis({ axis, bookId, value }: { axis: TagAxis; bookId: string; val
                   ? clear.mutate({ book_id: bookId, axis_id: axis.id })
                   : set.mutate({ book_id: bookId, axis_id: axis.id, scale_value: d })
               }
-              className={`leading-none transition ${
+              className={`leading-none transition inline-flex items-center justify-center ${
                 isPace
                   ? "font-mono text-[11px] px-0.5 py-1 tracking-tight"
-                  : "h-5 w-5 rounded-full text-xs inline-flex items-center justify-center"
+                  : isWeight
+                    ? "w-6 h-6"
+                    : "h-5 w-5 rounded-full text-xs"
               } ${isSpice ? "text-terra" : ""} ${active ? "" : "opacity-25 hover:opacity-60"}`}
-              aria-label={`${axis.label} ${d}${isPace ? ` (${paceLabels[d]})` : isSpice ? ` (${spiceLabels[d]})` : ""}`}
+              aria-label={`${axis.label} ${d}${isPace ? ` (${paceLabels[d]})` : isSpice ? ` (${spiceLabels[d]})` : isWeight ? ` (${weightLabels[d]})` : ""}`}
             >
-              {isPace ? "\u203a".repeat(d) : glyph}
+              {isPace
+                ? "\u203a".repeat(d)
+                : isWeight
+                  ? <span style={{
+                        display: "block",
+                        width: "12px",
+                        height: `${d * 2 + 1}px`,
+                        borderRadius: "1.5px",
+                        background: "currentColor",
+                      }} />
+                  : glyph}
             </button>
           );
+
         })}
       </div>
     </div>
