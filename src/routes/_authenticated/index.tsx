@@ -520,7 +520,7 @@ function HomepageStyles() {
       }
 
       .two-col { display: grid; grid-template-columns: 1.3fr 1fr; gap: 32px; margin-bottom: 48px; }
-      @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+      @media (max-width: 900px) { .two-col { grid-template-columns: minmax(0, 1fr); } }
 
       .upnext-row {
         display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start;
