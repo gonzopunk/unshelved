@@ -400,12 +400,14 @@ function HomepageStyles() {
         max-width: 1280px;
         margin: 0 auto;
         box-sizing: border-box;
+        overflow-x: clip;
         background-image:
           radial-gradient(circle at 85% 0%, rgba(209,118,72,0.08), transparent 35%),
           radial-gradient(circle at 0% 60%, rgba(111,179,122,0.08), transparent 40%);
       }
       @media (max-width: 900px) { .hp { padding: 8px 20px 40px; } }
       @media (max-width: 640px) { .hp { padding: 8px 16px 40px; } }
+      .hero-title em { overflow-wrap: anywhere; }
 
       .hero {
         display: grid;
