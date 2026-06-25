@@ -73,15 +73,6 @@ function BookDetail() {
   }
   const pct = Number(userBook.progress_pct ?? 0);
 
-  const setProgress = (val: number) => {
-    if (book.format === "audiobook") {
-      const total = userBook.total_seconds ?? 0;
-      updateProgress.mutate({ id: userBook.id, current_seconds: Math.round((val / 100) * total), progress_pct: val });
-    } else {
-      const total = userBook.total_pages ?? 0;
-      updateProgress.mutate({ id: userBook.id, current_page: Math.round((val / 100) * total), progress_pct: val });
-    }
-  };
 
   const deleteBook = async () => {
     if (!confirm("Remove this book from your library?")) return;
