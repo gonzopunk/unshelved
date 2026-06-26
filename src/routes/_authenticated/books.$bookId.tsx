@@ -206,7 +206,18 @@ function BookDetail() {
       </div>
 
       <AxisSummary bookId={book.id} />
-      <QuickTagBar bookId={book.id} />
+
+      <div className="mt-3">
+        <button
+          type="button"
+          onClick={() => setTagsOpen((o) => !o)}
+          className="inline-flex items-center gap-1 font-mono text-[10px] uppercase
+            tracking-widest text-muted-foreground hover:text-ink transition"
+        >
+          {tagsOpen ? "▴" : "▾"} Edit tags
+        </button>
+        {tagsOpen && <div className="mt-2"><QuickTagBar bookId={book.id} /></div>}
+      </div>
 
       <Tabs value={tab} onValueChange={(v) => navigate({ to: "/books/$bookId", params: { bookId }, search: { tab: v }, replace: true })} className="mt-12">
         <TabsList className="rounded-full bg-card shadow-paper p-1">
