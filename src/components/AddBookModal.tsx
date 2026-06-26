@@ -38,8 +38,17 @@ type OLDoc = {
   title: string;
   author_name?: string[];
   cover_i?: number;
+  cover_edition_key?: string;
+  edition_key?: string[];
   first_publish_year?: number;
   number_of_pages_median?: number;
+};
+
+type Enrichment = {
+  publication_year: number | null;
+  publisher: string | null;
+  isbn: string | null;
+  description: string | null;
 };
 
 type Props = {
@@ -63,6 +72,10 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
   const [shelf, setShelf] = useState<BookStatus>("want");
   const [busy, setBusy] = useState(false);
   const [totalPages, setTotalPages] = useState<number | null>(null);
+  const [totalSeconds, setTotalSeconds] = useState<number | null>(null);
+  const [enrichment, setEnrichment] = useState<Enrichment>({
+    publication_year: null, publisher: null, isbn: null, description: null,
+  });
 
   // Search state
   const [search, setSearch] = useState("");
@@ -80,13 +93,23 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
       setCoverUrl(editing.book.cover_url ?? null);
       setSecondary(editing.book.cover_secondary_color ?? null);
       setBookmark(editing.book.bookmark_color ?? null);
-      setSearch(""); setResults([]); setTotalPages(null);
+      setTotalPages(editing.userBook?.total_pages ?? null);
+      setTotalSeconds(editing.userBook?.total_seconds ?? null);
+      setEnrichment({
+        publication_year: editing.book.publication_year ?? null,
+        publisher: editing.book.publisher ?? null,
+        isbn: editing.book.isbn ?? null,
+        description: editing.book.description ?? null,
+      });
+      setSearch(""); setResults([]);
     } else if (open) {
       setTitle(""); setAuthor(""); setFormat("print"); setColor(PALETTE[0]); setShelf("want");
       setCoverUrl(null); setSecondary(null); setBookmark(null);
-      setSearch(""); setResults([]); setTotalPages(null);
+      setSearch(""); setResults([]); setTotalPages(null); setTotalSeconds(null);
+      setEnrichment({ publication_year: null, publisher: null, isbn: null, description: null });
     }
   }, [editing, open]);
+
 
   // Debounced Open Library search
   useEffect(() => {
@@ -117,6 +140,13 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
     setTotalPages(doc.number_of_pages_median ?? null);
     setResults([]);
     setSearch("");
+    // Seed enrichment from search doc; refined by detail fetch below.
+    setEnrichment({
+      publication_year: doc.first_publish_year ?? null,
+      publisher: null,
+      isbn: null,
+      description: null,
+    });
     if (doc.cover_i) {
       const url = `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`;
       setCoverUrl(url);
@@ -129,6 +159,33 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
     } else {
       setCoverUrl(null);
     }
+    // Best-effort detail fetch for publisher/ISBN/description. Never blocks add.
+    const editionKey = doc.cover_edition_key ?? doc.edition_key?.[0];
+    if (editionKey) {
+      try {
+        const res = await fetch(
+          `https://openlibrary.org/api/books?bibkeys=OLID:${encodeURIComponent(editionKey)}&format=json&jscmd=data`
+        );
+        if (res.ok) {
+          const json = await res.json();
+          const entry = json[`OLID:${editionKey}`];
+          if (entry) {
+            const yearMatch = typeof entry.publish_date === "string" ? entry.publish_date.match(/\b(\d{4})\b/) : null;
+            const year = yearMatch ? parseInt(yearMatch[1], 10) : null;
+            const desc =
+              (typeof entry.excerpts?.[0]?.text === "string" && entry.excerpts[0].text) ||
+              (typeof entry.notes === "string" ? entry.notes : entry.notes?.value) ||
+              null;
+            setEnrichment((prev) => ({
+              publication_year: year ?? prev.publication_year,
+              publisher: entry.publishers?.[0]?.name ?? prev.publisher,
+              isbn: entry.identifiers?.isbn_13?.[0] ?? entry.identifiers?.isbn_10?.[0] ?? prev.isbn,
+              description: desc ?? prev.description,
+            }));
+          }
+        }
+      } catch { /* swallow */ }
+    }
   };
 
   const save = async () => {
@@ -137,7 +194,7 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
     try {
       const finalBookmark =
         bookmark ?? (color.color === "#D17648" ? "#1F5266" : "#D17648");
-      const payload = {
+      const basePayload = {
         title, author, format,
         cover_color: color.color,
         cover_text_color: color.text,
@@ -146,14 +203,30 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
         cover_url: coverUrl,
         cover_generic: !coverUrl,
       };
+      // Only include enrichment fields when present — never overwrite with null.
+      const enrichPayload: Record<string, unknown> = {};
+      if (enrichment.publication_year) enrichPayload.publication_year = enrichment.publication_year;
+      if (enrichment.publisher) enrichPayload.publisher = enrichment.publisher;
+      if (enrichment.isbn) enrichPayload.isbn = enrichment.isbn;
+      if (enrichment.description) enrichPayload.description = enrichment.description;
+      const payload = { ...basePayload, ...enrichPayload };
+
       if (editing) {
         const { error: bookErr } = await supabase.from("books").update(payload).eq("id", editing.book.id);
         if (bookErr) throw bookErr;
-        if (editing.userBook) {
-          await supabase.from("user_books").update({ status: shelf }).eq("id", editing.userBook.id);
+        const ubPatch: Record<string, unknown> = { status: shelf };
+        if (format === "audiobook") {
+          ubPatch.total_seconds = totalSeconds ?? null;
         } else {
-          await supabase.from("user_books").insert({ user_id: user.id, book_id: editing.book.id, status: shelf });
+          ubPatch.total_pages = totalPages ?? null;
         }
+        const { error: ubErr } = await supabase
+          .from("user_books")
+          .upsert(
+            { user_id: user.id, book_id: editing.book.id, ...ubPatch },
+            { onConflict: "user_id,book_id" }
+          );
+        if (ubErr) throw ubErr;
       } else {
         const { data: book, error: bookErr } = await supabase.from("books").insert({
           user_id: user.id, ...payload,
@@ -167,6 +240,7 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
       if (!editing) track("book_added");
       qc.invalidateQueries({ queryKey: ["library"] });
       qc.invalidateQueries({ queryKey: ["book"] });
+      if (editing) qc.invalidateQueries({ queryKey: ["book", editing.book.id] });
       toast.success(editing ? "Book updated" : "Book added");
       onOpenChange(false);
     } catch (e: unknown) {
@@ -175,6 +249,7 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
       setBusy(false);
     }
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -276,6 +351,57 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
               ))}
             </div>
           </div>
+
+          {editing && (
+            format === "audiobook" ? (
+              <div>
+                <Label>Total duration</Label>
+                <div className="mt-1 flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={99}
+                    className="w-20"
+                    value={totalSeconds != null ? Math.floor(totalSeconds / 3600) : ""}
+                    onChange={(e) => {
+                      const h = Math.max(0, Math.min(99, parseInt(e.target.value || "0", 10) || 0));
+                      const m = totalSeconds != null ? Math.floor((totalSeconds % 3600) / 60) : 0;
+                      setTotalSeconds(h * 3600 + m * 60);
+                    }}
+                  />
+                  <span className="text-sm text-muted-foreground">hr</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={59}
+                    className="w-20"
+                    value={totalSeconds != null ? Math.floor((totalSeconds % 3600) / 60) : ""}
+                    onChange={(e) => {
+                      const m = Math.max(0, Math.min(59, parseInt(e.target.value || "0", 10) || 0));
+                      const h = totalSeconds != null ? Math.floor(totalSeconds / 3600) : 0;
+                      setTotalSeconds(h * 3600 + m * 60);
+                    }}
+                  />
+                  <span className="text-sm text-muted-foreground">min</span>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <Label htmlFor="totalPages">Total pages</Label>
+                <Input
+                  id="totalPages"
+                  type="number"
+                  min={0}
+                  className="mt-1 w-32"
+                  value={totalPages ?? ""}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    setTotalPages(Number.isFinite(v) && v > 0 ? v : null);
+                  }}
+                />
+              </div>
+            )
+          )}
 
           <div>
             <Label>Cover color</Label>

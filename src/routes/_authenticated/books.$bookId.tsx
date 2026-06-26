@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useBookDetail, useUpdateProgress, useUpdateStatus, useUpdateRating, type BookStatus } from "@/lib/queries";
+import { useBookDetail, useUpdateProgress, useUpdateStatus, useUpdateRating, type BookStatus, type Book, type UserBook } from "@/lib/queries";
 import GeneratedCover from "@/components/GeneratedCover";
 import SampleBadge from "@/components/SampleBadge";
 import StarRating from "@/components/StarRating";
@@ -150,6 +150,8 @@ function BookDetail() {
           </div>
           <h1 className="font-display text-4xl md:text-5xl mt-1">{book.title}</h1>
           <p className="text-lg text-muted-foreground mt-1">{book.author}</p>
+          <BookMetaLine book={book} userBook={userBook} />
+          <BookAbout description={book.description} />
 
           <div className="mt-3">
             <StarRating
@@ -734,4 +736,51 @@ function AxisSummary({ bookId }: { bookId: string }) {
     </div>
   );
 }
+
+function formatDuration(totalSeconds: number): string {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m}m`;
+}
+
+function BookMetaLine({ book, userBook }: { book: Book; userBook: UserBook }) {
+  const parts: string[] = [];
+  if (book.format === "audiobook") {
+    const secs = userBook.total_seconds ?? 0;
+    if (secs > 0) parts.push(formatDuration(secs));
+  } else {
+    const pages = userBook.total_pages ?? 0;
+    if (pages > 0) parts.push(`${pages} pages`);
+  }
+  if (book.publication_year) parts.push(String(book.publication_year));
+  if (book.publisher && book.publisher.trim()) parts.push(book.publisher.trim());
+  if (parts.length === 0) return null;
+  return (
+    <div className="text-sm text-muted-foreground mt-1">
+      {parts.join(" · ")}
+    </div>
+  );
+}
+
+function BookAbout({ description }: { description: string | null | undefined }) {
+  const [open, setOpen] = useState(false);
+  if (!description || !description.trim()) return null;
+  return (
+    <div className="mt-3 max-w-prose">
+      <p className={`text-sm text-foreground/80 leading-relaxed ${open ? "" : "line-clamp-1"}`}>
+        {description}
+      </p>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="mt-1 text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground transition"
+      >
+        {open ? "Show less" : "Show more"}
+      </button>
+    </div>
+  );
+}
+
 
