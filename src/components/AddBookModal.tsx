@@ -352,6 +352,57 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
             </div>
           </div>
 
+          {editing && (
+            format === "audiobook" ? (
+              <div>
+                <Label>Total duration</Label>
+                <div className="mt-1 flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={99}
+                    className="w-20"
+                    value={totalSeconds != null ? Math.floor(totalSeconds / 3600) : ""}
+                    onChange={(e) => {
+                      const h = Math.max(0, Math.min(99, parseInt(e.target.value || "0", 10) || 0));
+                      const m = totalSeconds != null ? Math.floor((totalSeconds % 3600) / 60) : 0;
+                      setTotalSeconds(h * 3600 + m * 60);
+                    }}
+                  />
+                  <span className="text-sm text-muted-foreground">hr</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={59}
+                    className="w-20"
+                    value={totalSeconds != null ? Math.floor((totalSeconds % 3600) / 60) : ""}
+                    onChange={(e) => {
+                      const m = Math.max(0, Math.min(59, parseInt(e.target.value || "0", 10) || 0));
+                      const h = totalSeconds != null ? Math.floor(totalSeconds / 3600) : 0;
+                      setTotalSeconds(h * 3600 + m * 60);
+                    }}
+                  />
+                  <span className="text-sm text-muted-foreground">min</span>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <Label htmlFor="totalPages">Total pages</Label>
+                <Input
+                  id="totalPages"
+                  type="number"
+                  min={0}
+                  className="mt-1 w-32"
+                  value={totalPages ?? ""}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    setTotalPages(Number.isFinite(v) && v > 0 ? v : null);
+                  }}
+                />
+              </div>
+            )
+          )}
+
           <div>
             <Label>Cover color</Label>
             <div className="mt-1 flex flex-wrap gap-2 items-center">
