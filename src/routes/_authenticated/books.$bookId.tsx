@@ -505,16 +505,20 @@ function QuickLogDialog({
     const patch: Partial<Database["public"]["Tables"]["user_books"]["Update"]> = {};
 
     if (isAudio) {
-      const newTotalSeconds = (hours * 3600) + (minutes * 60);
-      const sec = Math.max(0, newTotalSeconds - startSec);
-      if (sec <= 0) {
-        toast.error("No progress to log");
+      const parsed = parseHM(hmValue);
+      if (!parsed.ok) {
+        toast.error(parsed.error);
         return;
       }
-      const startSecVal = startSec;
+      const newTotalSeconds = parsed.seconds;
+      const sec = newTotalSeconds - startSec;
+      if (sec <= 0) {
+        toast.error("New location must be later than current");
+        return;
+      }
       const endSec = newTotalSeconds;
-      const minutesLogged = Math.round(sec / 60);
-      row.start_seconds = startSecVal;
+      const minutesLogged = Math.max(1, Math.round(sec / 60));
+      row.start_seconds = startSec;
       row.end_seconds = endSec;
       row.minutes = minutesLogged;
       row.ended_at = new Date(Date.now() + sec * 1000).toISOString();
