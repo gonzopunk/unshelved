@@ -292,10 +292,6 @@ function BookDetail() {
         userId={user!.id}
         format={book.format}
         userBook={userBook}
-        onSeeFull={() => {
-          setQuickLogOpen(false);
-          navigate({ to: "/books/$bookId", params: { bookId: book.id }, search: { tab: "sessions" } });
-        }}
       />
       {weaveSource && (
         <AddConnectionModal
