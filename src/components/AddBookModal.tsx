@@ -38,8 +38,17 @@ type OLDoc = {
   title: string;
   author_name?: string[];
   cover_i?: number;
+  cover_edition_key?: string;
+  edition_key?: string[];
   first_publish_year?: number;
   number_of_pages_median?: number;
+};
+
+type Enrichment = {
+  publication_year: number | null;
+  publisher: string | null;
+  isbn: string | null;
+  description: string | null;
 };
 
 type Props = {
