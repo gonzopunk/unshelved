@@ -199,7 +199,7 @@ function BookDetail() {
 
       <QuickTagBar bookId={book.id} />
 
-      <Tabs defaultValue={tab} className="mt-12">
+      <Tabs value={tab} onValueChange={(v) => navigate({ to: "/books/$bookId", params: { bookId }, search: { tab: v }, replace: true })} className="mt-12">
         <TabsList className="rounded-full bg-card shadow-paper p-1">
           <TabsTrigger value="notes" className="rounded-full">Notes</TabsTrigger>
           <TabsTrigger value="quotes" className="rounded-full">Quotes</TabsTrigger>
