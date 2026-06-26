@@ -611,8 +611,8 @@ function QuickLogDialog({
             <button
               type="button"
               onClick={() => {
-                navigate({ to: ".", search: { tab: "sessions" }, replace: true });
                 onOpenChange(false);
+                navigate({ to: "/books/$bookId", params: { bookId }, search: { tab: "sessions" }, replace: true });
               }}
               className="text-xs text-muted-foreground hover:text-ink transition"
             >
