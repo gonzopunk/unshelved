@@ -573,35 +573,19 @@ function QuickLogDialog({
           <div>
             <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</label>
             {isAudio ? (
-              <div className="flex items-center gap-3 mt-1">
-                <div className="flex-1 flex items-center gap-1">
-                  <Input
-                    autoFocus
-                    value={hours}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      setHours(Number.isNaN(n) ? 0 : Math.max(0, Math.min(99, n)));
-                    }}
-                    inputMode="numeric"
-                    min={0}
-                    max={99}
-                  />
-                  <span className="font-mono text-xs text-muted-foreground">hr</span>
-                </div>
-                <div className="flex-1 flex items-center gap-1">
-                  <Input
-                    value={minutes}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      setMinutes(Number.isNaN(n) ? 0 : Math.max(0, Math.min(59, n)));
-                    }}
-                    inputMode="numeric"
-                    min={0}
-                    max={59}
-                  />
-                  <span className="font-mono text-xs text-muted-foreground">min</span>
-                </div>
-              </div>
+              <Input
+                autoFocus
+                value={hmValue}
+                onChange={(e) => setHmValue(e.target.value)}
+                onBlur={() => {
+                  const parsed = parseHM(hmValue);
+                  if (parsed.ok) setHmValue(formatHM(parsed.seconds));
+                }}
+                placeholder="0:00"
+                inputMode="numeric"
+                pattern="\d{1,2}:[0-5]?\d"
+                className="mt-1 font-mono"
+              />
             ) : (
               <Input
                 autoFocus
