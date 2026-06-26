@@ -161,7 +161,11 @@ function BookDetail() {
               onChange={(v) => updateRating.mutate({ id: userBook.id, rating: v })}
             />
             {userBook.rating && (
-              <RatingNote userBookId={userBook.id} note={userBook.note} />
+              <div className="mt-2">
+                <span className="font-mono text-[10px] uppercase tracking-widest
+                  text-muted-foreground">your note</span>
+                <RatingNote userBookId={userBook.id} note={userBook.note} />
+              </div>
             )}
           </div>
 
