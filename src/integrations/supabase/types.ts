@@ -91,10 +91,14 @@ export type Database = {
           cover_text_color: string
           cover_url: string | null
           created_at: string
+          description: string | null
           format: Database["public"]["Enums"]["book_format"]
           id: string
           import_batch_id: string | null
           is_sample: boolean
+          isbn: string | null
+          publication_year: number | null
+          publisher: string | null
           title: string
           user_id: string
         }
@@ -107,10 +111,14 @@ export type Database = {
           cover_text_color?: string
           cover_url?: string | null
           created_at?: string
+          description?: string | null
           format?: Database["public"]["Enums"]["book_format"]
           id?: string
           import_batch_id?: string | null
           is_sample?: boolean
+          isbn?: string | null
+          publication_year?: number | null
+          publisher?: string | null
           title: string
           user_id: string
         }
@@ -123,10 +131,14 @@ export type Database = {
           cover_text_color?: string
           cover_url?: string | null
           created_at?: string
+          description?: string | null
           format?: Database["public"]["Enums"]["book_format"]
           id?: string
           import_batch_id?: string | null
           is_sample?: boolean
+          isbn?: string | null
+          publication_year?: number | null
+          publisher?: string | null
           title?: string
           user_id?: string
         }
