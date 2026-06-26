@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import AddBookModal from "@/components/AddBookModal";
 import AddConnectionModal from "@/components/AddConnectionModal";
 import QuickTagBar from "@/components/QuickTagBar";
+import { useTagAxes, useBookAxisValues, useBookTags } from "@/lib/tagging";
 import ConnectionCard, { type EndpointInfo } from "@/components/ConnectionCard";
 import { useBookConnections, useReferenceBooks, type ConnectionKind, type Connection } from "@/lib/weave";
 import { useLibrary } from "@/lib/queries";
@@ -197,6 +198,7 @@ function BookDetail() {
         </div>
       </div>
 
+      <AxisSummary bookId={book.id} />
       <QuickTagBar bookId={book.id} />
 
       <Tabs value={tab} onValueChange={(v) => navigate({ to: "/books/$bookId", params: { bookId }, search: { tab: v }, replace: true })} className="mt-12">
@@ -625,6 +627,111 @@ function QuickLogDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function AxisSummary({ bookId }: { bookId: string }) {
+  const { data: axes = [] } = useTagAxes();
+  const { data: values = [] } = useBookAxisValues(bookId);
+  const { data: bookTags = [] } = useBookTags(bookId);
+
+  const valueByAxis = useMemo(() => new Map(values.map((v) => [v.axis_id, v])), [values]);
+
+  const scaleAxes = axes.filter(
+    (a) => a.kind === "scale" && valueByAxis.has(a.id) && (valueByAxis.get(a.id)?.scale_value ?? 0) >= 1
+  );
+  const labelAxes = axes.filter(
+    (a) => a.kind !== "scale" && valueByAxis.has(a.id) && (valueByAxis.get(a.id)?.values?.length ?? 0) > 0
+  );
+
+  if (scaleAxes.length === 0 && labelAxes.length === 0 && bookTags.length === 0) return null;
+
+  const paceLabels: Record<number, string> = {
+    1: "glacial",
+    2: "languid",
+    3: "steady",
+    4: "brisk",
+    5: "blistering",
+  };
+  const spiceLabels: Record<number, string> = {
+    1: "mild",
+    2: "warm",
+    3: "spicy",
+    4: "sizzling",
+    5: "scorching",
+  };
+  const weightLabels: Record<number, string> = {
+    1: "light",
+    2: "accessible",
+    3: "moderate",
+    4: "dense",
+    5: "demanding",
+  };
+
+  return (
+    <div className="mt-6 rounded-2xl bg-card shadow-paper px-5 py-4 space-y-3">
+      {scaleAxes.length > 0 && (
+        <div className="space-y-1.5">
+          {scaleAxes.map((axis) => {
+            const val = valueByAxis.get(axis.id)?.scale_value ?? 0;
+            const max = axis.scale_max ?? 5;
+            const pct = Math.round((val / max) * 100);
+            const descriptor =
+              axis.key === "pace"
+                ? paceLabels[val] ?? `${val}`
+                : axis.key === "spice"
+                  ? spiceLabels[val] ?? `${val}`
+                  : axis.key === "weight"
+                    ? weightLabels[val] ?? `${val}`
+                    : `${val} / ${max}`;
+            const barColor =
+              axis.key === "spice" ? "bg-terra" : axis.key === "weight" ? "bg-ink/60" : "bg-forest";
+            return (
+              <div key={axis.id} className="flex items-center gap-3">
+                <span className="w-20 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                  {axis.label}
+                </span>
+                <div className="flex-1 h-1.5 rounded-full bg-mist">
+                  <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+                </div>
+                <span className="w-20 text-right text-xs text-muted-foreground italic">{descriptor}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {labelAxes.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
+          {labelAxes.map((axis) => (
+            <div key={axis.id} className="flex items-center mr-2 mb-1">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mr-1">
+                {axis.label}
+              </span>
+              {(valueByAxis.get(axis.id)?.values ?? []).map((v) => (
+                <span key={v} className="rounded-full bg-mist text-ink text-xs px-2 py-0.5 mr-1">
+                  {v}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {bookTags.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1.5 pt-1">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mr-1">Tags</span>
+          {bookTags.map((t) => (
+            <span
+              key={t.id}
+              className="inline-flex items-center rounded-full bg-terra/15 text-terra px-2 py-0.5 text-xs"
+            >
+              {t.name}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
