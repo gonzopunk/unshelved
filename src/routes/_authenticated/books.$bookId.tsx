@@ -199,7 +199,7 @@ function BookDetail() {
 
       <QuickTagBar bookId={book.id} />
 
-      <Tabs defaultValue={tab} className="mt-12">
+      <Tabs value={tab} onValueChange={(v) => navigate({ to: "/books/$bookId", params: { bookId }, search: { tab: v }, replace: true })} className="mt-12">
         <TabsList className="rounded-full bg-card shadow-paper p-1">
           <TabsTrigger value="notes" className="rounded-full">Notes</TabsTrigger>
           <TabsTrigger value="quotes" className="rounded-full">Quotes</TabsTrigger>
@@ -456,9 +456,14 @@ function QuickLogDialog({
   const startPage = userBook.current_page ?? 0;
   const startSec = userBook.current_seconds ?? 0;
 
+  const formatHM = (totalSec: number) => {
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    return `${h}:${String(m).padStart(2, "0")}`;
+  };
+
   const [pageValue, setPageValue] = useState(String(startPage));
-  const [hours, setHours] = useState(Math.floor(startSec / 3600));
-  const [minutes, setMinutes] = useState(Math.floor((startSec % 3600) / 60));
+  const [hmValue, setHmValue] = useState(formatHM(startSec));
   const [note, setNote] = useState("");
   const save = useSaveSession();
 
@@ -466,15 +471,24 @@ function QuickLogDialog({
   useMemo(() => {
     if (open) {
       setPageValue(String(startPage));
-      setHours(Math.floor(startSec / 3600));
-      setMinutes(Math.floor((startSec % 3600) / 60));
+      setHmValue(formatHM(startSec));
       setNote("");
     }
   }, [open, startPage, startSec]);
 
-  const label = isAudio ? "Current location (hrs:min)" : "Current page";
+  const parseHM = (s: string): { ok: true; seconds: number } | { ok: false; error: string } => {
+    const trimmed = s.trim();
+    const m = trimmed.match(/^(\d{1,2}):([0-5]?\d)$/);
+    if (!m) return { ok: false, error: "Use h:mm (e.g. 4:32)" };
+    const h = Number(m[1]);
+    const mn = Number(m[2]);
+    if (h > 99) return { ok: false, error: "Hours out of range" };
+    return { ok: true, seconds: h * 3600 + mn * 60 };
+  };
+
+  const label = isAudio ? "Current location (h:mm)" : "Current page";
   const hint = isAudio
-    ? `current: ${Math.floor(startSec / 60)} min in`
+    ? `currently at ${formatHM(startSec)}`
     : isEbook
       ? `from location ${startPage}`
       : `from p. ${startPage}`;
@@ -491,16 +505,20 @@ function QuickLogDialog({
     const patch: Partial<Database["public"]["Tables"]["user_books"]["Update"]> = {};
 
     if (isAudio) {
-      const newTotalSeconds = (hours * 3600) + (minutes * 60);
-      const sec = Math.max(0, newTotalSeconds - startSec);
-      if (sec <= 0) {
-        toast.error("No progress to log");
+      const parsed = parseHM(hmValue);
+      if (!parsed.ok) {
+        toast.error(parsed.error);
         return;
       }
-      const startSecVal = startSec;
+      const newTotalSeconds = parsed.seconds;
+      const sec = newTotalSeconds - startSec;
+      if (sec <= 0) {
+        toast.error("New location must be later than current");
+        return;
+      }
       const endSec = newTotalSeconds;
-      const minutesLogged = Math.round(sec / 60);
-      row.start_seconds = startSecVal;
+      const minutesLogged = Math.max(1, Math.round(sec / 60));
+      row.start_seconds = startSec;
       row.end_seconds = endSec;
       row.minutes = minutesLogged;
       row.ended_at = new Date(Date.now() + sec * 1000).toISOString();
@@ -555,35 +573,19 @@ function QuickLogDialog({
           <div>
             <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</label>
             {isAudio ? (
-              <div className="flex items-center gap-3 mt-1">
-                <div className="flex-1 flex items-center gap-1">
-                  <Input
-                    autoFocus
-                    value={hours}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      setHours(Number.isNaN(n) ? 0 : Math.max(0, Math.min(99, n)));
-                    }}
-                    inputMode="numeric"
-                    min={0}
-                    max={99}
-                  />
-                  <span className="font-mono text-xs text-muted-foreground">hr</span>
-                </div>
-                <div className="flex-1 flex items-center gap-1">
-                  <Input
-                    value={minutes}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      setMinutes(Number.isNaN(n) ? 0 : Math.max(0, Math.min(59, n)));
-                    }}
-                    inputMode="numeric"
-                    min={0}
-                    max={59}
-                  />
-                  <span className="font-mono text-xs text-muted-foreground">min</span>
-                </div>
-              </div>
+              <Input
+                autoFocus
+                value={hmValue}
+                onChange={(e) => setHmValue(e.target.value)}
+                onBlur={() => {
+                  const parsed = parseHM(hmValue);
+                  if (parsed.ok) setHmValue(formatHM(parsed.seconds));
+                }}
+                placeholder="0:00"
+                inputMode="numeric"
+                pattern="\d{1,2}:[0-5]?\d"
+                className="mt-1 font-mono"
+              />
             ) : (
               <Input
                 autoFocus
@@ -609,8 +611,8 @@ function QuickLogDialog({
             <button
               type="button"
               onClick={() => {
-                navigate({ to: ".", search: { tab: "sessions" }, replace: true });
                 onOpenChange(false);
+                navigate({ to: "/books/$bookId", params: { bookId }, search: { tab: "sessions" }, replace: true });
               }}
               className="text-xs text-muted-foreground hover:text-ink transition"
             >
