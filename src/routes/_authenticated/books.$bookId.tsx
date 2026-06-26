@@ -150,6 +150,8 @@ function BookDetail() {
           </div>
           <h1 className="font-display text-4xl md:text-5xl mt-1">{book.title}</h1>
           <p className="text-lg text-muted-foreground mt-1">{book.author}</p>
+          <BookMetaLine book={book} userBook={userBook} />
+          <BookAbout description={book.description} />
 
           <div className="mt-3">
             <StarRating
