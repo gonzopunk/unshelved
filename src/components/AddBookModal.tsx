@@ -216,9 +216,19 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
         if (bookErr) throw bookErr;
         const ubPatch: Record<string, unknown> = { status: shelf };
         if (format === "audiobook") {
-          ubPatch.total_seconds = totalSeconds ?? null;
+          const newTotalSec = totalSeconds ?? null;
+          ubPatch.total_seconds = newTotalSec;
+          const currentSec = editing.userBook?.current_seconds ?? 0;
+          ubPatch.progress_pct = newTotalSec && newTotalSec > 0
+            ? Math.min(100, Math.round((currentSec / newTotalSec) * 100))
+            : (editing.userBook?.progress_pct ?? 0);
         } else {
-          ubPatch.total_pages = totalPages ?? null;
+          const newTotalPages = totalPages ?? null;
+          ubPatch.total_pages = newTotalPages;
+          const currentPage = editing.userBook?.current_page ?? 0;
+          ubPatch.progress_pct = newTotalPages && newTotalPages > 0
+            ? Math.min(100, Math.round((currentPage / newTotalPages) * 100))
+            : (editing.userBook?.progress_pct ?? 0);
         }
         const { error: ubErr } = await supabase
           .from("user_books")
