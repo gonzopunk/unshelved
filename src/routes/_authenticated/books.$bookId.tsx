@@ -60,6 +60,7 @@ function BookDetail() {
   const [editOpen, setEditOpen] = useState(false);
   const [weaveSource, setWeaveSource] = useState<{ kind: ConnectionKind; id: string; label: string } | null>(null);
   const [editingConn, setEditingConn] = useState<Connection | null>(null);
+  const [quickLogOpen, setQuickLogOpen] = useState(false);
 
   if (!user) {
     return <div className="text-center py-20 text-muted-foreground">Loading…</div>;
