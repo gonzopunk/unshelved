@@ -172,6 +172,9 @@ function BookDetail() {
           </div>
 
           <div className="mt-6 flex flex-wrap items-center gap-2">
+            <Button className="rounded-full gap-1.5" onClick={() => setQuickLogOpen(true)}>
+              <BookOpen className="h-4 w-4" /> Log session
+            </Button>
             <Select value={userBook.status} onValueChange={(v) => updateStatus.mutate({ id: userBook.id, status: v as BookStatus })}>
               <SelectTrigger className="w-52 rounded-full"><SelectValue /></SelectTrigger>
               <SelectContent>{SHELVES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
