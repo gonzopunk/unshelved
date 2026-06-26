@@ -456,9 +456,14 @@ function QuickLogDialog({
   const startPage = userBook.current_page ?? 0;
   const startSec = userBook.current_seconds ?? 0;
 
+  const formatHM = (totalSec: number) => {
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    return `${h}:${String(m).padStart(2, "0")}`;
+  };
+
   const [pageValue, setPageValue] = useState(String(startPage));
-  const [hours, setHours] = useState(Math.floor(startSec / 3600));
-  const [minutes, setMinutes] = useState(Math.floor((startSec % 3600) / 60));
+  const [hmValue, setHmValue] = useState(formatHM(startSec));
   const [note, setNote] = useState("");
   const save = useSaveSession();
 
@@ -466,8 +471,7 @@ function QuickLogDialog({
   useMemo(() => {
     if (open) {
       setPageValue(String(startPage));
-      setHours(Math.floor(startSec / 3600));
-      setMinutes(Math.floor((startSec % 3600) / 60));
+      setHmValue(formatHM(startSec));
       setNote("");
     }
   }, [open, startPage, startSec]);
