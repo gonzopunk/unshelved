@@ -62,6 +62,7 @@ function BookDetail() {
   const [weaveSource, setWeaveSource] = useState<{ kind: ConnectionKind; id: string; label: string } | null>(null);
   const [editingConn, setEditingConn] = useState<Connection | null>(null);
   const [quickLogOpen, setQuickLogOpen] = useState(false);
+  const [tagsOpen, setTagsOpen] = useState(false);
 
   if (!user) {
     return <div className="text-center py-20 text-muted-foreground">Loading…</div>;
@@ -160,7 +161,11 @@ function BookDetail() {
               onChange={(v) => updateRating.mutate({ id: userBook.id, rating: v })}
             />
             {userBook.rating && (
-              <RatingNote userBookId={userBook.id} note={userBook.note} />
+              <div className="mt-2">
+                <span className="font-mono text-[10px] uppercase tracking-widest
+                  text-muted-foreground">your note</span>
+                <RatingNote userBookId={userBook.id} note={userBook.note} />
+              </div>
             )}
           </div>
 
@@ -201,7 +206,18 @@ function BookDetail() {
       </div>
 
       <AxisSummary bookId={book.id} />
-      <QuickTagBar bookId={book.id} />
+
+      <div className="mt-3">
+        <button
+          type="button"
+          onClick={() => setTagsOpen((o) => !o)}
+          className="inline-flex items-center gap-1 font-mono text-[10px] uppercase
+            tracking-widest text-muted-foreground hover:text-ink transition"
+        >
+          {tagsOpen ? "▴" : "▾"} Edit tags
+        </button>
+        {tagsOpen && <div className="mt-2"><QuickTagBar bookId={book.id} /></div>}
+      </div>
 
       <Tabs value={tab} onValueChange={(v) => navigate({ to: "/books/$bookId", params: { bookId }, search: { tab: v }, replace: true })} className="mt-12">
         <TabsList className="rounded-full bg-card shadow-paper p-1">
@@ -632,107 +648,80 @@ function QuickLogDialog({
   );
 }
 
+function getScaleDescriptor(key: string, val: number, max: number): string {
+  const maps: Record<string, Record<number, string>> = {
+    pace:   { 1: "glacial", 2: "languid", 3: "steady", 4: "brisk", 5: "blistering" },
+    spice:  { 1: "mild", 2: "warm", 3: "spicy", 4: "sizzling", 5: "scorching" },
+    weight: { 1: "light", 2: "accessible", 3: "moderate", 4: "dense", 5: "demanding" },
+  };
+  return maps[key]?.[val] ?? `${val} / ${max}`;
+}
+
 function AxisSummary({ bookId }: { bookId: string }) {
   const { data: axes = [] } = useTagAxes();
   const { data: values = [] } = useBookAxisValues(bookId);
   const { data: bookTags = [] } = useBookTags(bookId);
 
-  const valueByAxis = useMemo(() => new Map(values.map((v) => [v.axis_id, v])), [values]);
-
-  const scaleAxes = axes.filter(
-    (a) => a.kind === "scale" && valueByAxis.has(a.id) && (valueByAxis.get(a.id)?.scale_value ?? 0) >= 1
-  );
-  const labelAxes = axes.filter(
-    (a) => a.kind !== "scale" && valueByAxis.has(a.id) && (valueByAxis.get(a.id)?.values?.length ?? 0) > 0
+  const valueByAxis = useMemo(
+    () => new Map(values.map((v) => [v.axis_id, v])),
+    [values]
   );
 
-  if (scaleAxes.length === 0 && labelAxes.length === 0 && bookTags.length === 0) return null;
+  const summaries = useMemo(() =>
+    axes.flatMap((axis) => {
+      const v = valueByAxis.get(axis.id);
+      if (!v) return [];
 
-  const paceLabels: Record<number, string> = {
-    1: "glacial",
-    2: "languid",
-    3: "steady",
-    4: "brisk",
-    5: "blistering",
-  };
-  const spiceLabels: Record<number, string> = {
-    1: "mild",
-    2: "warm",
-    3: "spicy",
-    4: "sizzling",
-    5: "scorching",
-  };
-  const weightLabels: Record<number, string> = {
-    1: "light",
-    2: "accessible",
-    3: "moderate",
-    4: "dense",
-    5: "demanding",
-  };
+      if (axis.kind === "scale") {
+        const val = v.scale_value ?? 0;
+        if (val < 1) return [];
+        return [{ id: axis.id, label: axis.label,
+          chips: [getScaleDescriptor(axis.key, val, axis.scale_max ?? 5)] }];
+      }
+
+      const chips = v.values ?? [];
+      if (chips.length === 0) return [];
+      return [{ id: axis.id, label: axis.label, chips }];
+    }), [axes, valueByAxis]);
+
+  if (summaries.length === 0 && bookTags.length === 0) return null;
 
   return (
-    <div className="mt-6 rounded-2xl bg-card shadow-paper px-5 py-4 space-y-3">
-      {scaleAxes.length > 0 && (
-        <div className="space-y-1.5">
-          {scaleAxes.map((axis) => {
-            const val = valueByAxis.get(axis.id)?.scale_value ?? 0;
-            const max = axis.scale_max ?? 5;
-            const pct = Math.round((val / max) * 100);
-            const descriptor =
-              axis.key === "pace"
-                ? paceLabels[val] ?? `${val}`
-                : axis.key === "spice"
-                  ? spiceLabels[val] ?? `${val}`
-                  : axis.key === "weight"
-                    ? weightLabels[val] ?? `${val}`
-                    : `${val} / ${max}`;
-            const barColor =
-              axis.key === "spice" ? "bg-terra" : axis.key === "weight" ? "bg-ink/60" : "bg-forest";
-            return (
-              <div key={axis.id} className="flex items-center gap-3">
-                <span className="w-20 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                  {axis.label}
-                </span>
-                <div className="flex-1 h-1.5 rounded-full bg-mist">
-                  <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
-                </div>
-                <span className="w-20 text-right text-xs text-muted-foreground italic">{descriptor}</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {labelAxes.length > 0 && (
-        <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
-          {labelAxes.map((axis) => (
-            <div key={axis.id} className="flex items-center mr-2 mb-1">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mr-1">
-                {axis.label}
-              </span>
-              {(valueByAxis.get(axis.id)?.values ?? []).map((v) => (
-                <span key={v} className="rounded-full bg-mist text-ink text-xs px-2 py-0.5 mr-1">
-                  {v}
-                </span>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {bookTags.length > 0 && (
-        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1.5 pt-1">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mr-1">Tags</span>
-          {bookTags.map((t) => (
-            <span
-              key={t.id}
-              className="inline-flex items-center rounded-full bg-terra/15 text-terra px-2 py-0.5 text-xs"
-            >
-              {t.name}
+    <div className="mt-6 rounded-2xl bg-card shadow-paper px-5 py-4">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+          your read
+        </span>
+        <div className="flex-1 h-px bg-border" />
+      </div>
+      <div className="flex flex-wrap items-baseline gap-x-1 gap-y-2">
+        {summaries.map(({ id, label, chips }) => (
+          <div key={id} className="flex items-center gap-1 mr-3">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              {label}
             </span>
-          ))}
-        </div>
-      )}
+            {chips.map((chip) => (
+              <span key={chip}
+                className="rounded-full bg-mist text-ink text-xs px-2 py-0.5">
+                {chip}
+              </span>
+            ))}
+          </div>
+        ))}
+        {bookTags.length > 0 && (
+          <div className="flex items-center gap-1 mr-3">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              tags
+            </span>
+            {bookTags.map((t) => (
+              <span key={t.id}
+                className="rounded-full bg-terra/15 text-terra text-xs px-2 py-0.5">
+                {t.name}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
