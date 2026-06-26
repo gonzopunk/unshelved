@@ -292,10 +292,6 @@ function BookDetail() {
         userId={user!.id}
         format={book.format}
         userBook={userBook}
-        onSeeFull={() => {
-          setQuickLogOpen(false);
-          navigate({ to: "/books/$bookId", params: { bookId: book.id }, search: { tab: "sessions" } });
-        }}
       />
       {weaveSource && (
         <AddConnectionModal
@@ -445,7 +441,7 @@ function Empty({ children }: { children: React.ReactNode }) {
 type UserBookRow = Database["public"]["Tables"]["user_books"]["Row"];
 
 function QuickLogDialog({
-  open, onOpenChange, bookId, userId, format: fmt, userBook, onSeeFull,
+  open, onOpenChange, bookId, userId, format: fmt, userBook,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -453,56 +449,71 @@ function QuickLogDialog({
   userId: string;
   format: string;
   userBook: UserBookRow;
-  onSeeFull: () => void;
 }) {
+  const navigate = useNavigate();
   const isAudio = fmt === "audiobook";
   const isEbook = fmt === "ebook";
   const startPage = userBook.current_page ?? 0;
   const startSec = userBook.current_seconds ?? 0;
 
-  const defaultValue = isAudio ? "" : String(startPage);
-  const [value, setValue] = useState(defaultValue);
+  const [pageValue, setPageValue] = useState(String(startPage));
+  const [hours, setHours] = useState(Math.floor(startSec / 3600));
+  const [minutes, setMinutes] = useState(Math.floor((startSec % 3600) / 60));
+  const [note, setNote] = useState("");
   const save = useSaveSession();
 
   // Re-seed when reopened.
-  useMemo(() => { if (open) setValue(isAudio ? "" : String(startPage)); }, [open, isAudio, startPage]);
+  useMemo(() => {
+    if (open) {
+      setPageValue(String(startPage));
+      setHours(Math.floor(startSec / 3600));
+      setMinutes(Math.floor((startSec % 3600) / 60));
+      setNote("");
+    }
+  }, [open, startPage, startSec]);
 
-  const label = isAudio ? "Minutes listened" : isEbook ? "Current location" : "Current page";
+  const label = isAudio ? "Time elapsed" : "Current page";
   const hint = isAudio
-    ? `current: ${Math.round(startSec / 60)} min in`
+    ? `current: ${Math.floor(startSec / 60)} min in`
     : isEbook
       ? `from location ${startPage}`
       : `from p. ${startPage}`;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    const n = Number(value);
-    if (!Number.isFinite(n) || n <= 0) {
-      toast.error("Enter a number");
-      return;
-    }
-    const startedAt = new Date();
     const row: Database["public"]["Tables"]["reading_sessions"]["Insert"] = {
       book_id: bookId,
       user_id: userId,
-      started_at: startedAt.toISOString(),
+      started_at: new Date().toISOString(),
       ended_at: null,
+      session_note: note.trim() || null,
     };
     const patch: Partial<Database["public"]["Tables"]["user_books"]["Update"]> = {};
 
     if (isAudio) {
-      const min = Math.round(n);
-      const sec = min * 60;
-      const endSec = startSec + sec;
-      row.minutes = min;
-      row.start_seconds = startSec;
+      const newTotalSeconds = (hours * 3600) + (minutes * 60);
+      const sec = Math.max(0, newTotalSeconds - startSec);
+      if (sec <= 0) {
+        toast.error("No progress to log");
+        return;
+      }
+      const startSecVal = startSec;
+      const endSec = newTotalSeconds;
+      const minutesLogged = Math.round(sec / 60);
+      row.start_seconds = startSecVal;
       row.end_seconds = endSec;
-      row.ended_at = new Date(startedAt.getTime() + sec * 1000).toISOString();
+      row.minutes = minutesLogged;
+      row.ended_at = new Date(Date.now() + sec * 1000).toISOString();
       patch.current_seconds = endSec;
       if (userBook.total_seconds && userBook.total_seconds > 0) {
         patch.progress_pct = Math.min(100, Math.round((endSec / userBook.total_seconds) * 100));
       }
     } else {
+      const n = Number(pageValue);
+      if (!Number.isFinite(n) || n <= 0) {
+        toast.error("Enter a number");
+        return;
+      }
       const newPage = Math.round(n);
       const read = Math.max(0, newPage - startPage);
       if (read <= 0) {
@@ -540,27 +551,72 @@ function QuickLogDialog({
         <DialogHeader>
           <DialogTitle>Log a session</DialogTitle>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-3">
+        <form onSubmit={submit} className="space-y-4">
           <div>
             <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</label>
-            <Input
-              autoFocus
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              inputMode="numeric"
-              className="mt-1"
-            />
+            {isAudio ? (
+              <div className="flex items-center gap-3 mt-1">
+                <div className="flex-1 flex items-center gap-1">
+                  <Input
+                    autoFocus
+                    value={hours}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      setHours(Number.isNaN(n) ? 0 : Math.max(0, Math.min(99, n)));
+                    }}
+                    inputMode="numeric"
+                    min={0}
+                    max={99}
+                  />
+                  <span className="font-mono text-xs text-muted-foreground">hr</span>
+                </div>
+                <div className="flex-1 flex items-center gap-1">
+                  <Input
+                    value={minutes}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      setMinutes(Number.isNaN(n) ? 0 : Math.max(0, Math.min(59, n)));
+                    }}
+                    inputMode="numeric"
+                    min={0}
+                    max={59}
+                  />
+                  <span className="font-mono text-xs text-muted-foreground">min</span>
+                </div>
+              </div>
+            ) : (
+              <Input
+                autoFocus
+                value={pageValue}
+                onChange={(e) => setPageValue(e.target.value)}
+                inputMode="numeric"
+                className="mt-1"
+              />
+            )}
             <p className="mt-1 text-xs text-muted-foreground italic">{hint}</p>
+            {isEbook && (
+              <p className="mt-1 font-mono text-xs text-muted-foreground">Page-based tracking. Location tracking coming soon.</p>
+            )}
           </div>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Any thoughts?"
+            rows={2}
+            className="w-full bg-transparent border-0 border-b border-mist text-sm text-ink placeholder:text-muted-foreground/40 resize-none focus:outline-none focus:border-terra py-1 transition-colors leading-relaxed"
+          />
           <DialogFooter className="flex !justify-between items-center gap-3 sm:!justify-between">
             <button
               type="button"
-              onClick={onSeeFull}
+              onClick={() => {
+                navigate({ to: ".", search: { tab: "sessions" }, replace: true });
+                onOpenChange(false);
+              }}
               className="text-xs text-muted-foreground hover:text-ink transition"
             >
               Full session details →
             </button>
-            <Button type="submit" className="rounded-full" disabled={save.isPending || !value}>
+            <Button type="submit" className="rounded-full" disabled={save.isPending || (isAudio ? false : !pageValue)}>
               {save.isPending ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
