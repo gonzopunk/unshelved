@@ -11,7 +11,10 @@ import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Pause, Play, Pencil, Trash2, Network } from "lucide-react";
+import { ArrowLeft, Pause, Play, Pencil, Trash2, Network, BookOpen } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useSaveSession } from "@/lib/sessions";
+import type { Database } from "@/integrations/supabase/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AddBookModal from "@/components/AddBookModal";
 import AddConnectionModal from "@/components/AddConnectionModal";
@@ -57,6 +60,7 @@ function BookDetail() {
   const [editOpen, setEditOpen] = useState(false);
   const [weaveSource, setWeaveSource] = useState<{ kind: ConnectionKind; id: string; label: string } | null>(null);
   const [editingConn, setEditingConn] = useState<Connection | null>(null);
+  const [quickLogOpen, setQuickLogOpen] = useState(false);
 
   if (!user) {
     return <div className="text-center py-20 text-muted-foreground">Loading…</div>;
@@ -168,6 +172,9 @@ function BookDetail() {
           </div>
 
           <div className="mt-6 flex flex-wrap items-center gap-2">
+            <Button className="rounded-full gap-1.5" onClick={() => setQuickLogOpen(true)}>
+              <BookOpen className="h-4 w-4" /> Log session
+            </Button>
             <Select value={userBook.status} onValueChange={(v) => updateStatus.mutate({ id: userBook.id, status: v as BookStatus })}>
               <SelectTrigger className="w-52 rounded-full"><SelectValue /></SelectTrigger>
               <SelectContent>{SHELVES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
@@ -278,6 +285,18 @@ function BookDetail() {
       </Tabs>
 
       <AddBookModal open={editOpen} onOpenChange={setEditOpen} editing={{ book, userBook }} />
+      <QuickLogDialog
+        open={quickLogOpen}
+        onOpenChange={setQuickLogOpen}
+        bookId={book.id}
+        userId={user!.id}
+        format={book.format}
+        userBook={userBook}
+        onSeeFull={() => {
+          setQuickLogOpen(false);
+          navigate({ to: "/books/$bookId", params: { bookId: book.id }, search: { tab: "sessions" } });
+        }}
+      />
       {weaveSource && (
         <AddConnectionModal
           open={!!weaveSource}
@@ -422,3 +441,132 @@ function RatingNote({ userBookId, note }: { userBookId: string; note: string | n
 function Empty({ children }: { children: React.ReactNode }) {
   return <div className="rounded-2xl bg-card shadow-paper p-6 text-center text-muted-foreground italic">{children}</div>;
 }
+
+type UserBookRow = Database["public"]["Tables"]["user_books"]["Row"];
+
+function QuickLogDialog({
+  open, onOpenChange, bookId, userId, format: fmt, userBook, onSeeFull,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  bookId: string;
+  userId: string;
+  format: string;
+  userBook: UserBookRow;
+  onSeeFull: () => void;
+}) {
+  const isAudio = fmt === "audiobook";
+  const isEbook = fmt === "ebook";
+  const startPage = userBook.current_page ?? 0;
+  const startSec = userBook.current_seconds ?? 0;
+
+  const defaultValue = isAudio ? "" : String(startPage);
+  const [value, setValue] = useState(defaultValue);
+  const save = useSaveSession();
+
+  // Re-seed when reopened.
+  useMemo(() => { if (open) setValue(isAudio ? "" : String(startPage)); }, [open, isAudio, startPage]);
+
+  const label = isAudio ? "Minutes listened" : isEbook ? "Current location" : "Current page";
+  const hint = isAudio
+    ? `current: ${Math.round(startSec / 60)} min in`
+    : isEbook
+      ? `from location ${startPage}`
+      : `from p. ${startPage}`;
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) {
+      toast.error("Enter a number");
+      return;
+    }
+    const startedAt = new Date();
+    const row: Database["public"]["Tables"]["reading_sessions"]["Insert"] = {
+      book_id: bookId,
+      user_id: userId,
+      started_at: startedAt.toISOString(),
+      ended_at: null,
+    };
+    const patch: Partial<Database["public"]["Tables"]["user_books"]["Update"]> = {};
+
+    if (isAudio) {
+      const min = Math.round(n);
+      const sec = min * 60;
+      const endSec = startSec + sec;
+      row.minutes = min;
+      row.start_seconds = startSec;
+      row.end_seconds = endSec;
+      row.ended_at = new Date(startedAt.getTime() + sec * 1000).toISOString();
+      patch.current_seconds = endSec;
+      if (userBook.total_seconds && userBook.total_seconds > 0) {
+        patch.progress_pct = Math.min(100, Math.round((endSec / userBook.total_seconds) * 100));
+      }
+    } else {
+      const newPage = Math.round(n);
+      const read = Math.max(0, newPage - startPage);
+      if (read <= 0) {
+        toast.error("No progress to log");
+        return;
+      }
+      row.start_page = startPage;
+      row.end_page = newPage;
+      row.pages_read = read;
+      patch.current_page = newPage;
+      if (userBook.total_pages && userBook.total_pages > 0) {
+        patch.progress_pct = Math.min(100, Math.round((newPage / userBook.total_pages) * 100));
+      }
+    }
+
+    save.mutate(
+      { ...row, userBookId: userBook.id, patchUserBook: patch },
+      {
+        onSuccess: () => {
+          toast.success("Session logged");
+          const totalUnits = isAudio ? userBook.total_seconds : userBook.total_pages;
+          const newPos = isAudio ? patch.current_seconds : patch.current_page;
+          if (totalUnits && newPos && newPos >= totalUnits) {
+            toast("You finished the book — mark the shelf?", { duration: 6000 });
+          }
+          onOpenChange(false);
+        },
+      },
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Log a session</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={submit} className="space-y-3">
+          <div>
+            <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</label>
+            <Input
+              autoFocus
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              inputMode="numeric"
+              className="mt-1"
+            />
+            <p className="mt-1 text-xs text-muted-foreground italic">{hint}</p>
+          </div>
+          <DialogFooter className="flex !justify-between items-center gap-3 sm:!justify-between">
+            <button
+              type="button"
+              onClick={onSeeFull}
+              className="text-xs text-muted-foreground hover:text-ink transition"
+            >
+              Full session details →
+            </button>
+            <Button type="submit" className="rounded-full" disabled={save.isPending || !value}>
+              {save.isPending ? "Saving…" : "Save"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
