@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useBookDetail, useUpdateProgress, useUpdateStatus, useUpdateRating, type BookStatus } from "@/lib/queries";
+import { useBookDetail, useUpdateProgress, useUpdateStatus, useUpdateRating, type BookStatus, type Book, type UserBook } from "@/lib/queries";
 import GeneratedCover from "@/components/GeneratedCover";
 import SampleBadge from "@/components/SampleBadge";
 import StarRating from "@/components/StarRating";
