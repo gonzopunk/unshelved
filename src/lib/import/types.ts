@@ -26,6 +26,9 @@ export type ImportRow = {
   coverSecondaryColor: string | null;
   coverTextColor: string | null;
   bookmarkColor: string | null;
+  publicationYear: number | null;
+  publisher: string | null;
+  description: string | null;
   enrichTried: boolean;
   // review-time
   selected: boolean;

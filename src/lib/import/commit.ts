@@ -60,6 +60,10 @@ export async function commitImport(
       cover_secondary_color: r.coverSecondaryColor,
       cover_url: r.coverUrl,
       cover_generic: !r.coverUrl,
+      publication_year: r.publicationYear ?? null,
+      publisher: r.publisher ?? null,
+      isbn: r.isbn ?? null,
+      description: r.description ?? null,
       import_batch_id: batchId,
     }));
     const { data: books, error: bErr } = await supabase
