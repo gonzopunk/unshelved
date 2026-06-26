@@ -72,6 +72,10 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
   const [shelf, setShelf] = useState<BookStatus>("want");
   const [busy, setBusy] = useState(false);
   const [totalPages, setTotalPages] = useState<number | null>(null);
+  const [totalSeconds, setTotalSeconds] = useState<number | null>(null);
+  const [enrichment, setEnrichment] = useState<Enrichment>({
+    publication_year: null, publisher: null, isbn: null, description: null,
+  });
 
   // Search state
   const [search, setSearch] = useState("");
@@ -89,13 +93,23 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
       setCoverUrl(editing.book.cover_url ?? null);
       setSecondary(editing.book.cover_secondary_color ?? null);
       setBookmark(editing.book.bookmark_color ?? null);
-      setSearch(""); setResults([]); setTotalPages(null);
+      setTotalPages(editing.userBook?.total_pages ?? null);
+      setTotalSeconds(editing.userBook?.total_seconds ?? null);
+      setEnrichment({
+        publication_year: editing.book.publication_year ?? null,
+        publisher: editing.book.publisher ?? null,
+        isbn: editing.book.isbn ?? null,
+        description: editing.book.description ?? null,
+      });
+      setSearch(""); setResults([]);
     } else if (open) {
       setTitle(""); setAuthor(""); setFormat("print"); setColor(PALETTE[0]); setShelf("want");
       setCoverUrl(null); setSecondary(null); setBookmark(null);
-      setSearch(""); setResults([]); setTotalPages(null);
+      setSearch(""); setResults([]); setTotalPages(null); setTotalSeconds(null);
+      setEnrichment({ publication_year: null, publisher: null, isbn: null, description: null });
     }
   }, [editing, open]);
+
 
   // Debounced Open Library search
   useEffect(() => {
