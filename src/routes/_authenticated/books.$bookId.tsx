@@ -285,6 +285,18 @@ function BookDetail() {
       </Tabs>
 
       <AddBookModal open={editOpen} onOpenChange={setEditOpen} editing={{ book, userBook }} />
+      <QuickLogDialog
+        open={quickLogOpen}
+        onOpenChange={setQuickLogOpen}
+        bookId={book.id}
+        userId={user!.id}
+        format={book.format}
+        userBook={userBook}
+        onSeeFull={() => {
+          setQuickLogOpen(false);
+          navigate({ to: "/books/$bookId", params: { bookId: book.id }, search: { tab: "sessions" } });
+        }}
+      />
       {weaveSource && (
         <AddConnectionModal
           open={!!weaveSource}
