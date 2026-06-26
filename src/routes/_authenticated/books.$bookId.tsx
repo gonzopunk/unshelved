@@ -476,9 +476,19 @@ function QuickLogDialog({
     }
   }, [open, startPage, startSec]);
 
-  const label = isAudio ? "Current location (hrs:min)" : "Current page";
+  const parseHM = (s: string): { ok: true; seconds: number } | { ok: false; error: string } => {
+    const trimmed = s.trim();
+    const m = trimmed.match(/^(\d{1,2}):([0-5]?\d)$/);
+    if (!m) return { ok: false, error: "Use h:mm (e.g. 4:32)" };
+    const h = Number(m[1]);
+    const mn = Number(m[2]);
+    if (h > 99) return { ok: false, error: "Hours out of range" };
+    return { ok: true, seconds: h * 3600 + mn * 60 };
+  };
+
+  const label = isAudio ? "Current location (h:mm)" : "Current page";
   const hint = isAudio
-    ? `current: ${Math.floor(startSec / 60)} min in`
+    ? `currently at ${formatHM(startSec)}`
     : isEbook
       ? `from location ${startPage}`
       : `from p. ${startPage}`;
