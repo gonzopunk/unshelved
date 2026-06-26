@@ -472,7 +472,7 @@ function QuickLogDialog({
     }
   }, [open, startPage, startSec]);
 
-  const label = isAudio ? "Time elapsed" : "Current page";
+  const label = isAudio ? "Current location (hrs:min)" : "Current page";
   const hint = isAudio
     ? `current: ${Math.floor(startSec / 60)} min in`
     : isEbook
