@@ -760,11 +760,26 @@ function BookMetaLine({ book, userBook }: { book: Book; userBook: UserBook }) {
     if (pages > 0) parts.push(`${pages} pages`);
   }
   if (book.publication_year) parts.push(String(book.publication_year));
-  if (book.publisher && book.publisher.trim()) parts.push(book.publisher.trim());
-  if (parts.length === 0) return null;
+  if (book.publisher?.trim()) parts.push(book.publisher.trim());
+  if (parts.length === 0 && !book.isbn) return null;
   return (
-    <div className="text-sm text-muted-foreground mt-1">
-      {parts.join(" · ")}
+    <div className="mt-1 space-y-0.5">
+      {parts.length > 0 && (
+        <div className="text-sm text-muted-foreground">
+          {parts.join(" · ")}
+        </div>
+      )}
+      {book.isbn && (
+        <a
+          href={`https://openlibrary.org/isbn/${book.isbn}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono text-[10px] text-muted-foreground/60
+            hover:text-muted-foreground transition tracking-wider"
+        >
+          ISBN {book.isbn} ↗
+        </a>
+      )}
     </div>
   );
 }
