@@ -436,6 +436,75 @@ export default function AddBookModal({ open, onOpenChange, editing }: Props) {
             </div>
           </div>
 
+          {editing && (
+            <div>
+              <Label htmlFor="isbn">ISBN</Label>
+              <Input
+                id="isbn"
+                value={enrichment.isbn ?? ""}
+                onChange={(e) =>
+                  setEnrichment((prev) => ({
+                    ...prev,
+                    isbn: e.target.value.trim() || null,
+                  }))
+                }
+                placeholder="e.g. 9780393356687"
+                className="mt-1 font-mono text-sm"
+              />
+            </div>
+          )}
+
+          {editing && (
+            <div>
+              <Label>Cover image</Label>
+              <div className="mt-2 flex flex-col gap-2">
+                {enrichment.isbn && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full text-xs self-start gap-1.5"
+                    onClick={async () => {
+                      const url = `https://covers.openlibrary.org/b/isbn/${enrichment.isbn}-L.jpg`;
+                      setCoverUrl(url);
+                      const pal = await extractCoverPalette(url);
+                      if (pal) {
+                        setColor({ color: pal.dominant, text: pal.text, name: "From cover" });
+                        setSecondary(pal.secondary);
+                        setBookmark(pal.bookmark);
+                      }
+                      toast.success("Cover fetched — review the preview above");
+                    }}
+                  >
+                    Fetch cover from ISBN
+                  </Button>
+                )}
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={coverUrl ?? ""}
+                    onChange={(e) => setCoverUrl(e.target.value.trim() || null)}
+                    placeholder="Or paste a direct image URL"
+                    className="text-xs"
+                  />
+                  {coverUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setCoverUrl(null)}
+                      className="shrink-0 text-xs text-muted-foreground hover:text-destructive transition"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                {!enrichment.isbn && (
+                  <p className="font-mono text-[10px] text-muted-foreground">
+                    Add an ISBN above to enable one-click cover fetch.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           <div>
             <Label>Shelf</Label>
             <Select value={shelf} onValueChange={(v) => setShelf(v as BookStatus)}>
