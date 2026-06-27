@@ -363,7 +363,7 @@ function WeaveTab({
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-muted-foreground italic">How this book — and what's in it — speaks to the rest of your library.</p>
+        <p className="text-sm text-muted-foreground italic">How this book — and what's in it — speaks to the rest of your library...and beyond.</p>
         <Button size="sm" className="rounded-full gap-1.5" onClick={onAdd}>
           <Network className="h-4 w-4" /> Connect
         </Button>
