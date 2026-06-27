@@ -163,7 +163,23 @@ function BookDetail() {
             {userBook.rating && (
               <div className="mt-2">
                 <span className="font-mono text-[10px] uppercase tracking-widest
-                  text-muted-foreground">your note</span>
+                  text-muted-foreground">your quick review</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate({
+                      to: "/books/$bookId",
+                      params: { bookId },
+                      search: { tab: "notes" },
+                      replace: true,
+                      resetScroll: false,
+                    })
+                  }
+                  className="ml-2 font-mono text-[10px] uppercase tracking-widest
+                    text-muted-foreground/50 hover:text-muted-foreground transition"
+                >
+                  In-depth review →
+                </button>
                 <RatingNote userBookId={userBook.id} note={userBook.note} />
               </div>
             )}
@@ -219,7 +235,7 @@ function BookDetail() {
         {tagsOpen && <div className="mt-2"><QuickTagBar bookId={book.id} /></div>}
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => navigate({ to: "/books/$bookId", params: { bookId }, search: { tab: v }, replace: true })} className="mt-12">
+      <Tabs value={tab} onValueChange={(v) => navigate({ to: "/books/$bookId", params: { bookId }, search: { tab: v }, replace: true, resetScroll: false })} className="mt-12">
         <TabsList className="rounded-full bg-card shadow-paper p-1">
           <TabsTrigger value="notes" className="rounded-full">Notes</TabsTrigger>
           <TabsTrigger value="quotes" className="rounded-full">Quotes</TabsTrigger>
@@ -400,7 +416,7 @@ function NewNote({ bookId, userId }: { bookId: string; userId: string }) {
       setText("");
       qc.invalidateQueries({ queryKey: ["book"] });
     }} className="rounded-2xl bg-card shadow-paper p-4">
-      <Textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="A thought, a reaction, a connection…" className="min-h-24 bg-transparent border-0 focus-visible:ring-0 resize-none" />
+      <Textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="A thought, a reaction, an inspiration…" className="min-h-24 bg-transparent border-0 focus-visible:ring-0 resize-none" />
       <div className="flex justify-end mt-2"><Button type="submit" className="rounded-full" disabled={!text.trim()}>Save note</Button></div>
     </form>
   );
@@ -690,7 +706,7 @@ function AxisSummary({ bookId }: { bookId: string }) {
     <div className="mt-6 rounded-2xl bg-card shadow-paper px-5 py-4">
       <div className="flex items-center gap-2 mb-3">
         <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-          your read
+          your tags
         </span>
         <div className="flex-1 h-px bg-border" />
       </div>
@@ -755,19 +771,24 @@ function BookMetaLine({ book, userBook }: { book: Book; userBook: UserBook }) {
 
 function BookAbout({ description }: { description: string | null | undefined }) {
   const [open, setOpen] = useState(false);
-  if (!description || !description.trim()) return null;
+  const hasContent = !!(description?.trim());
+
   return (
     <div className="mt-3 max-w-prose">
-      <p className={`text-sm text-foreground/80 leading-relaxed ${open ? "" : "line-clamp-1"}`}>
-        {description}
-      </p>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="mt-1 text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground transition"
+        onClick={() => hasContent && setOpen((o) => !o)}
+        className={`font-mono text-[10px] uppercase tracking-widest
+          text-muted-foreground transition
+          ${hasContent ? "hover:text-foreground" : "opacity-40 cursor-default"}`}
       >
-        {open ? "Show less" : "Show more"}
+        {open ? "▴ About this book" : "▾ About this book"}
       </button>
+      {open && hasContent && (
+        <p className="mt-2 text-sm text-foreground/80 leading-relaxed">
+          {description}
+        </p>
+      )}
     </div>
   );
 }
