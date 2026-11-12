@@ -33,8 +33,10 @@ function fmt(secs: number) {
 export default function SessionTimer({
   bookId,
   onStop,
+  autoStart,
 }: {
   bookId: string;
+  autoStart?: boolean;
   onStop: (elapsedSeconds: number, startedAt: Date) => void;
 }) {
   const [state, setState] = useState<TimerState | null>(null);
@@ -43,8 +45,12 @@ export default function SessionTimer({
 
   // hydrate
   useEffect(() => {
-    setState(load(bookId));
-  }, [bookId]);
+    const existing = load(bookId);
+    if (!existing && autoStart) {
+      const s: TimerState = { startedAt: Date.now(), accumulated: 0, running: true };
+      save(bookId, s); setState(s);
+    } else setState(existing);
+  }, [bookId, autoStart]);
 
   // tick
   useEffect(() => {

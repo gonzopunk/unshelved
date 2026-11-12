@@ -13,7 +13,6 @@ import { useAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Pause, Play, Pencil, Trash2, Network, BookOpen } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useSaveSession } from "@/lib/sessions";
 import type { Database } from "@/integrations/supabase/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AddBookModal from "@/components/AddBookModal";
@@ -25,7 +24,8 @@ import { useBookConnections, useReferenceBooks, type ConnectionKind, type Connec
 import { useLibrary } from "@/lib/queries";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import NewSessionCard from "@/components/sessions/NewSessionCard";
+import SessionLogDialog, { type LogEntryPoint } from "@/components/sessions/SessionLogDialog";
+import SessionTimer from "@/components/sessions/SessionTimer";
 import SessionRow from "@/components/sessions/SessionRow";
 import PaceStrip from "@/components/sessions/PaceStrip";
 import RhythmStrip from "@/components/sessions/RhythmStrip";
@@ -34,6 +34,7 @@ import RhythmStrip from "@/components/sessions/RhythmStrip";
 export const Route = createFileRoute("/_authenticated/books/$bookId")({
   validateSearch: (search: Record<string, unknown>) => ({
     tab: typeof search.tab === "string" ? search.tab : "notes",
+    timer: search.timer === "1" || search.timer === 1 ? "1" : undefined,
   }),
   component: BookDetail,
 });
@@ -57,11 +58,17 @@ function BookDetail() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const { tab } = Route.useSearch();
+  const { tab, timer } = Route.useSearch();
   const [editOpen, setEditOpen] = useState(false);
   const [weaveSource, setWeaveSource] = useState<{ kind: ConnectionKind; id: string; label: string } | null>(null);
   const [editingConn, setEditingConn] = useState<Connection | null>(null);
-  const [quickLogOpen, setQuickLogOpen] = useState(false);
+  const [quickLogOpen, setQuickLogOpenRaw] = useState(false);
+  const [logEntry, setLogEntry] = useState<LogEntryPoint>("book");
+  const [logDuration, setLogDuration] = useState<number | null>(null);
+  const setQuickLogOpen = (o: boolean, entry: LogEntryPoint = "book", dur: number | null = null) => {
+    if (o) { setLogEntry(entry); setLogDuration(dur); }
+    setQuickLogOpenRaw(o);
+  };
   const [tagsOpen, setTagsOpen] = useState(false);
 
   if (!user) {
@@ -309,7 +316,14 @@ function BookDetail() {
             }
             accent={book.cover_color}
           />
-          <NewSessionCard bookId={book.id} userId={user!.id} format={book.format} userBook={userBook} />
+          <div className="rounded-2xl bg-card shadow-paper p-4 flex flex-wrap items-center justify-between gap-3">
+            <Button className="rounded-full" onClick={() => setQuickLogOpen(true, "sessions_tab")}>Log a session</Button>
+            <SessionTimer
+              bookId={book.id}
+              autoStart={timer === "1"}
+              onStop={(sec) => setQuickLogOpen(true, "sessions_tab", Math.max(1, Math.round(sec / 60)))}
+            />
+          </div>
           <RhythmStrip sessions={sessions} />
           <div className="rounded-2xl bg-card shadow-paper divide-y divide-border">
             {sessions.length === 0 && <Empty>No reading sessions logged.</Empty>}
@@ -321,13 +335,13 @@ function BookDetail() {
       </Tabs>
 
       <AddBookModal open={editOpen} onOpenChange={setEditOpen} editing={{ book, userBook }} />
-      <QuickLogDialog
+      <SessionLogDialog
         open={quickLogOpen}
-        onOpenChange={setQuickLogOpen}
-        bookId={book.id}
+        onOpenChange={(o) => setQuickLogOpen(o)}
+        books={[{ ...book, user_books: [userBook] }]}
         userId={user!.id}
-        format={book.format}
-        userBook={userBook}
+        entryPoint={logEntry}
+        initialDurationMinutes={logDuration}
       />
       {weaveSource && (
         <AddConnectionModal
@@ -472,196 +486,6 @@ function RatingNote({ userBookId, note }: { userBookId: string; note: string | n
 
 function Empty({ children }: { children: React.ReactNode }) {
   return <div className="rounded-2xl bg-card shadow-paper p-6 text-center text-muted-foreground italic">{children}</div>;
-}
-
-type UserBookRow = Database["public"]["Tables"]["user_books"]["Row"];
-
-function QuickLogDialog({
-  open, onOpenChange, bookId, userId, format: fmt, userBook,
-}: {
-  open: boolean;
-  onOpenChange: (o: boolean) => void;
-  bookId: string;
-  userId: string;
-  format: string;
-  userBook: UserBookRow;
-}) {
-  const navigate = useNavigate();
-  const isAudio = fmt === "audiobook";
-  const isEbook = fmt === "ebook";
-  const startPage = userBook.current_page ?? 0;
-  const startSec = userBook.current_seconds ?? 0;
-
-  const formatHM = (totalSec: number) => {
-    const h = Math.floor(totalSec / 3600);
-    const m = Math.floor((totalSec % 3600) / 60);
-    return `${h}:${String(m).padStart(2, "0")}`;
-  };
-
-  const [pageValue, setPageValue] = useState(String(startPage));
-  const [hmValue, setHmValue] = useState(formatHM(startSec));
-  const [note, setNote] = useState("");
-  const save = useSaveSession();
-
-  // Re-seed when reopened.
-  useMemo(() => {
-    if (open) {
-      setPageValue(String(startPage));
-      setHmValue(formatHM(startSec));
-      setNote("");
-    }
-  }, [open, startPage, startSec]);
-
-  const parseHM = (s: string): { ok: true; seconds: number } | { ok: false; error: string } => {
-    const trimmed = s.trim();
-    const m = trimmed.match(/^(\d{1,2}):([0-5]?\d)$/);
-    if (!m) return { ok: false, error: "Use h:mm (e.g. 4:32)" };
-    const h = Number(m[1]);
-    const mn = Number(m[2]);
-    if (h > 99) return { ok: false, error: "Hours out of range" };
-    return { ok: true, seconds: h * 3600 + mn * 60 };
-  };
-
-  const label = isAudio ? "Current location (h:mm)" : "Current page";
-  const hint = isAudio
-    ? `currently at ${formatHM(startSec)}`
-    : isEbook
-      ? `from location ${startPage}`
-      : `from p. ${startPage}`;
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const row: Database["public"]["Tables"]["reading_sessions"]["Insert"] = {
-      book_id: bookId,
-      user_id: userId,
-      started_at: new Date().toISOString(),
-      ended_at: null,
-      session_note: note.trim() || null,
-    };
-    const patch: Partial<Database["public"]["Tables"]["user_books"]["Update"]> = {};
-
-    if (isAudio) {
-      const parsed = parseHM(hmValue);
-      if (!parsed.ok) {
-        toast.error(parsed.error);
-        return;
-      }
-      const newTotalSeconds = parsed.seconds;
-      const sec = newTotalSeconds - startSec;
-      if (sec <= 0) {
-        toast.error("New location must be later than current");
-        return;
-      }
-      const endSec = newTotalSeconds;
-      const minutesLogged = Math.max(1, Math.round(sec / 60));
-      row.start_seconds = startSec;
-      row.end_seconds = endSec;
-      row.minutes = minutesLogged;
-      row.ended_at = new Date(Date.now() + sec * 1000).toISOString();
-      patch.current_seconds = endSec;
-      if (userBook.total_seconds && userBook.total_seconds > 0) {
-        patch.progress_pct = Math.min(100, Math.round((endSec / userBook.total_seconds) * 100));
-      }
-    } else {
-      const n = Number(pageValue);
-      if (!Number.isFinite(n) || n <= 0) {
-        toast.error("Enter a number");
-        return;
-      }
-      const newPage = Math.round(n);
-      const read = Math.max(0, newPage - startPage);
-      if (read <= 0) {
-        toast.error("No progress to log");
-        return;
-      }
-      row.start_page = startPage;
-      row.end_page = newPage;
-      row.pages_read = read;
-      patch.current_page = newPage;
-      if (userBook.total_pages && userBook.total_pages > 0) {
-        patch.progress_pct = Math.min(100, Math.round((newPage / userBook.total_pages) * 100));
-      }
-    }
-
-    save.mutate(
-      { ...row, userBookId: userBook.id, patchUserBook: patch },
-      {
-        onSuccess: () => {
-          toast.success("Session logged");
-          const totalUnits = isAudio ? userBook.total_seconds : userBook.total_pages;
-          const newPos = isAudio ? patch.current_seconds : patch.current_page;
-          if (totalUnits && newPos && newPos >= totalUnits) {
-            toast("You finished the book — mark the shelf?", { duration: 6000 });
-          }
-          onOpenChange(false);
-        },
-      },
-    );
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Log a session</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={submit} className="space-y-4">
-          <div>
-            <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</label>
-            {isAudio ? (
-              <Input
-                autoFocus
-                value={hmValue}
-                onChange={(e) => setHmValue(e.target.value)}
-                onBlur={() => {
-                  const parsed = parseHM(hmValue);
-                  if (parsed.ok) setHmValue(formatHM(parsed.seconds));
-                }}
-                placeholder="0:00"
-                inputMode="numeric"
-                pattern="\d{1,2}:[0-5]?\d"
-                className="mt-1 font-mono"
-              />
-            ) : (
-              <Input
-                autoFocus
-                value={pageValue}
-                onChange={(e) => setPageValue(e.target.value)}
-                inputMode="numeric"
-                className="mt-1"
-              />
-            )}
-            <p className="mt-1 text-xs text-muted-foreground italic">{hint}</p>
-            {isEbook && (
-              <p className="mt-1 font-mono text-xs text-muted-foreground">Page-based tracking. Location tracking coming soon.</p>
-            )}
-          </div>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Any thoughts?"
-            rows={2}
-            className="w-full bg-transparent border-0 border-b border-mist text-sm text-ink placeholder:text-muted-foreground/40 resize-none focus:outline-none focus:border-terra py-1 transition-colors leading-relaxed"
-          />
-          <DialogFooter className="flex !justify-between items-center gap-3 sm:!justify-between">
-            <button
-              type="button"
-              onClick={() => {
-                onOpenChange(false);
-                navigate({ to: "/books/$bookId", params: { bookId }, search: { tab: "sessions" }, replace: true });
-              }}
-              className="text-xs text-muted-foreground hover:text-ink transition"
-            >
-              Full session details →
-            </button>
-            <Button type="submit" className="rounded-full" disabled={save.isPending || (isAudio ? false : !pageValue)}>
-              {save.isPending ? "Saving…" : "Save"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
 }
 
 function getScaleDescriptor(key: string, val: number, max: number): string {
