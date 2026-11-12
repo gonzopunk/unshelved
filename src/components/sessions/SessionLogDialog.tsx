@@ -11,8 +11,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import GeneratedCover from "@/components/GeneratedCover";
 import { cn } from "@/lib/utils";
 import { track } from "@/lib/analytics";
-import { MOODS, useSaveSession, type MoodKey } from "@/lib/sessions";
-import { buildSessionLog, isLocalToday } from "@/lib/session-log";
+import { MOODS, useBookSessions, useSaveSession, type MoodKey } from "@/lib/sessions";
+import { buildSessionLog, historicalStartPosition, isLocalToday } from "@/lib/session-log";
 import type { Book, UserBook } from "@/lib/queries";
 
 export type LogBook = Book & { user_books: UserBook[] };
@@ -56,12 +56,14 @@ export default function SessionLogDialog({
   const [note, setNote] = useState("");
   const [place, setPlace] = useState("");
   const [confirmCorrect, setConfirmCorrect] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const openedAt = useRef(0);
 
   const book = books.find((b) => b.id === bookId) ?? books[0];
   const ub = book?.user_books[0];
   const isAudio = book?.format === "audiobook";
   const isEbook = book?.format === "ebook";
+  const history = useBookSessions(book?.id ?? "");
 
   const seed = (b: LogBook | undefined) => {
     const u = b?.user_books[0];
@@ -98,18 +100,37 @@ export default function SessionLogDialog({
     );
   }
 
-  const fromLabel = isAudio ? `from ${fmtHM(ub.current_seconds ?? 0)}` : `from p. ${ub.current_page ?? 0}`;
+  const startPosition = isLocalToday(day)
+    ? (isAudio ? ub.current_seconds : ub.current_page) ?? 0
+    : historicalStartPosition(history.data ?? [], book.id, book.format, day);
+  const fromLabel = !isLocalToday(day) && history.isPending ? "Loading history…"
+    : isAudio ? `from ${fmtHM(startPosition)}` : `from p. ${startPosition}`;
   const newPosition = isAudio ? (Number(hours) || 0) * 3600 + (Number(mins) || 0) * 60 : Number(page) || 0;
   const usedMore = !!(duration || mood || note.trim() || place.trim());
   const whenLabel = isLocalToday(day) ? "Today" : isYesterday(day) ? "Yesterday" : format(day, "MMM d");
 
   const done = () => onOpenChange(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loadingHistory || save.isPending) return;
+    let sessions = history.data ?? [];
+    if (!isLocalToday(day)) {
+      setLoadingHistory(true);
+      try {
+        const result = await history.refetch();
+        if (result.error) throw result.error;
+        sessions = result.data ?? [];
+      } catch {
+        toast.error("Couldn't load session history");
+        return;
+      } finally {
+        setLoadingHistory(false);
+      }
+    }
     const r = buildSessionLog({
       bookId: book.id, userId, format: book.format, userBook: ub,
-      newPosition, day, durationMinutes: Number(duration) || null,
+      newPosition, day, sessions, durationMinutes: Number(duration) || null,
       mood: mood || null, note, location: place,
     });
     if (r.kind === "no_progress") { toast("No progress to log."); return; }
@@ -212,10 +233,10 @@ export default function SessionLogDialog({
               </PopoverTrigger>
               <PopoverContent className="w-auto p-2" align="start">
                 <div className="flex gap-1 mb-2">
-                  <Button type="button" size="sm" variant="ghost" onClick={() => { setDay(new Date()); setWhenOpen(false); }}>Today</Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => { const d = new Date(); d.setDate(d.getDate() - 1); setDay(d); setWhenOpen(false); }}>Yesterday</Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => { setDay(new Date()); setConfirmCorrect(false); setWhenOpen(false); }}>Today</Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => { const d = new Date(); d.setDate(d.getDate() - 1); setDay(d); setConfirmCorrect(false); setWhenOpen(false); }}>Yesterday</Button>
                 </div>
-                <Calendar mode="single" selected={day} onSelect={(d) => { if (d) { setDay(d); setWhenOpen(false); } }} disabled={(d) => d > new Date()} className="p-1 pointer-events-auto" />
+                <Calendar mode="single" selected={day} onSelect={(d) => { if (d) { setDay(d); setConfirmCorrect(false); setWhenOpen(false); } }} disabled={(d) => d > new Date()} className="p-1 pointer-events-auto" />
               </PopoverContent>
             </Popover>
           </div>
@@ -257,8 +278,8 @@ export default function SessionLogDialog({
             <button type="button" onClick={startTimer} className="text-xs text-muted-foreground hover:text-ink transition">
               Reading now — start timer →
             </button>
-            <Button type="submit" className="rounded-full" disabled={save.isPending}>
-              {save.isPending ? "Saving…" : confirmCorrect ? "Correct position" : "Log session"}
+            <Button type="submit" className="rounded-full" disabled={save.isPending || loadingHistory}>
+              {save.isPending || loadingHistory ? "Saving…" : confirmCorrect ? "Correct position" : "Log session"}
             </Button>
           </div>
         </form>

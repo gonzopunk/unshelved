@@ -1,14 +1,14 @@
 import { useMemo } from "react";
-import { MOODS, partOfDay, type Session } from "@/lib/sessions";
+import { MOODS, type Session } from "@/lib/sessions";
+import { timeOfDayCounts } from "@/lib/session-math";
 
 const PARTS = ["morning", "afternoon", "evening", "night"] as const;
 
 export default function RhythmStrip({ sessions }: { sessions: Session[] }) {
   const { byPart, byMood, total } = useMemo(() => {
-    const byPart: Record<string, number> = { morning: 0, afternoon: 0, evening: 0, night: 0 };
+    const byPart = timeOfDayCounts(sessions);
     const byMood: Record<string, number> = {};
     for (const s of sessions) {
-      byPart[partOfDay(new Date(s.started_at))]++;
       if (s.mood) byMood[s.mood] = (byMood[s.mood] ?? 0) + 1;
     }
     return { byPart, byMood, total: sessions.length };

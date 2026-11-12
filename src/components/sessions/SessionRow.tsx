@@ -65,7 +65,7 @@ export default function SessionRow({
             title={m?.label ?? "no mood"}
           />
           <span className="font-mono text-sm">{format(startedAt, "MMM d")}</span>
-          <span className="text-xs text-muted-foreground">{format(startedAt, "h:mma").toLowerCase()}</span>
+          {!session.backdated && <span className="text-xs text-muted-foreground">{format(startedAt, "h:mma").toLowerCase()}</span>}
         </div>
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
           <span>{units}</span>
