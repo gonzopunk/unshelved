@@ -393,6 +393,7 @@ export type Database = {
       }
       reading_sessions: {
         Row: {
+          backdated: boolean
           book_id: string
           end_page: number | null
           end_pct: number | null
@@ -411,6 +412,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          backdated?: boolean
           book_id: string
           end_page?: number | null
           end_pct?: number | null
@@ -429,6 +431,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          backdated?: boolean
           book_id?: string
           end_page?: number | null
           end_pct?: number | null
