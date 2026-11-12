@@ -22,7 +22,7 @@ export default function PaceStrip({
     return last.map((s) => {
       if (isAudio) {
         if (s.start_seconds != null && s.end_seconds != null) return Math.max(0, s.end_seconds - s.start_seconds) / 60;
-        return s.minutes ?? 0;
+        return s.minutes && s.minutes > 0 ? s.minutes : 0;
       }
       if (s.start_page != null && s.end_page != null) return Math.max(0, s.end_page - s.start_page);
       return s.pages_read ?? 0;

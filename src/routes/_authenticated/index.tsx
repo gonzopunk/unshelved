@@ -9,8 +9,8 @@ import BookCard from "@/components/BookCard";
 import StarRating from "@/components/StarRating";
 import GeneratedCover from "@/components/GeneratedCover";
 import AddBookModal from "@/components/AddBookModal";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAllSessions } from "@/lib/sessions";
+import SessionLogDialog from "@/components/sessions/SessionLogDialog";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({ meta: [{ title: "Unshelved — Library" }] }),
@@ -75,6 +75,14 @@ function Home() {
       (a, b) => (lastSessionByBook.get(b.id) ?? "").localeCompare(lastSessionByBook.get(a.id) ?? "")
     )[0] ?? readingAll[0];
   const focusUb = focus?.user_books[0];
+  // "Most recently read": latest session, else latest progress update, among reading books.
+  const recency = (b: (typeof readingAll)[number]) => {
+    const ub = b.user_books[0] as { updated_at?: string | null; started_at?: string | null } | undefined;
+    const s = lastSessionByBook.get(b.id) ?? "";
+    const u = ub?.updated_at ?? ub?.started_at ?? "";
+    return s > u ? s : u;
+  };
+  const logBooks = [...readingAll].sort((a, b) => recency(b).localeCompare(recency(a)));
   const focusPct = focusUb?.total_pages
     ? Math.round(((focusUb.current_page ?? 0) / focusUb.total_pages) * 100)
     : Math.round(Number(focusUb?.progress_pct ?? 0));
@@ -343,44 +351,15 @@ function Home() {
       <HomepageStyles />
       <span className="sr-only">{initials}</span>
       <AddBookModal open={addOpen} onOpenChange={setAddOpen} />
-      <Dialog open={logSessionOpen} onOpenChange={setLogSessionOpen}>
-        <DialogContent className="rounded-2xl bg-card">
-          <DialogHeader>
-            <DialogTitle className="font-display text-2xl">Which book?</DialogTitle>
-          </DialogHeader>
-          {allReading.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground italic">
-              No books currently in progress.
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
-              {allReading.map((b) => {
-                const ub = b.user_books[0];
-                const pct = ub?.total_pages && ub.current_page != null
-                  ? Math.round((ub.current_page / ub.total_pages) * 100)
-                  : Math.round(Number(ub?.progress_pct ?? 0));
-                return (
-                  <button
-                    key={b.id}
-                    type="button"
-                    onClick={() => {
-                      setLogSessionOpen(false);
-                      navigate({ to: "/books/$bookId", params: { bookId: b.id }, search: { tab: "sessions" } });
-                    }}
-                    className="flex items-center gap-3 rounded-xl p-2 text-left hover:bg-muted transition-colors"
-                  >
-                    <GeneratedCover book={b} className="h-14 w-10 rounded shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <div className="font-medium truncate">{b.title}</div>
-                      <div className="text-xs text-muted-foreground truncate">{b.author} · {pct}%</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {user && (
+        <SessionLogDialog
+          open={logSessionOpen}
+          onOpenChange={setLogSessionOpen}
+          books={logBooks}
+          userId={user.id}
+          entryPoint="home"
+        />
+      )}
     </div>
   );
 }
