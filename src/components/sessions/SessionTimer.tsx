@@ -34,7 +34,9 @@ export default function SessionTimer({
   bookId,
   onStop,
   autoStart,
+  onAutoStarted,
 }: {
+  onAutoStarted?: () => void;
   bookId: string;
   autoStart?: boolean;
   onStop: (elapsedSeconds: number, startedAt: Date) => void;
@@ -49,7 +51,11 @@ export default function SessionTimer({
     if (!existing && autoStart) {
       const s: TimerState = { startedAt: Date.now(), accumulated: 0, running: true };
       save(bookId, s); setState(s);
-    } else setState(existing);
+      onAutoStarted?.();
+    } else {
+      setState(existing);
+      if (autoStart) onAutoStarted?.();
+    }
   }, [bookId, autoStart]);
 
   // tick

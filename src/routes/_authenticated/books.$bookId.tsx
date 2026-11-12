@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
@@ -60,12 +60,6 @@ function BookDetail() {
   const navigate = useNavigate();
   const { tab: tabRaw, timer } = Route.useSearch();
   const tab = tabRaw ?? "notes";
-  // One-shot: the timer has auto-started; drop the flag so it never restarts.
-  useEffect(() => {
-    if (timer !== "1") return;
-    const t = window.setTimeout(() => navigate({ to: "/books/$bookId", params: { bookId }, search: { tab: "sessions" }, replace: true, resetScroll: false }), 50);
-    return () => window.clearTimeout(t);
-  }, [timer, bookId, navigate]);
   const [editOpen, setEditOpen] = useState(false);
   const [weaveSource, setWeaveSource] = useState<{ kind: ConnectionKind; id: string; label: string } | null>(null);
   const [editingConn, setEditingConn] = useState<Connection | null>(null);
@@ -328,6 +322,7 @@ function BookDetail() {
             <SessionTimer
               bookId={book.id}
               autoStart={timer === "1"}
+              onAutoStarted={() => navigate({ to: "/books/$bookId", params: { bookId: book.id }, search: { tab: "sessions" }, replace: true, resetScroll: false })}
               onStop={(sec) => setQuickLogOpen(true, "sessions_tab", Math.max(1, Math.round(sec / 60)))}
             />
           </div>
