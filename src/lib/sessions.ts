@@ -64,16 +64,21 @@ type SaveArgs = SessionInsert & {
   // Optional auto-progress patch for the linked user_books row
   userBookId?: string;
   patchUserBook?: Partial<Database["public"]["Tables"]["user_books"]["Update"]>;
+  /** Only patch user_books (position correction); insert no session row. */
+  skipSession?: boolean;
 };
 
 export function useSaveSession() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ userBookId, patchUserBook, ...row }: SaveArgs) => {
-      const { error } = await supabase.from("reading_sessions").insert(row);
-      if (error) throw error;
+    mutationFn: async ({ userBookId, patchUserBook, skipSession, ...row }: SaveArgs) => {
+      if (!skipSession) {
+        const { error } = await supabase.from("reading_sessions").insert(row);
+        if (error) throw error;
+      }
       if (userBookId && patchUserBook && Object.keys(patchUserBook).length) {
-        await supabase.from("user_books").update(patchUserBook).eq("id", userBookId);
+        const { error } = await supabase.from("user_books").update(patchUserBook).eq("id", userBookId);
+        if (error) throw error;
       }
     },
     onSuccess: () => {
@@ -113,9 +118,10 @@ function unitsRead(s: Session, fmt: string): number {
   return s.pages_read ?? 0;
 }
 
-function sessionMinutes(s: Session): number {
+/** Real-time duration. Convention: minutes null OR 0 both mean "no duration". */
+export function sessionMinutes(s: Pick<Session, "minutes" | "ended_at" | "started_at">): number {
   if (s.minutes && s.minutes > 0) return s.minutes;
-  if (s.ended_at) return Math.max(1, (new Date(s.ended_at).getTime() - new Date(s.started_at).getTime()) / 60_000);
+  if (s.minutes == null && s.ended_at) return Math.max(1, (new Date(s.ended_at).getTime() - new Date(s.started_at).getTime()) / 60_000);
   return 0;
 }
 
@@ -174,11 +180,32 @@ export function computeStats(
   let pacePerHour: number | null = null;
   let etaMinutes: number | null = null;
   let etaDate: Date | null = null;
+  const hasRemaining = remainingUnits != null && remainingUnits > 0;
   if (wSum > 0 && mSum > 0) {
     const perMin = pSum / mSum; // units per real-minute
     pacePerHour = fmt === "audiobook" ? perMin / 60 : perMin * 60; // sec/min → ×; pages/min → /h
-    if (remainingUnits != null && remainingUnits > 0 && perMin > 0) {
-      etaMinutes = remainingUnits / perMin;
+    if (hasRemaining && perMin > 0) etaMinutes = remainingUnits! / perMin;
+  }
+
+  // Finish date: date-based (units per calendar day) only with >= 3 distinct
+  // local session days; else pace-based; else none.
+  if (hasRemaining) {
+    const days = new Map<string, number>();
+    let unitsSum = 0;
+    for (const s of sessions) {
+      const u = unitsRead(s, fmt);
+      if (u <= 0) continue;
+      const d = new Date(s.started_at);
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      days.set(key, new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime());
+      unitsSum += u;
+    }
+    if (days.size >= 3) {
+      const ts = [...days.values()];
+      const spanDays = Math.round((Math.max(...ts) - Math.min(...ts)) / 86_400_000) + 1;
+      const perDay = unitsSum / spanDays;
+      if (perDay > 0) etaDate = new Date(Date.now() + (remainingUnits! / perDay) * 86_400_000);
+    } else if (etaMinutes != null) {
       etaDate = new Date(Date.now() + etaMinutes * 60_000);
     }
   }
@@ -221,7 +248,7 @@ export function partOfDay(date: Date): "morning" | "afternoon" | "evening" | "ni
 }
 
 export function fmtMinutes(m: number): string {
-  if (!isFinite(m) || m <= 0) return "0m";
+  if (!isFinite(m) || m <= 0) return "—"; // never render "0m"
   const h = Math.floor(m / 60);
   const mm = Math.round(m % 60);
   return h > 0 ? `${h}h ${mm}m` : `${mm}m`;
