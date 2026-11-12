@@ -2,6 +2,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 type UB = Database["public"]["Tables"]["user_books"]["Row"];
 type SessionInsert = Database["public"]["Tables"]["reading_sessions"]["Insert"];
+type HistorySession = Pick<Database["public"]["Tables"]["reading_sessions"]["Row"], "book_id" | "started_at" | "end_page" | "end_seconds">;
 type UBPatch = Partial<Database["public"]["Tables"]["user_books"]["Update"]>;
 
 /** Same calendar day in the user's local timezone (never UTC). */
@@ -15,6 +16,21 @@ export function sessionStart(day: Date, now: Date = new Date()): Date {
   return new Date(day.getFullYear(), day.getMonth(), day.getDate(), 12, 0, 0, 0);
 }
 
+/** Latest known end position on or before the chosen local calendar date. */
+export function historicalStartPosition(sessions: readonly HistorySession[], bookId: string, format: string, day: Date): number {
+  const cutoff = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1).getTime();
+  let latest = -Infinity;
+  let position = 0;
+  for (const session of sessions) {
+    const timestamp = new Date(session.started_at).getTime();
+    const end = format === "audiobook" ? session.end_seconds : session.end_page;
+    if (session.book_id !== bookId || timestamp >= cutoff || timestamp <= latest || end == null) continue;
+    latest = timestamp;
+    position = end;
+  }
+  return position;
+}
+
 export type LogInput = {
   bookId: string;
   userId: string;
@@ -24,6 +40,7 @@ export type LogInput = {
   newPosition: number;
   /** last known position, defaults to the stored one */
   lastPosition?: number;
+  sessions?: readonly HistorySession[];
   day: Date;
   /** minutes; null/0 = no duration */
   durationMinutes?: number | null;
@@ -49,17 +66,19 @@ export function buildSessionLog(i: LogInput): LogResult {
   const now = i.now ?? new Date();
   const isAudio = i.format === "audiobook";
   const stored = (isAudio ? i.userBook.current_seconds : i.userBook.current_page) ?? 0;
-  const last = i.lastPosition ?? stored;
+  const today = isLocalToday(i.day, now);
+  const last = today ? i.lastPosition ?? stored : historicalStartPosition(i.sessions ?? [], i.bookId, i.format, i.day);
   const pos = Math.max(0, Math.round(i.newPosition));
-  const read = pos - last;
-  if (read === 0) return { kind: "no_progress" };
-  if (read < 0) return { kind: "regressed", correction: pctPatch(isAudio, pos, i.userBook) };
+  const read = Math.max(0, pos - last);
+  if (today && pos < stored) return { kind: "regressed", correction: pctPatch(isAudio, pos, i.userBook) };
+  if (today && read === 0) return { kind: "no_progress" };
 
   const startedAt = sessionStart(i.day, now);
   const dur = i.durationMinutes && i.durationMinutes > 0 ? Math.round(i.durationMinutes) : null;
   const row: SessionInsert = {
     book_id: i.bookId,
     user_id: i.userId,
+    backdated: !today,
     started_at: startedAt.toISOString(),
     ended_at: dur ? new Date(startedAt.getTime() + dur * 60_000).toISOString() : null,
     minutes: dur,
@@ -76,6 +95,6 @@ export function buildSessionLog(i: LogInput): LogResult {
     row.pages_read = read;
   }
   // Only move stored progress when logging today, or when moving beyond it.
-  const patch = isLocalToday(i.day, now) || pos > stored ? pctPatch(isAudio, pos, i.userBook) : {};
+  const patch = today || pos > stored ? pctPatch(isAudio, pos, i.userBook) : {};
   return { kind: "ok", row, patch };
 }

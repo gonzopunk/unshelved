@@ -20,7 +20,14 @@ export const Route = createFileRoute("/_authenticated/visualizations")({
     } catch { /* noop */ }
     return { tab: "charts" };
   },
-  head: () => ({ meta: [{ title: "Visualizations — Unshelved" }] }),
+  head: () => ({ meta: [
+    { title: "Visualizations — Unshelved" },
+    { name: "description", content: "Explore your Unshelved reading patterns through charts and constellations." },
+    { property: "og:title", content: "Visualizations — Unshelved" },
+    { property: "og:description", content: "Explore your Unshelved reading patterns through charts and constellations." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: VisualizationsPage,
 });
 

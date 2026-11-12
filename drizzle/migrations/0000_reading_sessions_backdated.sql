@@ -1,0 +1,2 @@
+ALTER TABLE public.reading_sessions ADD COLUMN backdated boolean NOT NULL DEFAULT false;
+COMMENT ON COLUMN public.reading_sessions.backdated IS 'Date-only historical entry; started_at local noon is a storage convention, not a known time of day.';

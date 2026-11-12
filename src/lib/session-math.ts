@@ -36,6 +36,23 @@ export type SessionStats = {
 
 const HALF_LIFE = 3; // EWMA half-life in sessions
 
+export function partOfDay(date: Date): "morning" | "afternoon" | "evening" | "night" {
+  const h = date.getHours();
+  if (h < 5) return "night";
+  if (h < 12) return "morning";
+  if (h < 18) return "afternoon";
+  if (h < 22) return "evening";
+  return "night";
+}
+
+export function timeOfDayCounts(sessions: readonly Pick<Session, "started_at" | "backdated">[]) {
+  const counts = { morning: 0, afternoon: 0, evening: 0, night: 0 };
+  for (const session of sessions) {
+    if (!session.backdated) counts[partOfDay(new Date(session.started_at))]++;
+  }
+  return counts;
+}
+
 export function computeStats(
   sessions: Session[],
   fmt: string,

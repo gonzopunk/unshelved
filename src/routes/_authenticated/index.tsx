@@ -13,7 +13,14 @@ import { useAllSessions } from "@/lib/sessions";
 import SessionLogDialog from "@/components/sessions/SessionLogDialog";
 
 export const Route = createFileRoute("/_authenticated/")({
-  head: () => ({ meta: [{ title: "Unshelved — Library" }] }),
+  head: () => ({ meta: [
+    { title: "Your reading — Unshelved" },
+    { name: "description", content: "Your current books, reading sessions, and yearly reading progress on Unshelved." },
+    { property: "og:title", content: "Your reading — Unshelved" },
+    { property: "og:description", content: "Your current books, reading sessions, and yearly reading progress on Unshelved." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: Home,
 });
 

@@ -41,7 +41,14 @@ export const Route = createFileRoute("/_authenticated/library")({
     if (s.paused === 1 || s.paused === "1" || s.paused === true) out.paused = 1;
     return out;
   },
-  head: () => ({ meta: [{ title: "Library — Unshelved" }] }),
+  head: () => ({ meta: [
+    { title: "Library — Unshelved" },
+    { name: "description", content: "Browse and organize your Unshelved library across shelves and reading formats." },
+    { property: "og:title", content: "Library — Unshelved" },
+    { property: "og:description", content: "Browse and organize your Unshelved library across shelves and reading formats." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: LibraryPage,
 });
 

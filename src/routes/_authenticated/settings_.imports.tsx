@@ -16,6 +16,14 @@ import ImportWizard from "@/components/import/ImportWizard";
 import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/_authenticated/settings_/imports")({
+  head: () => ({ meta: [
+    { title: "Import history — Unshelved" },
+    { name: "description", content: "Review your book imports and manage imported library batches in Unshelved." },
+    { property: "og:title", content: "Import history — Unshelved" },
+    { property: "og:description", content: "Review your book imports and manage imported library batches in Unshelved." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: ImportsPage,
 });
 
