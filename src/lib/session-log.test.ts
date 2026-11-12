@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { buildSessionLog, isLocalToday, sessionStart } from "./session-log";
-import { computeStats, type Session } from "./sessions";
+import { computeStats } from "./session-math";
+import type { Database } from "@/integrations/supabase/types";
+type Session = Database["public"]["Tables"]["reading_sessions"]["Row"];
 
 const ub = { id: "ub", current_page: 110, current_seconds: 0, total_pages: 200, total_seconds: null };
 const now = new Date(2026, 10, 12, 21, 30); // 9:30pm local
