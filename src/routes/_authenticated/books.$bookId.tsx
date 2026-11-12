@@ -32,7 +32,7 @@ import RhythmStrip from "@/components/sessions/RhythmStrip";
 
 
 export const Route = createFileRoute("/_authenticated/books/$bookId")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { tab?: string; timer?: "1" } => ({
     tab: typeof search.tab === "string" ? search.tab : "notes",
     timer: search.timer === "1" || search.timer === 1 ? "1" : undefined,
   }),
@@ -58,7 +58,8 @@ function BookDetail() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const { tab, timer } = Route.useSearch();
+  const { tab: tabRaw, timer } = Route.useSearch();
+  const tab = tabRaw ?? "notes";
   const [editOpen, setEditOpen] = useState(false);
   const [weaveSource, setWeaveSource] = useState<{ kind: ConnectionKind; id: string; label: string } | null>(null);
   const [editingConn, setEditingConn] = useState<Connection | null>(null);
