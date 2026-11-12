@@ -16,6 +16,14 @@ import { List, Network, X } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/weave")({
+  head: () => ({ meta: [
+    { title: "Connections — Unshelved" },
+    { name: "description", content: "Explore the connections between books, notes, and quotes in Unshelved." },
+    { property: "og:title", content: "Connections — Unshelved" },
+    { property: "og:description", content: "Explore the connections between books, notes, and quotes in Unshelved." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: WeavePage,
 });
 

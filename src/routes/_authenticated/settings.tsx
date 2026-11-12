@@ -19,6 +19,14 @@ import { Sparkles, Upload, ChevronRight, AlertTriangle, Trash2 } from "lucide-re
 
 
 export const Route = createFileRoute("/_authenticated/settings")({
+  head: () => ({ meta: [
+    { title: "Settings — Unshelved" },
+    { name: "description", content: "Manage your Unshelved account, reading preferences, and library data." },
+    { property: "og:title", content: "Settings — Unshelved" },
+    { property: "og:description", content: "Manage your Unshelved account, reading preferences, and library data." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: SettingsPage,
 });
 

@@ -17,6 +17,14 @@ import {
 } from "@/lib/notations";
 
 export const Route = createFileRoute("/_authenticated/notations")({
+  head: () => ({ meta: [
+    { title: "Notations — Unshelved" },
+    { name: "description", content: "Revisit your reading notes, quotes, and commonplace collection in Unshelved." },
+    { property: "og:title", content: "Notations — Unshelved" },
+    { property: "og:description", content: "Revisit your reading notes, quotes, and commonplace collection in Unshelved." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   validateSearch: (search: Record<string, unknown>) => search,
   component: NotationsPage,
 });

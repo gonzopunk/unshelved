@@ -10,7 +10,14 @@ import { track } from "@/lib/analytics";
 import unshelvedLogo from "@/assets/unshelved_logo_transparent.png";
 
 export const Route = createFileRoute("/signup")({
-  head: () => ({ meta: [{ title: "Sign up — Unshelved" }] }),
+  head: () => ({ meta: [
+    { title: "Sign up — Unshelved" },
+    { name: "description", content: "Create your Unshelved account and start your personal reading library." },
+    { property: "og:title", content: "Sign up — Unshelved" },
+    { property: "og:description", content: "Create your Unshelved account and start your personal reading library." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: SignupPage,
 });
 

@@ -9,7 +9,14 @@ import { toast } from "sonner";
 import unshelvedLogo from "@/assets/unshelved_logo_transparent.png";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Sign in — Unshelved" }] }),
+  head: () => ({ meta: [
+    { title: "Sign in — Unshelved" },
+    { name: "description", content: "Sign in to Unshelved to track your reading and revisit your books." },
+    { property: "og:title", content: "Sign in — Unshelved" },
+    { property: "og:description", content: "Sign in to Unshelved to track your reading and revisit your books." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: LoginPage,
 });
 

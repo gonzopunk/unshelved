@@ -32,6 +32,14 @@ import RhythmStrip from "@/components/sessions/RhythmStrip";
 
 
 export const Route = createFileRoute("/_authenticated/books/$bookId")({
+  head: () => ({ meta: [
+    { title: "Book details — Unshelved" },
+    { name: "description", content: "Track this book’s reading progress, sessions, notes, quotes, and connections in Unshelved." },
+    { property: "og:title", content: "Book details — Unshelved" },
+    { property: "og:description", content: "Track this book’s reading progress, sessions, notes, quotes, and connections in Unshelved." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   validateSearch: (search: Record<string, unknown>): { tab?: string; timer?: "1" } => ({
     tab: typeof search.tab === "string" ? search.tab : "notes",
     timer: search.timer === "1" || search.timer === 1 ? "1" : undefined,
