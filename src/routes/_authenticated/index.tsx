@@ -9,7 +9,6 @@ import BookCard from "@/components/BookCard";
 import StarRating from "@/components/StarRating";
 import GeneratedCover from "@/components/GeneratedCover";
 import AddBookModal from "@/components/AddBookModal";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAllSessions } from "@/lib/sessions";
 import SessionLogDialog from "@/components/sessions/SessionLogDialog";
 
