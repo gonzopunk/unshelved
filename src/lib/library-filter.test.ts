@@ -1,10 +1,51 @@
 import { describe, it, expect } from "vitest";
 import {
+  filterLibrary,
   searchToFilters,
   filtersToSearch,
   emptyLibraryFilters,
   type LibrarySearch,
 } from "./library-filter";
+
+type FilterInput = Parameters<typeof filterLibrary>[0];
+
+const shelf = (rating: number | string | null) =>
+  ({
+    id: "b1",
+    title: "Pachinko",
+    author: "Min Jin Lee",
+    user_books: [{ rating }],
+  }) as unknown as FilterInput[number];
+
+const ctx = { bookTags: {}, bookAxes: {} };
+
+const match = (rating: number, bookRating: number | string | null) =>
+  filterLibrary([shelf(bookRating)], searchToFilters({ rating }), ctx).length;
+
+describe("filterLibrary rating filter", () => {
+  it("matches a half-star 4.5 under rating=5, the same bin the chart uses", () => {
+    expect(match(5, 4.5)).toBe(1);
+    expect(match(4, 4.5)).toBe(0);
+  });
+
+  it("matches 4.3 under rating=4", () => {
+    expect(match(4, 4.3)).toBe(1);
+  });
+
+  it("matches an exact whole rating", () => {
+    expect(match(4, 4)).toBe(1);
+    expect(match(5, 4)).toBe(0);
+  });
+
+  it("matches numeric ratings that arrive from the database as strings", () => {
+    expect(match(5, "4.5")).toBe(1);
+    expect(match(4, "4.0")).toBe(1);
+  });
+
+  it("excludes books with no rating", () => {
+    expect(match(4, null)).toBe(0);
+  });
+});
 
 describe("searchToFilters", () => {
   it("empty input returns the empty filters shape", () => {
