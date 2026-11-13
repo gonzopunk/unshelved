@@ -56,7 +56,7 @@ export function filterLibrary(
     }
     if (f.paused && !ub?.paused) return false;
     if (f.rating != null) {
-      if ((ub?.rating ?? 0) !== f.rating) return false;
+      if (ub?.rating == null || Math.round(Number(ub.rating)) !== f.rating) return false;
     }
     if (f.dateFrom || f.dateTo) {
       const fin = ub?.finished_at;
